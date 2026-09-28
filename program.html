@@ -48,6 +48,14 @@
 
     <!-- Senarai program -->
     <section id="paparSenarai" hidden>
+      <div id="panelMuka" class="panel-muka">
+        <div>
+          <b>Cap muka rujukan warga</b>
+          <span id="statusCapMuka" class="muted">Menyemak…</span>
+          <small class="hint">Diperlukan untuk kaedah imbas muka. Dijana daripada gambar direktori; jana semula jika gambar warga ditukar.</small>
+        </div>
+        <button id="btnJanaMuka" class="btn btn-soft btn-sm">Jana cap muka</button>
+      </div>
       <div class="bar-atas">
         <h2 class="tajuk-seksyen">Senarai Program</h2>
         <button id="btnProgramBaru" class="btn btn-primary">
@@ -115,6 +123,26 @@
         <span>Guna lokasi semasa saya</span>
       </button>
       <label class="suis"><input type="checkbox" name="aktif" checked> Buka pendaftaran kehadiran</label>
+
+      <fieldset class="bahagian">
+        <legend>Kaedah Pengesahan Kehadiran</legend>
+        <div class="pilihan-kaedah">
+          <label class="kaedah"><input type="radio" name="kaedah_sah" value="nama" checked>
+            <span><b>Carian nama</b><small>Warga taip dan pilih nama sendiri.</small></span></label>
+          <label class="kaedah"><input type="radio" name="kaedah_sah" value="nama_muka">
+            <span><b>Nama + imbas muka</b> <em class="disyor">Disyorkan</em><small>Pilih nama, kemudian swafoto dipadankan dengan gambar orang itu (1:1).</small></span></label>
+          <label class="kaedah"><input type="radio" name="kaedah_sah" value="muka">
+            <span><b>Imbas muka sahaja</b><small>Swafoto dahulu; sistem cadangkan 3 nama paling sepadan untuk dipilih, kemudian disahkan 1:1.</small></span></label>
+        </div>
+        <label id="kotakAmbang" class="ambang">Ketetatan padanan muka
+          <select name="ambang_muka">
+            <option value="0.45">Ketat — kurang tersilap orang, lebih kerap perlu imbas semula</option>
+            <option value="0.5" selected>Sederhana (disyorkan)</option>
+            <option value="0.55">Longgar — mudah lulus, lebih mudah tersilap orang</option>
+          </select>
+        </label>
+        <p id="notaMuka" class="hint"></p>
+      </fieldset>
 
       <fieldset class="bahagian">
         <legend>E-mel Pengesahan</legend>
@@ -196,6 +224,8 @@
   <script src="vendor/pdf-lib.min.js"></script>
   <script src="sijil.js"></script>
   <script src="storage.js"></script>
-  <script src="program.js"></script>
+  <script src="vendor/face-api/face-api.js" defer></script>
+  <script src="muka.js" defer></script>
+  <script src="program.js" defer></script>
 </body>
 </html>

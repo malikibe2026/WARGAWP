@@ -65,3 +65,12 @@ Supabase → Edge Functions → **Secrets**, tambah:
 - `BALAS_KE` (pilihan) = alamat untuk balasan (Reply-To), cth. e-mel rasmi @dosm.gov.my
 
 Alternatif: `BREVO_API_KEY` + `PENGIRIM_EMEL` (penghantar yang disahkan dalam Brevo).
+
+### Kaedah pengesahan kehadiran (setiap program)
+- **Carian nama** — seperti biasa.
+- **Nama + imbas muka** (disyorkan) — swafoto dipadankan 1:1 dengan gambar warga yang dipilih.
+- **Imbas muka sahaja** — sistem cadangkan ≤3 nama paling sepadan; warga pilih, kemudian disahkan 1:1.
+
+Pentadbir perlu klik **Jana cap muka** (program.html) sekali, dan semula jika gambar warga ditukar.
+Padanan dibuat di pelayan (`daftar_hadir`, `cari_muka`, jadual `warga_muka` yang hanya boleh dibaca pentadbir).
+Swafoto tidak disimpan; hanya cap muka 128 nombor dihantar. Model: `vendor/face-api` (MIT).

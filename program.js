@@ -35,6 +35,7 @@
     if (!(await Store.sesi())) { $("#btnLogout").hidden = true; return papar("#paparLogin"); }
     $("#btnLogout").hidden = false;
     st.warga = semak(await sb.from("warga").select("id,nama,jawatan,gred,unit,gambar_url,susunan").order("susunan", { nullsFirst: false }));
+    semakCapMuka();
     await muatProgram();
   }
 
@@ -79,6 +80,7 @@
         <ul class="kp-meta">
           <li>📅 ${esc(tarikhPanjang(p.tarikh))}</li>
           <li>🕘 ${esc(masa)}</li>
+          <li>${p.kaedah_sah === "nama" ? "🔎 Carian nama" : p.kaedah_sah === "nama_muka" ? "🙂 Nama + imbas muka" : "🙂 Imbas muka"}${p.emel_aktif ? " · ✉ E-mel" : ""}${p.sijil_aktif ? " · 📜 Sijil" : ""}</li>
           <li>📍 ${esc(p.lokasi_nama || "—")}${p.lat != null ? ` <span class="muted">(${p.radius_m} m)</span>` : ' <span class="muted">(tiada semakan lokasi)</span>'}</li>
         </ul>
         <div class="kp-bawah">
@@ -197,6 +199,48 @@ Jabatan Perangkaan Malaysia, Wilayah Persekutuan`;
     finally { b.disabled = false; b.textContent = "Pratonton sijil"; }
   };
 
+  // ---------- Kaedah pengesahan & cap muka ----------
+  function kemasKaedah() {
+    const f = $("#borangProgram").elements, muka = f.kaedah_sah.value !== "nama";
+    $("#kotakAmbang").hidden = !muka;
+    const tanpa = st.warga.length - (st.bilMuka || 0);
+    $("#notaMuka").innerHTML = !muka ? "" : (st.bilMuka ? `${st.bilMuka} warga mempunyai cap muka.` : "Belum ada cap muka — klik <b>Jana cap muka</b> di halaman senarai program dahulu.")
+      + (muka && tanpa > 0 && st.bilMuka ? ` ${tanpa} warga tanpa cap muka tidak dapat daftar sendiri (tanda manual).` : "")
+      + (muka ? " Warga perlu membenarkan kamera pada telefon." : "");
+  }
+  document.querySelectorAll('[name="kaedah_sah"]').forEach(r => r.addEventListener("change", kemasKaedah));
+
+  async function semakCapMuka() {
+    const { count, error } = await sb.from("warga_muka").select("warga_id", { count: "exact", head: true });
+    st.bilMuka = error ? 0 : count || 0;
+    $("#statusCapMuka").textContent = error ? "Tidak dapat disemak" : `${st.bilMuka} / ${st.warga.length} warga`;
+  }
+
+  $("#btnJanaMuka").onclick = async () => {
+    if (!confirm(`Jana cap muka daripada gambar direktori untuk ${st.warga.length} warga?\n\nIni mengambil masa beberapa minit. Jangan tutup halaman ini.`)) return;
+    const b = $("#btnJanaMuka"); b.disabled = true;
+    let siap = 0, gagal = [];
+    try {
+      b.textContent = "Memuatkan model…";
+      await Muka.muatModel();
+      for (const [i, w] of st.warga.entries()) {
+        b.textContent = `Memproses ${i + 1}/${st.warga.length}…`;
+        if (!w.gambar_url || !/^https?:/.test(w.gambar_url)) { gagal.push(w.nama + " (tiada gambar)"); continue; }
+        try {
+          const img = await Muka.muatGambar(w.gambar_url);
+          const r = await Muka.capMuka(img);
+          if (!r) { gagal.push(w.nama + " (muka tidak dikesan)"); continue; }
+          semak(await sb.from("warga_muka").upsert({ warga_id: w.id, deskriptor: JSON.stringify(r.deskriptor), gambar_url: w.gambar_url, dikemas: new Date().toISOString() }));
+          siap++;
+        } catch (err) { gagal.push(`${w.nama} (${err.message})`); }
+      }
+      toast(`${siap} cap muka dijana${gagal.length ? `, ${gagal.length} gagal` : ""}.`, gagal.length > 0 && !siap);
+      if (gagal.length) console.warn("Cap muka gagal:", gagal);
+      if (gagal.length) alert("Tidak berjaya:\n" + gagal.slice(0, 30).join("\n") + (gagal.length > 30 ? `\n…dan ${gagal.length - 30} lagi` : ""));
+    } catch (err) { toast(err.message, true); }
+    finally { b.disabled = false; b.textContent = "Jana cap muka"; semakCapMuka(); }
+  };
+
   // ---------- Borang program ----------
   function bukaBorang(p) {
     st.sedangEdit = p || null;
@@ -211,6 +255,9 @@ Jabatan Perangkaan Malaysia, Wilayah Persekutuan`;
     f.elements.koordinat.value = p?.lat != null ? `${p.lat}, ${p.lng}` : "";
     f.elements.radius_m.value = String(p?.radius_m || 200);
     f.elements.aktif.checked = p ? p.aktif : true;
+    f.elements.kaedah_sah.value = p?.kaedah_sah || "nama";
+    f.elements.ambang_muka.value = String(p?.ambang_muka ?? 0.5);
+    kemasKaedah();
     f.elements.emel_aktif.checked = !!p?.emel_aktif;
     f.elements.emel_subjek.value = p?.emel_subjek || "Pengesahan Kehadiran: {program}";
     f.elements.emel_isi.value = p?.emel_isi || ISI_LALAI;
@@ -257,6 +304,7 @@ Jabatan Perangkaan Malaysia, Wilayah Persekutuan`;
         masa_mula: f.masa_mula.value || null, masa_tamat: f.masa_tamat.value || null,
         lokasi_nama: f.lokasi_nama.value.trim() || null, lat, lng,
         radius_m: +f.radius_m.value, aktif: f.aktif.checked,
+        kaedah_sah: f.kaedah_sah.value, ambang_muka: +f.ambang_muka.value,
         emel_aktif: f.emel_aktif.checked, emel_subjek: f.emel_subjek.value.trim() || null,
         emel_isi: f.emel_isi.value.trim() || null, sijil_aktif: f.sijil_aktif.checked,
         sijil_teks: st.teksSijil.filter(t => String(t.teks || "").trim()),
@@ -392,7 +440,7 @@ Jabatan Perangkaan Malaysia, Wilayah Persekutuan`;
         <div class="baris-hadir">
           <img src="${esc(w.gambar_url || TANPA_GAMBAR)}" alt="">
           <div class="bh-nama"><b>${esc(w.nama)}</b><small>${esc([w.jawatan, w.unit].filter(Boolean).join(" · "))}</small></div>
-          <div class="bh-emel">${lencanaEmel(h)}</div>
+          <div class="bh-emel">${h.jarak_muka != null ? `<span class="lencana ok" title="Jarak cap muka ${h.jarak_muka.toFixed(2)} (lebih kecil = lebih sepadan)">🙂 ${Math.round((1 - h.jarak_muka) * 100)}%</span>` : ""}${lencanaEmel(h)}</div>
           <div class="bh-masa">${new Date(h.masa).toLocaleTimeString("ms-MY", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kuala_Lumpur" })}</div>
           <div class="bh-lokasi">${h.kaedah === "manual" ? '<span class="lencana lepas">Manual</span>'
             : h.jarak_m != null ? `<span class="lencana ok">✓ ${Math.round(h.jarak_m)} m</span>` : '<span class="lencana lepas">Tiada lokasi</span>'}</div>

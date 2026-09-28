@@ -11,10 +11,11 @@
   }, true);
 
   const kod = new URLSearchParams(location.search).get("p");
-  let program = null, warga = [], dipilih = null;
+  let program = null, warga = [], dipilih = null, mukaSemasa = null, strim = null, penyelesai = null;
 
   function tunjuk(id) {
-    for (const s of ["#langkahCari", "#langkahSahkan", "#langkahHasil", "#ralatProgram"]) $(s).hidden = s !== id;
+    for (const s of ["#langkahCari", "#langkahSahkan", "#langkahMuka", "#langkahHasil", "#ralatProgram"]) $(s).hidden = s !== id;
+    if (id !== "#langkahMuka") hentiKamera();
   }
 
   function ralatBesar(tajuk, mesej) {
@@ -78,8 +79,123 @@
     $("#notaLokasi").textContent = program.lat != null
       ? `Lokasi telefon akan disemak. Anda perlu berada dalam lingkungan ${program.radius_m} m dari lokasi program.`
       : "";
+    $("#btnHadir span").textContent = labelHadir();
     tunjuk("#langkahSahkan");
     window.scrollTo({ top: $("#langkahSahkan").offsetTop - 16, behavior: "smooth" });
+  }
+
+  const perluMuka = () => program && program.kaedah_sah !== "nama";
+  const labelHadir = () => perluMuka() && !mukaSemasa ? "Imbas Muka & Hadir" : "Sahkan Lokasi & Hadir";
+
+  // ---------- Kamera & imbasan muka ----------
+  function muatSkrip(src) {
+    return new Promise((ok, gagal) => {
+      if (document.querySelector(`script[src="${src}"]`)) return ok();
+      const s = document.createElement("script"); s.src = src; s.onload = ok;
+      s.onerror = () => gagal(new Error("Gagal memuatkan " + src)); document.head.appendChild(s);
+    });
+  }
+  let modelSedia = null;
+  function sediaModel() {
+    if (!modelSedia) modelSedia = (async () => {
+      await muatSkrip("vendor/face-api/face-api.js");
+      await muatSkrip("muka.js");
+      await Muka.muatModel();
+    })();
+    return modelSedia;
+  }
+
+  function hentiKamera() {
+    if (strim) { strim.getTracks().forEach(t => t.stop()); strim = null; }
+  }
+
+  async function bukaKamera(tajuk, modCari) {
+    $("#tajukMuka").textContent = tajuk;
+    $("#calonMuka").innerHTML = "";
+    $("#btnCariManual").hidden = !modCari;
+    $("#btnImbas").disabled = true;
+    $("#kameraMuat").hidden = false;
+    $("#kameraMuat").textContent = "Memuatkan kamera…";
+    $("#statusMuka").textContent = "Letakkan muka di dalam bingkai, pastikan cahaya mencukupi.";
+    $("#statusMuka").className = "status-muka";
+    tunjuk("#langkahMuka");
+    window.scrollTo({ top: $("#langkahMuka").offsetTop - 16, behavior: "smooth" });
+    try {
+      if (!navigator.mediaDevices?.getUserMedia) throw new Error("Pelayar ini tidak menyokong kamera. Cuba Chrome atau Safari terkini.");
+      strim = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 640 } }, audio: false });
+      $("#video").srcObject = strim;
+      await $("#video").play();
+      $("#kameraMuat").textContent = "Memuatkan pengecaman muka… (kali pertama mungkin mengambil masa)";
+      await sediaModel();
+      $("#kameraMuat").hidden = true;
+      $("#btnImbas").disabled = false;
+    } catch (err) {
+      $("#kameraMuat").hidden = true;
+      $("#statusMuka").textContent = err.name === "NotAllowedError"
+        ? "Akses kamera ditolak. Benarkan kamera untuk laman ini dalam tetapan pelayar, kemudian muat semula."
+        : (err.message || "Kamera tidak dapat dibuka.");
+      $("#statusMuka").className = "status-muka ralat";
+    }
+  }
+
+  // Ambil cap muka daripada video; pulangkan array 128 nombor atau null.
+  async function ambilCapMuka() {
+    const btn = $("#btnImbas"), label = btn.querySelector("span");
+    btn.disabled = true; label.textContent = "Mengimbas…";
+    try {
+      for (let cubaan = 0; cubaan < 3; cubaan++) {
+        const r = await Muka.capMuka($("#video"));
+        if (r) return r.deskriptor;
+        await new Promise(ok => setTimeout(ok, 300));
+      }
+      $("#statusMuka").textContent = "Muka tidak dikesan. Dekatkan telefon, hadap kamera dan pastikan tiada cahaya dari belakang.";
+      $("#statusMuka").className = "status-muka ralat";
+      return null;
+    } finally { btn.disabled = false; label.textContent = "Imbas Muka"; }
+  }
+
+  // Mod "nama + muka": imbas untuk mengesahkan nama yang telah dipilih.
+  function imbasUntukSahkan() {
+    return new Promise((ok, gagal) => {
+      penyelesai = { ok, gagal, mod: "sahkan" };
+      bukaKamera("Imbas muka untuk pengesahan", false);
+    });
+  }
+
+  // Mod "imbas muka sahaja": cari calon paling sepadan.
+  async function cariDenganMuka() {
+    penyelesai = { mod: "cari" };
+    bukaKamera("Imbas muka anda", true);
+  }
+
+  async function klikImbas() {
+    const d = await ambilCapMuka();
+    if (!d) return;
+    mukaSemasa = d;
+    if (penyelesai?.mod === "sahkan") {
+      const p = penyelesai; penyelesai = null; hentiKamera(); p.ok(d); return;
+    }
+    // Mod cari
+    $("#statusMuka").textContent = "Mencari padanan…"; $("#statusMuka").className = "status-muka";
+    const { data, error } = await Store.sb.rpc("cari_muka", { p_kod: kod, p_muka: d });
+    if (error) { $("#statusMuka").textContent = error.message; $("#statusMuka").className = "status-muka ralat"; return; }
+    hentiKamera();
+    if (!data?.length) {
+      $("#statusMuka").textContent = "Tiada padanan ditemui. Cuba imbas semula dengan cahaya lebih terang, atau cari nama secara manual.";
+      $("#statusMuka").className = "status-muka ralat";
+      $("#btnImbas").querySelector("span").textContent = "Imbas Semula";
+      $("#btnImbas").onclick = () => { $("#btnImbas").onclick = null; $("#btnImbas").querySelector("span").textContent = "Imbas Muka"; cariDenganMuka(); };
+      return;
+    }
+    $("#statusMuka").textContent = data.length > 1 ? "Pilih nama anda:" : "Adakah ini anda? Tekan nama untuk teruskan.";
+    $("#btnImbas").querySelector("span").textContent = "Imbas Semula";
+    $("#btnImbas").onclick = () => { $("#btnImbas").onclick = null; $("#btnImbas").querySelector("span").textContent = "Imbas Muka"; cariDenganMuka(); };
+    $("#calonMuka").innerHTML = data.map(w => `
+      <li><button class="cadang" data-id="${esc(w.id)}">
+        <img src="${esc(w.gambar_url || TANPA_GAMBAR)}" alt="">
+        <span><b>${esc(w.nama)}</b><small>${esc([w.jawatan, w.unit].filter(Boolean).join(" · "))}</small></span>
+        <svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+      </button></li>`).join("");
   }
 
   function dapatLokasi() {
@@ -109,6 +225,10 @@
     btn.disabled = true;
     const teks = btn.querySelector("span");
     try {
+      if (perluMuka() && !mukaSemasa) {
+        try { await imbasUntukSahkan(); } catch { return; }
+        tunjuk("#langkahSahkan");
+      }
       let c = null;
       if (program.lat != null) {
         teks.textContent = "Mendapatkan lokasi…";
@@ -119,6 +239,7 @@
         p_kod: kod, p_warga: dipilih.id,
         p_lat: c ? c.latitude : null, p_lng: c ? c.longitude : null,
         p_ketepatan: c ? Math.round(c.accuracy) : null, p_peranti: idPeranti(),
+        p_muka: perluMuka() ? mukaSemasa : null,
       });
       if (error) throw new Error(error.message);
       if (data.ok) {
@@ -134,13 +255,14 @@
       } else if (data.sudah) {
         hasil(true, "Sudah direkodkan", data.sebab);
       } else {
+        if (data.muka === false) mukaSemasa = null;   // imbas semula pada cubaan seterusnya
         hasil(false, "Kehadiran tidak direkodkan", data.sebab);
       }
     } catch (err) {
       hasil(false, "Kehadiran tidak direkodkan", err.message);
     } finally {
       btn.disabled = false;
-      teks.textContent = "Sahkan Lokasi & Hadir";
+      teks.textContent = labelHadir();
     }
   }
 
@@ -176,13 +298,27 @@
     paparProgram(null);
     muatKiraan();
     if (!program.aktif) return ralatBesar("Pendaftaran ditutup", "Pendaftaran kehadiran untuk program ini telah ditutup oleh urus setia.");
+    if (perluMuka()) sediaModel().catch(() => {});   // pramuat model di latar belakang
+    if (program.kaedah_sah === "muka") return cariDenganMuka();
     tunjuk("#langkahCari");
     $("#cariNama").focus();
   }
 
   $("#cariNama").addEventListener("input", cadang);
   $("#cadangan").addEventListener("click", e => { const b = e.target.closest("[data-id]"); if (b) pilih(b.dataset.id); });
-  $("#btnBukan").addEventListener("click", () => { dipilih = null; tunjuk("#langkahCari"); $("#cariNama").select(); });
+  $("#btnBukan").addEventListener("click", () => {
+    dipilih = null;
+    if (program.kaedah_sah === "muka") { mukaSemasa = null; return cariDenganMuka(); }
+    tunjuk("#langkahCari"); $("#cariNama").select();
+  });
   $("#btnHadir").addEventListener("click", hadir);
+  $("#btnImbas").addEventListener("click", () => { if (!$("#btnImbas").onclick) klikImbas(); });
+  $("#calonMuka").addEventListener("click", e => { const b = e.target.closest("[data-id]"); if (b) pilih(b.dataset.id); });
+  $("#btnCariManual").addEventListener("click", () => { tunjuk("#langkahCari"); $("#cariNama").focus(); });
+  $("#btnMukaBatal").addEventListener("click", () => {
+    const p = penyelesai; penyelesai = null; hentiKamera();
+    if (p?.gagal) { p.gagal(new Error("batal")); tunjuk("#langkahSahkan"); return; }
+    tunjuk(dipilih ? "#langkahSahkan" : "#langkahCari");
+  });
   mula().catch(err => ralatBesar("Ralat", err.message));
 })();

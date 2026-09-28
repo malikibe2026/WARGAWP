@@ -50,6 +50,27 @@
       </div>
     </section>
 
+    <!-- Imbas muka -->
+    <section id="langkahMuka" class="panel" hidden>
+      <h2 class="panel-tajuk"><span class="nombor">📷</span><span id="tajukMuka">Imbas muka anda</span></h2>
+      <div class="kamera">
+        <video id="video" playsinline muted autoplay></video>
+        <div class="bingkai-muka" aria-hidden="true"></div>
+        <div id="kameraMuat" class="kamera-muat">Memuatkan…</div>
+      </div>
+      <p id="statusMuka" class="status-muka">Letakkan muka di dalam bingkai, pastikan cahaya mencukupi.</p>
+      <div class="aksi-sahkan">
+        <button id="btnMukaBatal" class="btn btn-ghost">Batal</button>
+        <button id="btnImbas" class="btn btn-primary btn-besar" disabled>
+          <svg viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="11" r="3.5"/><path d="M7.5 18a5 5 0 0 1 9 0"/></svg>
+          <span>Imbas Muka</span>
+        </button>
+      </div>
+      <ul id="calonMuka" class="cadangan"></ul>
+      <button id="btnCariManual" class="btn btn-ghost btn-sm pautan-manual" hidden>Nama saya tiada — cari secara manual</button>
+      <p class="hint privasi">🔒 Gambar anda tidak disimpan. Hanya "cap muka" digunakan untuk pengesahan dan dibuang serta-merta.</p>
+    </section>
+
     <!-- Langkah 3: keputusan -->
     <section id="langkahHasil" class="panel hasil" hidden></section>
 

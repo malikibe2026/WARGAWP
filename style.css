@@ -554,3 +554,27 @@ svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width:
 .nota-emel { margin: 14px auto 0 !important; max-width: 420px; font-size: 13.5px; color: var(--muted) !important; }
 .nota-emel.ok { color: var(--ok) !important; font-weight: 600; }
 @media (max-width: 760px) { .bh-emel { display: none; } .templat-baris { flex-direction: column; align-items: stretch; } }
+
+/* ============ Imbasan muka ============ */
+.kamera { position: relative; width: 100%; max-width: 360px; aspect-ratio: 3 / 4; margin: 0 auto; border-radius: 20px; overflow: hidden; background: #0b1624; }
+.kamera video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); display: block; }
+.bingkai-muka { position: absolute; left: 50%; top: 46%; width: 62%; aspect-ratio: 3 / 4; transform: translate(-50%, -50%); border: 3px solid rgba(255,255,255,.85); border-radius: 50%; box-shadow: 0 0 0 999px rgba(6,16,30,.45); }
+.kamera-muat { position: absolute; inset: 0; display: grid; place-items: center; padding: 20px; text-align: center; color: #fff; font-weight: 600; font-size: 14px; background: rgba(6,16,30,.7); }
+.status-muka { text-align: center; margin: 14px 0 0; font-size: 13.5px; color: var(--ink-2); }
+.status-muka.ralat { color: var(--danger); font-weight: 600; }
+#calonMuka:not(:empty) { margin-top: 14px; }
+.pautan-manual { display: block; margin: 12px auto 0; }
+.privasi { text-align: center; margin-top: 14px !important; }
+.pilihan-kaedah { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+.kaedah { display: flex !important; gap: 12px; align-items: flex-start; padding: 12px; border: 1px solid var(--line); border-radius: 12px; cursor: pointer; margin: 0 !important; font-weight: 500 !important; }
+.kaedah:has(input:checked) { border-color: var(--brand-2); background: color-mix(in srgb, var(--brand-2) 6%, var(--surface)); }
+.kaedah input { width: 18px !important; height: 18px; margin: 2px 0 0 !important; accent-color: var(--brand-2); flex: none; }
+.kaedah b { font-size: 14px; color: var(--ink); }
+.kaedah small { display: block; font-size: 12.5px; color: var(--muted); font-weight: 400; margin-top: 2px; }
+.disyor { font-style: normal; font-size: 10.5px; font-weight: 800; letter-spacing: .04em; color: #16713f; background: #e3f6ec; padding: 2px 7px; border-radius: 99px; margin-left: 4px; }
+.ambang { margin-top: 12px !important; }
+.panel-muka { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 14px 16px; margin-bottom: 18px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); border-left: 4px solid var(--brand-2); }
+.panel-muka > div { display: flex; flex-direction: column; gap: 2px; }
+.panel-muka b { font-size: 14px; }
+.bh-emel { display: flex; gap: 6px; }
+@media (max-width: 760px) { .panel-muka { flex-direction: column; align-items: stretch; } }
