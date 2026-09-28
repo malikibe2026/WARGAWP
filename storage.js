@@ -71,7 +71,12 @@
   function buatSupaStore() {
     const sb = global.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_ANON_KEY);
     const JADUAL = "warga";
-    const semak = ({ data, error }) => { if (error) throw new Error(error.message); return data; };
+    const semak = ({ data, error }) => {
+      if (!error) return data;
+      if (/row-level security|403|Unauthorized/i.test(error.message))
+        throw new Error("Akaun ini tiada kebenaran pentadbir. Hubungi pengurus sistem.");
+      throw new Error(error.message);
+    };
     return {
       mod: "dalam talian",
       async senarai() { return semak(await sb.from(JADUAL).select("*").order("nama")); },

@@ -10,19 +10,25 @@ Semua maklumat (termasuk gambar) boleh dikemas kini oleh pentadbir.
   No. KP **tidak disimpan** — hanya tarikh lahir.
 - Import CSV (templat: `contoh/templat-import.csv`, boleh ada lajur `No KP`), eksport CSV, cetak.
 
-## Dua mod
+## Pangkalan data (Supabase — mod dalam talian)
+Sistem sudah disambungkan ke projek Supabase `direktori-warga-dosm-kl` (Singapura).
+Skema penuh: `supabase/schema.sql` (sudah dijalankan).
 
-| Mod | Tetapan | Siapa nampak data |
-|---|---|---|
-| Tempatan (lalai) | `config.js` kosong | Pelayar komputer itu sahaja. Untuk cubaan. PIN pentadbir dalam `config.js`. |
-| Dalam talian | Isi `SUPABASE_URL` & `SUPABASE_ANON_KEY` | Semua yang buka laman. Pentadbir log masuk dengan e-mel & kata laluan. |
+- **Baca:** sesiapa yang ada pautan laman.
+- **Tambah / ubah / padam / gambar:** hanya akaun yang e-melnya ada dalam jadual `pentadbir`
+  dan telah disahkan.
 
-### Sediakan mod dalam talian (sekali sahaja)
-1. Daftar projek percuma di https://supabase.com.
-2. SQL Editor → tampal dan jalankan `supabase/schema.sql`.
-3. Authentication → Users → tambah akaun untuk setiap pentadbir.
-4. Project Settings → API → salin *Project URL* dan *anon public key* ke `config.js`.
-5. Terbitkan folder ini (GitHub Pages / Netlify). Tiada langkah *build*.
+### Cipta akaun pentadbir
+1. Supabase → Authentication → Users → **Add user** → masukkan e-mel & kata laluan, tandakan *Auto Confirm User*.
+2. Jika e-mel itu belum ada dalam senarai pentadbir, jalankan dalam SQL Editor:
+   `insert into public.pentadbir (emel) values ('nama@contoh.com');`
+3. Disyorkan: Authentication → Sign In / Providers → matikan **Allow new users to sign up**.
+
+### Buang pentadbir
+`delete from public.pentadbir where emel = 'nama@contoh.com';`
+
+### Mod tempatan (cubaan tanpa internet)
+Kosongkan `SUPABASE_URL` dan `SUPABASE_ANON_KEY` dalam `config.js`. Data disimpan dalam pelayar sahaja; PIN dalam `config.js`.
 
 ## Jalankan secara tempatan
 ```
@@ -31,6 +37,6 @@ python3 -m http.server 8000
 Buka http://localhost:8000.
 
 ## Nota privasi
-- Polisi lalai dalam `schema.sql` membenarkan sesiapa yang ada pautan membaca direktori (termasuk no. telefon bimbit).
-  Untuk hadkan kepada pengguna log masuk sahaja, guna pilihan (B) dalam fail tersebut.
+- Sesiapa yang ada pautan boleh membaca direktori, termasuk no. telefon bimbit. Kongsi pautan secara dalaman sahaja.
+- Projek Supabase pelan percuma akan *dijeda* selepas 7 hari tanpa aktiviti; pulihkan di papan pemuka Supabase jika laman tidak memaparkan data.
 - Gambar disimpan dalam *bucket* awam — sesiapa yang ada URL gambar boleh melihatnya.
