@@ -130,6 +130,7 @@
             ${data.jarak != null ? `<dt>Jarak dari lokasi</dt><dd>${data.jarak} m</dd>` : ""}
           </dl>`);
         muatKiraan();
+        if (program.emel_aktif) hantarPengesahan();
       } else if (data.sudah) {
         hasil(true, "Sudah direkodkan", data.sebab);
       } else {
@@ -141,6 +142,20 @@
       btn.disabled = false;
       teks.textContent = "Sahkan Lokasi & Hadir";
     }
+  }
+
+  async function hantarPengesahan() {
+    const nota = document.createElement("p");
+    nota.className = "nota-emel";
+    nota.textContent = program.sijil_aktif ? "Menghantar e-mel pengesahan dan sijil…" : "Menghantar e-mel pengesahan…";
+    $("#langkahHasil").appendChild(nota);
+    try {
+      const { data, error } = await Store.sb.functions.invoke("hantar-pengesahan", { body: { kod, warga_id: dipilih.id } });
+      if (error) throw error;
+      if (data?.ok) { nota.textContent = `✉ ${program.sijil_aktif ? "E-mel pengesahan dan sijil" : "E-mel pengesahan"} telah dihantar ke ${data.emel}.`; nota.classList.add("ok"); }
+      else if (data?.sebab === "tiada_emel") nota.textContent = "E-mel tidak dihantar kerana alamat e-mel anda tiada dalam direktori. Sila maklumkan urus setia.";
+      else nota.textContent = "E-mel pengesahan tidak dapat dihantar sekarang. Urus setia akan menghantarnya kemudian.";
+    } catch { nota.textContent = "E-mel pengesahan tidak dapat dihantar sekarang. Urus setia akan menghantarnya kemudian."; }
   }
 
   async function muatKiraan() {

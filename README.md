@@ -51,3 +51,16 @@ Buka http://localhost:8000.
 - Sesiapa yang ada pautan boleh membaca direktori, termasuk no. telefon bimbit. Kongsi pautan secara dalaman sahaja.
 - Projek Supabase pelan percuma akan *dijeda* selepas 7 hari tanpa aktiviti; pulihkan di papan pemuka Supabase jika laman tidak memaparkan data.
 - Gambar disimpan dalam *bucket* awam — sesiapa yang ada URL gambar boleh melihatnya.
+
+## Kehadiran program, e-mel pengesahan & sijil
+- `program.html` (pentadbir): cipta program, kod QR, senarai hadir, tetapan e-mel & sijil.
+- `hadir.html?p=KOD` (warga): cari nama → sahkan lokasi → hadir. E-mel (dan sijil) dihantar automatik jika diaktifkan.
+- Fungsi pelayan: `supabase/functions/hantar-pengesahan` (salinan `sijil.ts` dijana daripada `sijil.js`).
+
+### Tetapkan penghantar e-mel (sekali sahaja)
+Supabase → Edge Functions → **Secrets**, tambah:
+- `GMAIL_USER` = alamat Gmail penghantar
+- `GMAIL_APP_PASSWORD` = App Password 16 aksara (Akaun Google → Keselamatan → Pengesahan 2 Langkah → App passwords)
+- `PENGIRIM_NAMA` (pilihan) = nama yang dipaparkan, cth. `Urus Setia DOSM WP`
+
+Alternatif: `BREVO_API_KEY` + `PENGIRIM_EMEL` (penghantar yang disahkan dalam Brevo).

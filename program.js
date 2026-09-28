@@ -11,7 +11,7 @@
   }, true);
 
   const sb = Store.sb;
-  const st = { program: [], kiraan: new Map(), warga: [], semasa: null, hadir: [], tab: "hadir", sedangEdit: null, manual: null, pemasa: null };
+  const st = { teksSijil: [], templatBaru: null, program: [], kiraan: new Map(), warga: [], semasa: null, hadir: [], tab: "hadir", sedangEdit: null, manual: null, pemasa: null };
 
   function toast(msg, ralat) {
     const t = $("#toast");
@@ -101,6 +101,102 @@
     else if (b.dataset.lihat) bukaHadir(p);
   });
 
+  // ---------- Tetapan e-mel & sijil ----------
+  const RUANG = ["nama", "jawatan", "gred", "unit", "program", "tarikh", "masa", "lokasi", "masa_hadir"];
+  const ISI_LALAI = `Assalamualaikum dan salam sejahtera {nama},
+
+Terima kasih atas kehadiran tuan/puan ke {program} pada {tarikh} di {lokasi}.
+
+Kehadiran tuan/puan telah direkodkan pada {masa_hadir}.
+
+Sekian, terima kasih.
+
+Urus Setia
+Jabatan Perangkaan Malaysia, Wilayah Persekutuan`;
+  const TEKS_LALAI = [{ teks: "{nama}", x: 50, y: 50, saiz: 28, tebal: true, warna: "#0e1b2e", fon: "serif" }];
+
+  function paparBarisTeks() {
+    $("#barisTeks").innerHTML = st.teksSijil.map((t, i) => `
+      <div class="baris-t" data-i="${i}">
+        <input data-k="teks" value="${esc(t.teks)}" placeholder="cth. {nama}" aria-label="Teks">
+        <label>X<input data-k="x" type="number" min="0" max="100" step="0.5" value="${t.x ?? 50}"></label>
+        <label>Y<input data-k="y" type="number" min="0" max="100" step="0.5" value="${t.y ?? 50}"></label>
+        <label>Saiz<input data-k="saiz" type="number" min="6" max="120" value="${t.saiz ?? 24}"></label>
+        <select data-k="fon" aria-label="Fon">
+          <option value="serif"${t.fon === "serif" ? " selected" : ""}>Serif</option>
+          <option value="serif-italik"${t.fon === "serif-italik" ? " selected" : ""}>Serif italik</option>
+          <option value="sans"${t.fon === "sans" ? " selected" : ""}>Sans</option>
+        </select>
+        <label class="kecil"><input data-k="tebal" type="checkbox"${t.tebal ? " checked" : ""}>Tebal</label>
+        <input data-k="warna" type="color" value="${esc(t.warna || "#000000")}" aria-label="Warna">
+        <button type="button" class="icon-btn" data-buang-teks="${i}" aria-label="Buang baris"><svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+      </div>`).join("");
+  }
+  $("#barisTeks").addEventListener("input", e => {
+    const row = e.target.closest("[data-i]"), k = e.target.dataset.k; if (!row || !k) return;
+    const t = st.teksSijil[+row.dataset.i];
+    t[k] = e.target.type === "checkbox" ? e.target.checked : ["x", "y", "saiz"].includes(k) ? +e.target.value : e.target.value;
+  });
+  $("#barisTeks").addEventListener("click", e => {
+    const b = e.target.closest("[data-buang-teks]"); if (!b) return;
+    st.teksSijil.splice(+b.dataset.buangTeks, 1); paparBarisTeks();
+  });
+  $("#btnTambahTeks").onclick = () => {
+    st.teksSijil.push({ teks: "", x: 50, y: 65, saiz: 16, tebal: false, warna: "#333333", fon: "sans" }); paparBarisTeks();
+  };
+  $("#cipRuang").innerHTML = RUANG.map(r => `<button type="button" class="cip" data-ruang="{${r}}">{${r}}</button>`).join(" ");
+  $("#cipRuang").addEventListener("click", e => {
+    const b = e.target.closest("[data-ruang]"); if (!b) return;
+    const ta = $("#borangProgram").elements.emel_isi, i = ta.selectionStart ?? ta.value.length;
+    ta.value = ta.value.slice(0, i) + b.dataset.ruang + ta.value.slice(ta.selectionEnd ?? i);
+    ta.focus(); ta.selectionStart = ta.selectionEnd = i + b.dataset.ruang.length;
+  });
+  function kemasLipat() {
+    const f = $("#borangProgram").elements;
+    $("#kotakEmel").hidden = !f.emel_aktif.checked;
+    $("#kotakSijil").hidden = !f.sijil_aktif.checked;
+    if (f.sijil_aktif.checked && !f.emel_aktif.checked) { f.emel_aktif.checked = true; $("#kotakEmel").hidden = false; }
+  }
+  $("#borangProgram").elements.emel_aktif.addEventListener("change", () => {
+    const f = $("#borangProgram").elements;
+    if (!f.emel_aktif.checked) f.sijil_aktif.checked = false;
+    kemasLipat();
+  });
+  $("#borangProgram").elements.sijil_aktif.addEventListener("change", kemasLipat);
+  $("#failTemplat").addEventListener("change", e => {
+    const f = e.target.files[0]; if (!f) return;
+    if (f.size > 10 * 1024 * 1024) { e.target.value = ""; return toast("Templat melebihi 10 MB.", true); }
+    st.templatBaru = f; $("#namaTemplat").textContent = f.name + " (belum disimpan)";
+  });
+
+  async function baitTemplat() {
+    if (st.templatBaru) return { bait: new Uint8Array(await st.templatBaru.arrayBuffer()), jenis: st.templatBaru.type };
+    const laluan = st.sedangEdit?.sijil_templat;
+    if (!laluan) return { bait: null };
+    const { data, error } = await sb.storage.from("templat-sijil").download(laluan);
+    if (error) throw new Error("Templat tidak dapat dimuat: " + error.message);
+    return { bait: new Uint8Array(await data.arrayBuffer()), jenis: data.type };
+  }
+
+  $("#btnPratonton").onclick = async () => {
+    const f = $("#borangProgram").elements, b = $("#btnPratonton");
+    b.disabled = true; b.textContent = "Menjana…";
+    try {
+      const { bait, jenis } = await baitTemplat();
+      const pdf = await Sijil.jana(PDFLib, { templat: bait, jenis, teks: st.teksSijil, data: {
+        nama: "NUR ALIA BINTI MOHD RAZALI ABDULLAH", jawatan: "Pembantu Perangkaan", gred: "E2", unit: "Seksyen Contoh",
+        program: f.nama.value || "Nama Program", lokasi: f.lokasi_nama.value || "Lokasi Program",
+        tarikh: f.tarikh.value ? new Date(f.tarikh.value + "T00:00:00").toLocaleDateString("ms-MY", { day: "numeric", month: "long", year: "numeric" }) : "",
+        masa: f.masa_mula.value, masa_hadir: "09:05 PG" } });
+      const ifr = $("#pratontonSijil");
+      if (st.urlPratonton) URL.revokeObjectURL(st.urlPratonton);
+      st.urlPratonton = URL.createObjectURL(new Blob([pdf], { type: "application/pdf" }));
+      ifr.src = st.urlPratonton + "#toolbar=0&view=Fit"; ifr.hidden = false;
+      $("#pautanPratonton").href = st.urlPratonton; $("#pautanPratonton").hidden = false;
+    } catch (err) { toast(err.message, true); }
+    finally { b.disabled = false; b.textContent = "Pratonton sijil"; }
+  };
+
   // ---------- Borang program ----------
   function bukaBorang(p) {
     st.sedangEdit = p || null;
@@ -115,6 +211,16 @@
     f.elements.koordinat.value = p?.lat != null ? `${p.lat}, ${p.lng}` : "";
     f.elements.radius_m.value = String(p?.radius_m || 200);
     f.elements.aktif.checked = p ? p.aktif : true;
+    f.elements.emel_aktif.checked = !!p?.emel_aktif;
+    f.elements.emel_subjek.value = p?.emel_subjek || "Pengesahan Kehadiran: {program}";
+    f.elements.emel_isi.value = p?.emel_isi || ISI_LALAI;
+    f.elements.sijil_aktif.checked = !!p?.sijil_aktif;
+    st.templatBaru = null; $("#failTemplat").value = "";
+    $("#namaTemplat").textContent = p?.sijil_templat ? "Templat telah dimuat naik" : "Tiada templat (reka bentuk ringkas digunakan)";
+    st.teksSijil = JSON.parse(JSON.stringify(p?.sijil_teks?.length ? p.sijil_teks : TEKS_LALAI));
+    paparBarisTeks();
+    $("#pratontonSijil").hidden = true; $("#pautanPratonton").hidden = true;
+    kemasLipat();
     $("#btnPadamProgram").hidden = !p;
     $("#programRalat").hidden = true;
     $("#dlgProgram").showModal();
@@ -151,7 +257,17 @@
         masa_mula: f.masa_mula.value || null, masa_tamat: f.masa_tamat.value || null,
         lokasi_nama: f.lokasi_nama.value.trim() || null, lat, lng,
         radius_m: +f.radius_m.value, aktif: f.aktif.checked,
+        emel_aktif: f.emel_aktif.checked, emel_subjek: f.emel_subjek.value.trim() || null,
+        emel_isi: f.emel_isi.value.trim() || null, sijil_aktif: f.sijil_aktif.checked,
+        sijil_teks: st.teksSijil.filter(t => String(t.teks || "").trim()),
       };
+      if (rekod.sijil_aktif && !rekod.sijil_teks.length) throw new Error("Sijil perlu sekurang-kurangnya satu baris teks, cth. {nama}.");
+      if (st.templatBaru) {
+        const ext = (st.templatBaru.name.split(".").pop() || "bin").toLowerCase();
+        const laluan = `${crypto.randomUUID()}.${ext}`;
+        semak(await sb.storage.from("templat-sijil").upload(laluan, st.templatBaru, { contentType: st.templatBaru.type }));
+        rekod.sijil_templat = laluan;
+      }
       $("#btnSimpanProgram").disabled = true;
       if (st.sedangEdit) semak(await sb.from("program").update(rekod).eq("id", st.sedangEdit.id));
       else semak(await sb.from("program").insert(rekod));
@@ -217,7 +333,9 @@
   }
 
   async function muatHadir() {
-    const p = st.semasa; if (!p) return;
+    let p = st.semasa; if (!p) return;
+    const baru = semak(await sb.from("program").select("*").eq("id", p.id).maybeSingle());
+    if (baru) p = st.semasa = baru;
     try { st.hadir = semak(await sb.from("kehadiran").select("*").eq("program_id", p.id).order("masa", { ascending: false })); }
     catch (err) { return toast(err.message, true); }
     const masa = p.masa_mula ? `${jam(p.masa_mula)}${p.masa_tamat ? "–" + jam(p.masa_tamat) : ""}` : "Sepanjang hari";
@@ -238,6 +356,31 @@
     paparHadir();
   }
 
+  function lencanaEmel(h) {
+    const m = { dihantar: ["ok", "✉ Dihantar"], gagal: ["ditutup", "✉ Gagal"], tiada_emel: ["lepas", "Tiada e-mel"], menghantar: ["akan", "✉ Menghantar"] }[h.emel_status];
+    return m ? `<span class="lencana ${m[0]}" title="${esc(h.emel_ralat || "")}">${m[1]}</span>` : "";
+  }
+
+  async function hantarEmel(wargaIds) {
+    const b = $("#btnHantarSemua span"); let siap = 0, gagal = 0;
+    for (let i = 0; i < wargaIds.length; i += 10) {
+      b.textContent = `Menghantar ${Math.min(i + 10, wargaIds.length)}/${wargaIds.length}…`;
+      const { data, error } = await sb.functions.invoke("hantar-pengesahan", { body: { program_id: st.semasa.id, warga_ids: wargaIds.slice(i, i + 10) } });
+      if (error || !data?.ok) { b.textContent = "Hantar e-mel"; return toast("Gagal: " + (data?.sebab || error?.message), true); }
+      for (const r of Object.values(data.hasil)) r.ok ? siap++ : gagal++;
+    }
+    b.textContent = "Hantar e-mel";
+    toast(`${siap} e-mel dihantar${gagal ? `, ${gagal} gagal / tiada e-mel` : ""}.`, gagal > 0 && !siap);
+    muatHadir();
+  }
+
+  $("#btnHantarSemua").onclick = () => {
+    const belum = st.hadir.filter(h => h.emel_status !== "dihantar").map(h => h.warga_id);
+    if (!belum.length) return toast("Semua warga hadir telah menerima e-mel.");
+    const sijil = st.semasa.sijil_aktif ? " berserta sijil" : "";
+    if (confirm(`Hantar e-mel pengesahan${sijil} kepada ${belum.length} warga hadir yang belum menerimanya?`)) hantarEmel(belum);
+  };
+
   function paparHadir() {
     const q = $("#cariHadir").value.trim().toLowerCase(), unit = $("#unitHadir").value;
     const ikutId = new Map(st.warga.map(w => [w.id, w]));
@@ -249,9 +392,11 @@
         <div class="baris-hadir">
           <img src="${esc(w.gambar_url || TANPA_GAMBAR)}" alt="">
           <div class="bh-nama"><b>${esc(w.nama)}</b><small>${esc([w.jawatan, w.unit].filter(Boolean).join(" · "))}</small></div>
+          <div class="bh-emel">${lencanaEmel(h)}</div>
           <div class="bh-masa">${new Date(h.masa).toLocaleTimeString("ms-MY", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kuala_Lumpur" })}</div>
           <div class="bh-lokasi">${h.kaedah === "manual" ? '<span class="lencana lepas">Manual</span>'
             : h.jarak_m != null ? `<span class="lencana ok">✓ ${Math.round(h.jarak_m)} m</span>` : '<span class="lencana lepas">Tiada lokasi</span>'}</div>
+          <button class="icon-btn" data-emel="${h.warga_id}" title="Hantar e-mel pengesahan" aria-label="Hantar e-mel kepada ${esc(w.nama)}"><svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2.5"/><path d="m22 7-10 6L2 7"/></svg></button>
           <button class="icon-btn" data-buang="${h.id}" title="Buang rekod" aria-label="Buang rekod ${esc(w.nama)}"><svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg></button>
         </div>`).join("") : '<div class="empty">Belum ada kehadiran direkodkan.</div>';
     } else {
@@ -273,8 +418,11 @@
   $("#btnKembali").onclick = () => muatProgram();
 
   $("#senaraiHadir").addEventListener("click", async e => {
-    const buang = e.target.closest("[data-buang]"), manual = e.target.closest("[data-manual]");
-    if (buang) {
+    const buang = e.target.closest("[data-buang]"), manual = e.target.closest("[data-manual]"), emel = e.target.closest("[data-emel]");
+    if (emel) {
+      const w = st.warga.find(x => x.id === emel.dataset.emel);
+      if (confirm(`Hantar e-mel pengesahan${st.semasa.sijil_aktif ? " dan sijil" : ""} kepada ${w?.nama}?`)) hantarEmel([emel.dataset.emel]);
+    } else if (buang) {
       if (!confirm("Buang rekod kehadiran ini?")) return;
       try { semak(await sb.from("kehadiran").delete().eq("id", buang.dataset.buang)); toast("Rekod dibuang."); muatHadir(); }
       catch (err) { toast(err.message, true); }

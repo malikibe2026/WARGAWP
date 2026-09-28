@@ -73,6 +73,9 @@
           <input id="cariHadir" type="search" placeholder="Cari nama atau unit">
         </label>
         <select id="unitHadir" aria-label="Tapis unit"><option value="">Semua unit</option></select>
+        <button id="btnHantarSemua" class="btn btn-soft btn-sm" title="Hantar e-mel pengesahan kepada warga hadir yang belum menerimanya">
+          <svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2.5"/><path d="m22 7-10 6L2 7"/></svg><span>Hantar e-mel</span>
+        </button>
         <button id="btnEksportHadir" class="btn btn-soft btn-sm">
           <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg><span>Eksport CSV</span>
         </button>
@@ -112,6 +115,38 @@
         <span>Guna lokasi semasa saya</span>
       </button>
       <label class="suis"><input type="checkbox" name="aktif" checked> Buka pendaftaran kehadiran</label>
+
+      <fieldset class="bahagian">
+        <legend>E-mel Pengesahan</legend>
+        <label class="suis"><input type="checkbox" name="emel_aktif"> Hantar e-mel pengesahan selepas warga berjaya daftar hadir</label>
+        <div id="kotakEmel" class="kotak-lipat">
+          <label>Subjek<input name="emel_subjek" placeholder="Pengesahan Kehadiran: {program}"></label>
+          <label>Isi e-mel<textarea name="emel_isi" rows="9"></textarea></label>
+          <p class="hint">Ruang automatik (klik untuk sisip):
+            <span class="cip-ruang" id="cipRuang"></span></p>
+        </div>
+      </fieldset>
+
+      <fieldset class="bahagian">
+        <legend>Sijil</legend>
+        <label class="suis"><input type="checkbox" name="sijil_aktif"> Lampirkan sijil PDF dalam e-mel pengesahan</label>
+        <div id="kotakSijil" class="kotak-lipat">
+          <div class="templat-baris">
+            <div><b id="namaTemplat">Tiada templat</b><small class="hint">PNG, JPG atau PDF bersaiz A4 (menegak atau melintang), maks 10 MB. Biarkan ruang kosong untuk nama.</small></div>
+            <label class="btn btn-soft btn-sm">Muat naik templat
+              <input type="file" id="failTemplat" accept="image/png,image/jpeg,application/pdf" hidden>
+            </label>
+          </div>
+          <div class="kepala-teks"><span>Teks pada sijil</span><span class="hint">X/Y = kedudukan tengah teks (% dari kiri / atas)</span></div>
+          <div id="barisTeks" class="baris-teks"></div>
+          <div class="aksi-sijil">
+            <button type="button" id="btnTambahTeks" class="btn btn-ghost btn-sm">+ Tambah baris teks</button>
+            <button type="button" id="btnPratonton" class="btn btn-soft btn-sm">Pratonton sijil</button>
+            <a id="pautanPratonton" class="btn btn-ghost btn-sm" target="_blank" rel="noopener" hidden>Buka dalam tab baharu</a>
+          </div>
+          <iframe id="pratontonSijil" class="pratonton-sijil" title="Pratonton sijil" hidden></iframe>
+        </div>
+      </fieldset>
       <p id="programRalat" class="error" hidden></p>
       <div class="dialog-actions">
         <button type="button" id="btnPadamProgram" class="btn btn-danger" hidden>Padam Program</button>
@@ -158,6 +193,8 @@
   <script src="config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="vendor/qrcode.js"></script>
+  <script src="vendor/pdf-lib.min.js"></script>
+  <script src="sijil.js"></script>
   <script src="storage.js"></script>
   <script src="program.js"></script>
 </body>
