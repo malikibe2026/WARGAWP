@@ -34,7 +34,7 @@
     if (!sb) { $("#paparLogin").innerHTML = '<p class="empty">Modul kehadiran memerlukan mod dalam talian (Supabase).</p>'; return papar("#paparLogin"); }
     if (!(await Store.sesi())) { $("#btnLogout").hidden = true; return papar("#paparLogin"); }
     $("#btnLogout").hidden = false;
-    st.warga = semak(await sb.from("warga").select("id,nama,jawatan,gred,unit,gambar_url,susunan").order("susunan", { nullsFirst: false }));
+    st.warga = semak(await sb.from("warga").select("id,nama,jawatan,gred,unit,gambar_url,susunan,kategori").order("susunan", { nullsFirst: false }));
     semakCapMuka();
     await muatProgram();
   }
@@ -374,7 +374,7 @@ Jabatan Perangkaan Malaysia, Wilayah Persekutuan`;
     $("#tabHadir").classList.add("active"); $("#tabBelum").classList.remove("active");
     $("#cariHadir").value = "";
     const units = [...new Set(st.warga.map(w => w.unit).filter(Boolean))];
-    $("#unitHadir").innerHTML = '<option value="">Semua unit</option>' + units.map(u => `<option>${esc(u)}</option>`).join("");
+    $("#unitHadir").innerHTML = '<option value="">Semua unit</option><option value="__tetap">Staf Tetap sahaja</option><option value="__pms">PMS sahaja</option>' + units.map(u => `<option>${esc(u)}</option>`).join("");
     papar("#paparHadir");
     await muatHadir();
     st.pemasa = setInterval(muatHadir, 15000);
@@ -432,14 +432,15 @@ Jabatan Perangkaan Malaysia, Wilayah Persekutuan`;
   function paparHadir() {
     const q = $("#cariHadir").value.trim().toLowerCase(), unit = $("#unitHadir").value;
     const ikutId = new Map(st.warga.map(w => [w.id, w]));
-    const padan = w => w && (!unit || w.unit === unit) && (!q || `${w.nama} ${w.unit} ${w.jawatan}`.toLowerCase().includes(q));
+    const ikutUnit = w => !unit || (unit === "__pms" ? w.kategori === "pms" : unit === "__tetap" ? w.kategori !== "pms" : w.unit === unit);
+    const padan = w => w && ikutUnit(w) && (!q || `${w.nama} ${w.unit} ${w.jawatan}`.toLowerCase().includes(q));
     const el = $("#senaraiHadir");
     if (st.tab === "hadir") {
       const baris = st.hadir.map(h => ({ h, w: ikutId.get(h.warga_id) })).filter(x => padan(x.w));
       el.innerHTML = baris.length ? baris.map(({ h, w }) => `
         <div class="baris-hadir">
           <img src="${esc(w.gambar_url || TANPA_GAMBAR)}" alt="">
-          <div class="bh-nama"><b>${esc(w.nama)}</b><small>${esc([w.jawatan, w.unit].filter(Boolean).join(" · "))}</small></div>
+          <div class="bh-nama"><b>${esc(w.nama)}</b><small>${esc([w.kategori === "pms" ? "PMS" : w.jawatan, w.unit].filter(Boolean).join(" · "))}</small></div>
           <div class="bh-emel">${h.jarak_muka != null ? `<span class="lencana ok" title="Jarak cap muka ${h.jarak_muka.toFixed(2)} (lebih kecil = lebih sepadan)">🙂 ${Math.round((1 - h.jarak_muka) * 100)}%</span>` : ""}${lencanaEmel(h)}</div>
           <div class="bh-masa">${new Date(h.masa).toLocaleTimeString("ms-MY", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kuala_Lumpur" })}</div>
           <div class="bh-lokasi">${h.kaedah === "manual" ? '<span class="lencana lepas">Manual</span>'
@@ -453,7 +454,7 @@ Jabatan Perangkaan Malaysia, Wilayah Persekutuan`;
       el.innerHTML = belum.length ? belum.map(w => `
         <div class="baris-hadir">
           <img src="${esc(w.gambar_url || TANPA_GAMBAR)}" alt="">
-          <div class="bh-nama"><b>${esc(w.nama)}</b><small>${esc([w.jawatan, w.unit].filter(Boolean).join(" · "))}</small></div>
+          <div class="bh-nama"><b>${esc(w.nama)}</b><small>${esc([w.kategori === "pms" ? "PMS" : w.jawatan, w.unit].filter(Boolean).join(" · "))}</small></div>
           <button class="btn btn-soft btn-sm" data-manual="${w.id}">Tanda hadir</button>
         </div>`).join("") : '<div class="empty">Semua warga dalam tapisan ini telah hadir.</div>';
     }
@@ -490,10 +491,10 @@ Jabatan Perangkaan Malaysia, Wilayah Persekutuan`;
   $("#btnEksportHadir").onclick = () => {
     const q = v => `"${String(v ?? "").replace(/"/g, '""')}"`;
     const ikutHadir = new Map(st.hadir.map(h => [h.warga_id, h]));
-    const baris = [["Bil", "Nama", "Jawatan", "Gred", "Unit", "Status", "Masa", "Kaedah", "Jarak (m)"].map(q).join(",")];
+    const baris = [["Bil", "Nama", "Kategori", "Jawatan", "Gred", "Unit", "Status", "Masa", "Kaedah", "Jarak (m)"].map(q).join(",")];
     st.warga.forEach((w, i) => {
       const h = ikutHadir.get(w.id);
-      baris.push([i + 1, w.nama, w.jawatan, w.gred, w.unit, h ? "Hadir" : "Tidak hadir",
+      baris.push([i + 1, w.nama, w.kategori === "pms" ? "PMS" : "Tetap", w.jawatan, w.gred, w.unit, h ? "Hadir" : "Tidak hadir",
         h ? new Date(h.masa).toLocaleString("ms-MY", { timeZone: "Asia/Kuala_Lumpur" }) : "", h ? h.kaedah : "", h?.jarak_m != null ? Math.round(h.jarak_m) : ""].map(q).join(","));
     });
     const url = URL.createObjectURL(new Blob(["﻿" + baris.join("\r\n")], { type: "text/csv;charset=utf-8" }));

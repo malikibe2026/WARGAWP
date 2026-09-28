@@ -60,7 +60,7 @@
     ul.innerHTML = hasil.length ? hasil.map(w => `
       <li><button class="cadang" data-id="${esc(w.id)}" role="option">
         <img src="${esc(w.gambar_url || TANPA_GAMBAR)}" alt="" loading="lazy">
-        <span><b>${esc(w.nama)}</b><small>${esc([w.jawatan, w.unit].filter(Boolean).join(" · "))}</small></span>
+        <span><b>${esc(w.nama)}</b><small>${esc([w.kategori === "pms" ? "PMS" : w.jawatan, w.unit].filter(Boolean).join(" · "))}</small></span>
         <svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
       </button></li>`).join("")
       : '<li class="kosong-cadang">Tiada nama sepadan. Semak ejaan atau hubungi urus setia.</li>';
@@ -69,6 +69,7 @@
   function pilih(id) {
     dipilih = warga.find(w => w.id === id);
     if (!dipilih) return;
+    paksaMuka = false;
     $("#profilPilih").innerHTML = `
       <img src="${esc(dipilih.gambar_url || TANPA_GAMBAR)}" alt="Gambar ${esc(dipilih.nama)}">
       <div>
@@ -84,7 +85,9 @@
     window.scrollTo({ top: $("#langkahSahkan").offsetTop - 16, behavior: "smooth" });
   }
 
-  const perluMuka = () => program && program.kaedah_sah !== "nama";
+  let paksaMuka = false;
+  // PMS tanpa gambar rujukan hadir melalui nama + lokasi; pelayan akan minta imbasan jika rujukan wujud.
+  const perluMuka = () => program && program.kaedah_sah !== "nama" && (paksaMuka || !(dipilih && dipilih.kategori === "pms" && !dipilih.gambar_url));
   const labelHadir = () => perluMuka() && !mukaSemasa ? "Imbas Muka & Hadir" : "Sahkan Lokasi & Hadir";
 
   // ---------- Kamera & imbasan muka ----------
@@ -254,6 +257,8 @@
         if (program.emel_aktif) hantarPengesahan();
       } else if (data.sudah) {
         hasil(true, "Sudah direkodkan", data.sebab);
+      } else if (data.perlu_muka && !paksaMuka) {
+        paksaMuka = true; btn.disabled = false; return hadir();
       } else {
         if (data.muka === false) mukaSemasa = null;   // imbas semula pada cubaan seterusnya
         hasil(false, "Kehadiran tidak direkodkan", data.sebab);
@@ -290,7 +295,7 @@
     if (!Store.sb) return ralatBesar("Tidak tersedia", "Kehadiran memerlukan sambungan pangkalan data (mod dalam talian).");
     const [p, w] = await Promise.all([
       Store.sb.from("program").select("*").eq("kod", kod).maybeSingle(),
-      Store.sb.from("warga").select("id,nama,jawatan,gred,unit,gambar_url").order("nama"),
+      Store.sb.from("warga").select("id,nama,jawatan,gred,unit,gambar_url,kategori").order("nama"),
     ]);
     if (p.error || !p.data) { $("#progNama").textContent = "Program tidak dijumpai"; return ralatBesar("Program tidak dijumpai", "Pautan mungkin salah atau program telah dipadam."); }
     program = p.data;

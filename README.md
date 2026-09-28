@@ -10,6 +10,13 @@ Semua maklumat (termasuk gambar) boleh dikemas kini oleh pentadbir.
   No. KP **tidak disimpan** — hanya tarikh lahir.
 - Import CSV (templat: `contoh/templat-import.csv`, boleh ada lajur `No KP`), eksport CSV, cetak.
 
+## Personel MySTEPS (PMS)
+- Warga yang ada gambar dalam PDF ialah **Staf Tetap**. PMS disimpan dalam kategori berasingan (`warga.kategori = 'pms'`).
+- Tambah seorang: **Tambah PMS** → wajib isi **Nama, Seksyen, E-mel** (gambar tidak wajib; avatar huruf awal dipaparkan).
+- Tambah ramai: **Import CSV** guna `contoh/templat-pms.csv` (lajur `Kategori` = `PMS`). Tulis nama seksyen **sama ejaan** dengan staf tetap supaya dikumpul betul.
+- Tapis `Semua | Staf Tetap | PMS`; carta menyusun staf tetap dahulu, kemudian PMS ikut seksyen.
+- Kehadiran: PMS tanpa gambar rujukan boleh hadir dengan nama + lokasi walaupun program guna imbas muka.
+
 ## Data awal
 183 warga diimport daripada `DIREKTORI DOSM WP 28092026.pdf` (28/09/2026) ke Supabase.
 Gambar **tidak** disimpan dalam repo ini. Semua gambar disimpan dalam Supabase Storage.
