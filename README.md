@@ -17,6 +17,18 @@ Semua maklumat (termasuk gambar) boleh dikemas kini oleh pentadbir.
 - Tapis `Semua | Staf Tetap | PMS`; carta menyusun staf tetap dahulu, kemudian PMS ikut seksyen.
 - Kehadiran: PMS tanpa gambar rujukan boleh hadir dengan nama + lokasi walaupun program guna imbas muka.
 
+## Peserta semak & betulkan maklumat (semasa daftar hadir)
+- Di skrin "Sahkan maklumat anda", peserta boleh betulkan **E-mel** dan **No. Telefon Bimbit**.
+- Perubahan disimpan ke direktori **hanya selepas kehadiran sah** (lokasi/muka lulus), dan e-mel pengesahan dihantar ke alamat baharu.
+- Setiap perubahan dilog dalam jadual `warga_log` (nilai lama → baharu). Di `program.html`, lencana **✎ Dikemas** pada senarai hadir menunjukkan perubahan; klik untuk **pulihkan** nilai asal.
+
+## Kemas kini No. KP (umur) staf tetap secara pukal
+1. Mod Pentadbir → **Templat No. KP** → fail CSV senarai staf tetap dengan lajur `No KP` kosong.
+2. Isi No. KP **dengan sengkang** (cth. `850315-14-5678`) supaya Excel tidak menukarnya kepada nombor.
+3. Simpan sebagai *CSV UTF-8* → **Import CSV**. Baris dipadankan ikut **nama**; hanya medan yang diisi dikemas kini.
+   Sistem memaparkan ringkasan (dikemas kini / baharu / No. KP tidak sah) sebelum meneruskan.
+No. KP tidak disimpan — hanya tarikh lahir.
+
 ## Data awal
 183 warga diimport daripada `DIREKTORI DOSM WP 28092026.pdf` (28/09/2026) ke Supabase.
 Gambar **tidak** disimpan dalam repo ini. Semua gambar disimpan dalam Supabase Storage.

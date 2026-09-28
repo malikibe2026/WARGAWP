@@ -597,3 +597,13 @@ svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width:
   #segKategori button { flex: 1; }
   .stat { flex: 1 1 28%; }
 }
+
+/* Semak maklumat peserta sebelum hadir */
+.semak-maklumat { margin-top: 16px; padding: 14px 16px 6px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface-2); }
+.semak-tajuk { margin: 0 0 10px; font-weight: 800; font-size: 14px; color: var(--ink); }
+.semak-tajuk small { font-weight: 500; color: var(--muted); }
+.semak-maklumat label { display: block; font-size: 12.5px; font-weight: 700; color: var(--ink-2); margin-bottom: 10px; }
+.semak-maklumat input { display: block; width: 100%; margin-top: 6px; font: 500 15px var(--font); color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 11px; padding: 11px 12px; }
+.semak-maklumat input:focus { outline: 0; border-color: var(--brand-2); box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand-2) 18%, transparent); }
+.semak-maklumat .hint { margin: 0 0 8px; font-size: 12.5px; }
+.lencana-ubah { border: 0; cursor: pointer; font-family: inherit; }

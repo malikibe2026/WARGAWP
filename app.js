@@ -424,26 +424,74 @@
     const lajur = baris[0].map(h => peta[kunci(h)] || null);
     if (!lajur.includes("nama")) return toast("Lajur 'Nama' tidak dijumpai dalam baris pertama CSV.", true);
 
+    let icTakSah = 0;
     const rekods = baris.slice(1).map(b => {
       const r = {};
       lajur.forEach((k, i) => { if (k) r[k] = (b[i] || "").trim(); });
+      // Excel buang sifar di depan No. KP (lahir 2000–2009) jika disimpan sebagai nombor.
+      if (/^\d{11}$/.test(r._ic || "")) r._ic = "0" + r._ic;
       if (r._ic && !r.tarikh_lahir) {
         const lahir = Umur.tarikhLahirDaripadaIC(r._ic);
-        if (lahir) r.tarikh_lahir = Umur.keISO(lahir);
+        if (lahir) r.tarikh_lahir = Umur.keISO(lahir); else icTakSah++;
       }
-      delete r._ic;
+      delete r._ic;   // No. KP tidak disimpan — hanya tarikh lahir
       for (const t of ["tarikh_lahir", "tarikh_lapor_diri"]) if (r[t]) r[t] = normalTarikh(r[t]);
-      r.kategori = /pms|mysteps/i.test(r.kategori || "") ? "pms" : "tetap";
+      if ("kategori" in r) r.kategori = /pms|mysteps/i.test(r.kategori) ? "pms" : "tetap";
       return r;
     }).filter(r => r.nama);
 
-    const nPms = rekods.filter(adalahPms).length;
-    if (!confirm(`Import ${rekods.length} rekod baharu${nPms ? ` (${nPms} PMS)` : ""}? (Rekod sedia ada tidak diubah.)`)) return;
+    // Padankan dengan warga sedia ada ikut nama → kemas kini medan yang diisi sahaja; selebihnya rekod baharu.
+    const kunciNama = s => String(s || "").toUpperCase().replace(/\s+/g, " ").trim();
+    const ikutNama = new Map();
+    for (const w of keadaan.data) {
+      const k = kunciNama(w.nama);
+      ikutNama.set(k, ikutNama.has(k) ? null : w);   // null = nama berganda, tidak dipadankan
+    }
+    const kemas = [], baharu = [], berganda = [];
+    for (const r of rekods) {
+      const k = kunciNama(r.nama);
+      if (!ikutNama.has(k)) { baharu.push(r); continue; }
+      const w = ikutNama.get(k);
+      if (!w) { berganda.push(r.nama); continue; }
+      const ubah = {};
+      for (const [m, v] of Object.entries(r)) if (m !== "nama" && v !== "" && String(w[m] ?? "") !== String(v)) ubah[m] = v;
+      if (Object.keys(ubah).length) kemas.push({ w, ubah });
+    }
+    const nPms = baharu.filter(r => r.kategori === "pms").length;
+    const contoh = baharu.slice(0, 5).map(r => "  • " + r.nama).join("\n") + (baharu.length > 5 ? `\n  … dan ${baharu.length - 5} lagi` : "");
+    const mesej = [
+      `${kemas.length} warga sedia ada akan DIKEMAS KINI.`,
+      `${baharu.length} rekod BAHARU akan ditambah${nPms ? ` (${nPms} PMS)` : ""}.` + (baharu.length ? "\n" + contoh : ""),
+      berganda.length ? `${berganda.length} baris dilangkau kerana nama berganda dalam direktori: ${berganda.slice(0, 3).join(", ")}` : "",
+      icTakSah ? `${icTakSah} No. KP tidak sah (diabaikan).` : "",
+      baharu.length && kemas.length ? "Jika nama baharu di atas sepatutnya warga sedia ada, BATAL dan betulkan ejaan nama dalam fail." : "",
+      "\nTeruskan?",
+    ].filter(Boolean).join("\n\n");
+    if (!kemas.length && !baharu.length) return toast("Tiada perubahan dalam fail ini." + (icTakSah ? ` ${icTakSah} No. KP tidak sah.` : ""), !!icTakSah);
+    if (!confirm(mesej)) return;
     try {
-      await Store.simpanBanyak(rekods);
-      toast(`${rekods.length} rekod diimport.`);
+      let siap = 0;
+      for (const { w, ubah } of kemas) {
+        await Store.simpan({ ...w, ...ubah });
+        if (++siap % 10 === 0) toast(`Mengemas kini… ${siap}/${kemas.length}`);
+      }
+      if (baharu.length) await Store.simpanBanyak(baharu);
+      toast(`${kemas.length} dikemas kini, ${baharu.length} ditambah.`);
       await muat();
-    } catch (err) { toast("Import gagal: " + err.message, true); }
+    } catch (err) { toast("Import gagal: " + err.message, true); await muat(); }
+  }
+
+  // Templat untuk isi No. KP staf tetap; diimport semula melalui Import CSV (padanan ikut nama).
+  function templatIC() {
+    const q = v => `"${String(v ?? "").replace(/"/g, '""')}"`;
+    const ikutCarta = (a, b) => urutanUnit(a.unit) - urutanUnit(b.unit) || (a.susunan ?? Infinity) - (b.susunan ?? Infinity);
+    const staf = keadaan.data.filter(r => !adalahPms(r)).sort(ikutCarta);
+    const kandungan = [["Nama", "Seksyen", "No KP"].map(q).join(",")]
+      .concat(staf.map(r => [r.nama, r.unit, ""].map(q).join(","))).join("\r\n");
+    const url = URL.createObjectURL(new Blob(["\ufeff" + kandungan], { type: "text/csv;charset=utf-8" }));
+    Object.assign(document.createElement("a"), { href: url, download: "templat-no-kp-staf-tetap.csv" }).click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    toast(`Templat ${staf.length} staf tetap dimuat turun. Isi No. KP dengan sengkang (cth. 850315-14-5678).`);
   }
 
   function eksportCSV() {
@@ -587,6 +635,7 @@
     $("#btnImport").onclick = () => $("#fileImport").click();
     $("#fileImport").addEventListener("change", e => { const f = e.target.files[0]; e.target.value = ""; if (f) importCSV(f); });
     $("#btnExport").onclick = eksportCSV;
+    $("#btnTemplatIC").onclick = templatIC;
     $("#btnImportGambar").onclick = () => $("#fileGambar").click();
     $("#fileGambar").addEventListener("change", e => { const f = [...e.target.files]; e.target.value = ""; if (f.length) importGambar(f); });
     $("#btnCetak").onclick = () => window.print();

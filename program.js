@@ -386,6 +386,7 @@ Jabatan Perangkaan Malaysia, Wilayah Persekutuan`;
     if (baru) p = st.semasa = baru;
     try { st.hadir = semak(await sb.from("kehadiran").select("*").eq("program_id", p.id).order("masa", { ascending: false })); }
     catch (err) { return toast(err.message, true); }
+    try { st.log = semak(await sb.from("warga_log").select("*").eq("program_id", p.id).order("masa")); } catch { st.log = []; }
     const masa = p.masa_mula ? `${jam(p.masa_mula)}${p.masa_tamat ? "–" + jam(p.masa_tamat) : ""}` : "Sepanjang hari";
     const peratus = st.warga.length ? Math.round(st.hadir.length / st.warga.length * 100) : 0;
     $("#kepalaHadir").innerHTML = `
@@ -402,6 +403,15 @@ Jabatan Perangkaan Malaysia, Wilayah Persekutuan`;
       </div>`;
     $("#btnQRDariHadir").onclick = () => bukaQR(p);
     paparHadir();
+  }
+
+  // Pembetulan maklumat oleh peserta semasa daftar hadir (boleh dipulihkan oleh pentadbir).
+  function lencanaUbah(wargaId) {
+    const log = (st.log || []).filter(l => l.warga_id === wargaId);
+    if (!log.length) return "";
+    const label = { emel: "E-mel", telefon_bimbit: "Tel. bimbit" };
+    const tajuk = log.map(l => `${label[l.medan] || l.medan}: ${l.lama || "(kosong)"} → ${l.baru}`).join("\n");
+    return `<button class="lencana akan lencana-ubah" data-ubah="${esc(wargaId)}" title="${esc(tajuk + "\n\nKlik untuk pulihkan nilai asal")}">✎ Dikemas</button>`;
   }
 
   function lencanaEmel(h) {
@@ -441,7 +451,7 @@ Jabatan Perangkaan Malaysia, Wilayah Persekutuan`;
         <div class="baris-hadir">
           <img src="${esc(w.gambar_url || TANPA_GAMBAR)}" alt="">
           <div class="bh-nama"><b>${esc(w.nama)}</b><small>${esc([w.kategori === "pms" ? "PMS" : w.jawatan, w.unit].filter(Boolean).join(" · "))}</small></div>
-          <div class="bh-emel">${h.jarak_muka != null ? `<span class="lencana ok" title="Jarak cap muka ${h.jarak_muka.toFixed(2)} (lebih kecil = lebih sepadan)">🙂 ${Math.round((1 - h.jarak_muka) * 100)}%</span>` : ""}${lencanaEmel(h)}</div>
+          <div class="bh-emel">${lencanaUbah(h.warga_id)}${h.jarak_muka != null ? `<span class="lencana ok" title="Jarak cap muka ${h.jarak_muka.toFixed(2)} (lebih kecil = lebih sepadan)">🙂 ${Math.round((1 - h.jarak_muka) * 100)}%</span>` : ""}${lencanaEmel(h)}</div>
           <div class="bh-masa">${new Date(h.masa).toLocaleTimeString("ms-MY", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kuala_Lumpur" })}</div>
           <div class="bh-lokasi">${h.kaedah === "manual" ? '<span class="lencana lepas">Manual</span>'
             : h.jarak_m != null ? `<span class="lencana ok">✓ ${Math.round(h.jarak_m)} m</span>` : '<span class="lencana lepas">Tiada lokasi</span>'}</div>
@@ -468,6 +478,22 @@ Jabatan Perangkaan Malaysia, Wilayah Persekutuan`;
 
   $("#senaraiHadir").addEventListener("click", async e => {
     const buang = e.target.closest("[data-buang]"), manual = e.target.closest("[data-manual]"), emel = e.target.closest("[data-emel]");
+    const ubah = e.target.closest("[data-ubah]");
+    if (ubah) {
+      const w = st.warga.find(x => x.id === ubah.dataset.ubah);
+      const log = st.log.filter(l => l.warga_id === ubah.dataset.ubah);
+      const label = { emel: "E-mel", telefon_bimbit: "Tel. bimbit" };
+      const senarai = log.map(l => `• ${label[l.medan]}: ${l.lama || "(kosong)"} → ${l.baru}`).join("\n");
+      if (!confirm(`${w?.nama} telah mengemas kini:\n${senarai}\n\nPulihkan kepada nilai asal?`)) return;
+      try {
+        const asal = {};
+        for (const l of log) if (!(l.medan in asal)) asal[l.medan] = l.lama;   // nilai paling awal
+        semak(await sb.from("warga").update(asal).eq("id", ubah.dataset.ubah));
+        semak(await sb.from("warga_log").delete().in("id", log.map(l => l.id)));
+        toast("Maklumat asal dipulihkan."); muatHadir();
+      } catch (err) { toast(err.message, true); }
+      return;
+    }
     if (emel) {
       const w = st.warga.find(x => x.id === emel.dataset.emel);
       if (confirm(`Hantar e-mel pengesahan${st.semasa.sijil_aktif ? " dan sijil" : ""} kepada ${w?.nama}?`)) hantarEmel([emel.dataset.emel]);

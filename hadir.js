@@ -77,6 +77,11 @@
         <p>${esc(dipilih.jawatan || "")}${dipilih.gred ? ` <span class="gred">${esc(dipilih.gred)}</span>` : ""}</p>
         ${dipilih.unit ? `<span class="unit-tag">${esc(dipilih.unit)}</span>` : ""}
       </div>`;
+    $("#inEmel").value = dipilih.emel || "";
+    $("#inTel").value = dipilih.telefon_bimbit || "";
+    $("#notaEmel").textContent = program.emel_aktif
+      ? "E-mel pengesahan kehadiran" + (program.sijil_aktif ? " dan sijil" : "") + " akan dihantar ke alamat ini."
+      : "Pembetulan akan dikemas kini dalam direktori jabatan.";
     $("#notaLokasi").textContent = program.lat != null
       ? `Lokasi telefon akan disemak. Anda perlu berada dalam lingkungan ${program.radius_m} m dari lokasi program.`
       : "";
@@ -223,7 +228,31 @@
     $("#btnCubaLagi")?.addEventListener("click", () => tunjuk("#langkahSahkan"));
   }
 
+  function toast(msg, ralat) {
+    const t = $("#toast");
+    t.textContent = msg; t.className = "toast" + (ralat ? " error" : ""); t.hidden = false;
+    clearTimeout(toast._t); toast._t = setTimeout(() => (t.hidden = true), 4000);
+  }
+
+  // Hanya hantar medan yang diubah; pelayan simpan selepas kehadiran sah dan log perubahan.
+  function maklumatDiubah() {
+    const emel = $("#inEmel").value.trim(), tel = $("#inTel").value.trim();
+    const ubah = {};
+    if (emel && emel.toLowerCase() !== String(dipilih.emel || "").toLowerCase()) {
+      if (!$("#inEmel").checkValidity() || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(emel)) throw new Error("Format e-mel tidak sah. Sila semak semula.");
+      ubah.emel = emel;
+    }
+    if (tel && tel !== String(dipilih.telefon_bimbit || "")) {
+      if (!/^[0-9+()\/ -]{7,25}$/.test(tel)) throw new Error("Format nombor telefon tidak sah.");
+      ubah.tel = tel;
+    }
+    return ubah;
+  }
+
   async function hadir() {
+    let ubah;
+    try { ubah = maklumatDiubah(); }
+    catch (e) { toast(e.message, true); (/telefon/.test(e.message) ? $("#inTel") : $("#inEmel")).focus(); return; }
     const btn = $("#btnHadir");
     btn.disabled = true;
     const teks = btn.querySelector("span");
@@ -243,15 +272,19 @@
         p_lat: c ? c.latitude : null, p_lng: c ? c.longitude : null,
         p_ketepatan: c ? Math.round(c.accuracy) : null, p_peranti: idPeranti(),
         p_muka: perluMuka() ? mukaSemasa : null,
+        p_emel: ubah.emel || null, p_tel: ubah.tel || null,
       });
       if (error) throw new Error(error.message);
       if (data.ok) {
+        if (ubah.emel) dipilih.emel = ubah.emel.toLowerCase();
+        if (ubah.tel) dipilih.telefon_bimbit = ubah.tel;
         const masa = new Date(data.masa).toLocaleTimeString("ms-MY", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kuala_Lumpur" });
         hasil(true, "Kehadiran direkodkan", `Terima kasih, ${dipilih.nama}.`, `
           <dl class="meta meta-hasil">
             <dt>Program</dt><dd>${esc(program.nama)}</dd>
             <dt>Masa</dt><dd>${esc(masa)}</dd>
             ${data.jarak != null ? `<dt>Jarak dari lokasi</dt><dd>${data.jarak} m</dd>` : ""}
+            ${data.dikemas && data.dikemas.length ? `<dt>Maklumat dikemas kini</dt><dd>${data.dikemas.map(m => m === "emel" ? "E-mel" : "Telefon").join(", ")}</dd>` : ""}
           </dl>`);
         muatKiraan();
         if (program.emel_aktif) hantarPengesahan();
@@ -295,7 +328,7 @@
     if (!Store.sb) return ralatBesar("Tidak tersedia", "Kehadiran memerlukan sambungan pangkalan data (mod dalam talian).");
     const [p, w] = await Promise.all([
       Store.sb.from("program").select("*").eq("kod", kod).maybeSingle(),
-      Store.sb.from("warga").select("id,nama,jawatan,gred,unit,gambar_url,kategori").order("nama"),
+      Store.sb.from("warga").select("id,nama,jawatan,gred,unit,gambar_url,kategori,emel,telefon_bimbit").order("nama"),
     ]);
     if (p.error || !p.data) { $("#progNama").textContent = "Program tidak dijumpai"; return ralatBesar("Program tidak dijumpai", "Pautan mungkin salah atau program telah dipadam."); }
     program = p.data;
