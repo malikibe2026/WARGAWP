@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="ms">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#071a33">
+  <title>Kehadiran Program — DOSM WP</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="hadir-body">
+  <header class="hero hero-mini">
+    <nav class="nav wrap">
+      <div class="brand">
+        <div class="logo" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 20V11M9.5 20V5M15 20v-7M20.5 20V8"/></svg></div>
+        <div class="brand-text"><span class="brand-t">DOSM</span><span class="brand-s">Kehadiran Program</span></div>
+      </div>
+    </nav>
+    <div class="wrap hero-body">
+      <p class="eyebrow">Rekod Kehadiran</p>
+      <h1 id="progNama">Memuatkan program…</h1>
+      <div id="progMeta" class="prog-meta"></div>
+    </div>
+  </header>
+
+  <main class="wrap hadir-main">
+    <!-- Langkah 1: cari nama -->
+    <section id="langkahCari" class="panel" hidden>
+      <h2 class="panel-tajuk"><span class="nombor">1</span>Cari nama anda</h2>
+      <label class="search search-panel">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input id="cariNama" type="search" placeholder="Taip sekurang-kurangnya 3 huruf nama anda" autocomplete="off" aria-label="Cari nama">
+      </label>
+      <ul id="cadangan" class="cadangan" role="listbox"></ul>
+    </section>
+
+    <!-- Langkah 2: sahkan -->
+    <section id="langkahSahkan" class="panel" hidden>
+      <h2 class="panel-tajuk"><span class="nombor">2</span>Sahkan maklumat anda</h2>
+      <div id="profilPilih" class="profil-pilih"></div>
+      <p class="hint hint-lokasi" id="notaLokasi"></p>
+      <div class="aksi-sahkan">
+        <button id="btnBukan" class="btn btn-ghost">Bukan saya</button>
+        <button id="btnHadir" class="btn btn-primary btn-besar">
+          <svg viewBox="0 0 24 24"><path d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></svg>
+          <span>Sahkan Lokasi &amp; Hadir</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- Langkah 3: keputusan -->
+    <section id="langkahHasil" class="panel hasil" hidden></section>
+
+    <section id="ralatProgram" class="panel hasil" hidden></section>
+  </main>
+
+  <footer class="footer">
+    <div class="wrap footer-inner">
+      <span>© Jabatan Perangkaan Malaysia, Wilayah Persekutuan</span>
+      <span class="muted">Lokasi hanya digunakan untuk mengesahkan kehadiran</span>
+    </div>
+  </footer>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <script src="config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="storage.js"></script>
+  <script src="hadir.js"></script>
+</body>
+</html>

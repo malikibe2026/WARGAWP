@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="ms">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#071a33">
+  <title>Program &amp; Kehadiran — DOSM WP</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="hero hero-mini">
+    <nav class="nav wrap">
+      <a class="brand" href="./" style="color:inherit;text-decoration:none">
+        <div class="logo" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 20V11M9.5 20V5M15 20v-7M20.5 20V8"/></svg></div>
+        <div class="brand-text"><span class="brand-t">DOSM</span><span class="brand-s">Kembali ke Direktori</span></div>
+      </a>
+      <div class="nav-actions">
+        <button id="btnLogout" class="btn btn-glass" hidden>
+          <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg><span>Log Keluar</span>
+        </button>
+      </div>
+    </nav>
+    <div class="wrap hero-body">
+      <p class="eyebrow">Pentadbir</p>
+      <h1>Program &amp; Kehadiran</h1>
+      <p class="lead">Cipta program, kongsi kod QR, dan pantau kehadiran warga secara langsung.</p>
+    </div>
+  </header>
+
+  <main class="wrap main">
+    <!-- Log masuk -->
+    <section id="paparLogin" class="panel panel-sempit" hidden>
+      <div class="login-head">
+        <div class="logo logo-lg" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 20V11M9.5 20V5M15 20v-7M20.5 20V8"/></svg></div>
+        <h2>Log Masuk Pentadbir</h2>
+        <p class="muted">Halaman ini untuk pentadbir sahaja.</p>
+      </div>
+      <form id="borangLogin" class="borang">
+        <label>E-mel<input name="email" type="email" autocomplete="username" required></label>
+        <label>Kata Laluan<input name="password" type="password" autocomplete="current-password" required></label>
+        <p id="loginRalat" class="error" hidden></p>
+        <button class="btn btn-primary" style="width:100%">Masuk</button>
+      </form>
+    </section>
+
+    <!-- Senarai program -->
+    <section id="paparSenarai" hidden>
+      <div class="bar-atas">
+        <h2 class="tajuk-seksyen">Senarai Program</h2>
+        <button id="btnProgramBaru" class="btn btn-primary">
+          <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg><span>Program Baharu</span>
+        </button>
+      </div>
+      <div id="senaraiProgram" class="senarai-program"></div>
+    </section>
+
+    <!-- Butiran kehadiran satu program -->
+    <section id="paparHadir" hidden>
+      <button id="btnKembali" class="btn btn-ghost btn-sm">
+        <svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg><span>Semua program</span>
+      </button>
+      <div id="kepalaHadir" class="kepala-hadir"></div>
+      <div class="tab-hadir">
+        <div class="seg seg-teks" role="tablist">
+          <button id="tabHadir" class="active">Hadir</button>
+          <button id="tabBelum">Belum hadir</button>
+        </div>
+        <label class="cari-kecil">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <input id="cariHadir" type="search" placeholder="Cari nama atau unit">
+        </label>
+        <select id="unitHadir" aria-label="Tapis unit"><option value="">Semua unit</option></select>
+        <button id="btnEksportHadir" class="btn btn-soft btn-sm">
+          <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg><span>Eksport CSV</span>
+        </button>
+      </div>
+      <div id="senaraiHadir" class="senarai-hadir"></div>
+    </section>
+  </main>
+
+  <!-- Borang program -->
+  <dialog id="dlgProgram" class="dialog wide">
+    <form id="borangProgram" method="dialog" novalidate>
+      <div class="dialog-head">
+        <h2 id="tajukBorangProgram">Program Baharu</h2>
+        <button type="button" class="icon-btn" data-close aria-label="Tutup"><svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+      </div>
+      <label>Nama Program *<input name="nama" required placeholder="cth. Taklimat Banci Ekonomi 2026"></label>
+      <div class="row">
+        <label>Tarikh *<input name="tarikh" type="date" required></label>
+        <label>Masa Mula<input name="masa_mula" type="time"></label>
+        <label>Masa Tamat<input name="masa_tamat" type="time"></label>
+      </div>
+      <label>Nama Lokasi<input name="lokasi_nama" placeholder="cth. Bilik Mesyuarat Tingkat 15, Wisma FGV"></label>
+      <div class="row">
+        <label>Koordinat (lat, lng)
+          <input name="koordinat" placeholder="cth. 3.16690, 101.69600" autocomplete="off">
+          <small class="hint">Salin daripada Google Maps (klik kanan pada peta). Kosongkan jika tidak mahu semak lokasi.</small>
+        </label>
+        <label class="narrow-lebar">Radius
+          <select name="radius_m">
+            <option value="50">50 m</option><option value="100">100 m</option>
+            <option value="200" selected>200 m</option><option value="500">500 m</option><option value="1000">1 km</option>
+          </select>
+        </label>
+      </div>
+      <button type="button" id="btnLokasiSaya" class="btn btn-soft btn-sm">
+        <svg viewBox="0 0 24 24"><path d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></svg>
+        <span>Guna lokasi semasa saya</span>
+      </button>
+      <label class="suis"><input type="checkbox" name="aktif" checked> Buka pendaftaran kehadiran</label>
+      <p id="programRalat" class="error" hidden></p>
+      <div class="dialog-actions">
+        <button type="button" id="btnPadamProgram" class="btn btn-danger" hidden>Padam Program</button>
+        <span class="spacer"></span>
+        <button type="button" class="btn btn-ghost" data-close>Batal</button>
+        <button type="submit" id="btnSimpanProgram" class="btn btn-primary">Simpan</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- QR -->
+  <dialog id="dlgQR" class="dialog dialog-sm">
+    <div class="qr-isi">
+      <button class="icon-btn tutup-qr" data-close aria-label="Tutup"><svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+      <p class="eyebrow eyebrow-gelap">Imbas untuk hadir</p>
+      <h2 id="qrNama"></h2>
+      <p id="qrMeta" class="muted"></p>
+      <div id="qrKod" class="qr-kod"></div>
+      <div class="pautan-salin"><input id="qrPautan" readonly><button id="btnSalinPautan" class="btn btn-soft btn-sm">Salin</button></div>
+      <div class="dialog-actions" style="justify-content:center">
+        <button id="btnCetakQR" class="btn btn-primary">Cetak Poster QR</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Tanda hadir manual -->
+  <dialog id="dlgManual" class="dialog dialog-sm">
+    <form method="dialog" style="padding:26px">
+      <div class="dialog-head">
+        <h2>Tanda Hadir Manual</h2>
+        <button type="button" class="icon-btn" data-close aria-label="Tutup"><svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+      </div>
+      <p id="manualNama" class="manual-nama"></p>
+      <p class="muted" style="font-size:13px">Rekod ini akan ditanda sebagai <b>manual</b> (tanpa semakan lokasi).</p>
+      <div class="dialog-actions">
+        <button type="button" class="btn btn-ghost" data-close>Batal</button>
+        <button type="button" id="btnSahManual" class="btn btn-primary">Tanda Hadir</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <script src="config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="vendor/qrcode.js"></script>
+  <script src="storage.js"></script>
+  <script src="program.js"></script>
+</body>
+</html>

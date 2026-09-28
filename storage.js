@@ -80,6 +80,7 @@
     };
     return {
       mod: "dalam talian",
+      sb,
       async senarai() { return semak(await sb.from(JADUAL).select("*").order("nama")); },
       async simpan(rekod) {
         const data = bersihRekod(rekod);
