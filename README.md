@@ -62,5 +62,6 @@ Supabase → Edge Functions → **Secrets**, tambah:
 - `GMAIL_USER` = alamat Gmail penghantar
 - `GMAIL_APP_PASSWORD` = App Password 16 aksara (Akaun Google → Keselamatan → Pengesahan 2 Langkah → App passwords)
 - `PENGIRIM_NAMA` (pilihan) = nama yang dipaparkan, cth. `Urus Setia DOSM WP`
+- `BALAS_KE` (pilihan) = alamat untuk balasan (Reply-To), cth. e-mel rasmi @dosm.gov.my
 
 Alternatif: `BREVO_API_KEY` + `PENGIRIM_EMEL` (penghantar yang disahkan dalam Brevo).

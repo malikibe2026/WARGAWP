@@ -46,6 +46,7 @@ async function adalahPentadbir(req: Request): Promise<boolean> {
 
 async function hantarEmel(ke: string, nama: string, subjek: string, teks: string, html: string, lampiran?: { nama: string; bait: Uint8Array }) {
   const namaPengirim = Deno.env.get("PENGIRIM_NAMA") || "DOSM Wilayah Persekutuan";
+  const balasKe = Deno.env.get("BALAS_KE") || undefined;
   const brevo = Deno.env.get("BREVO_API_KEY");
   if (brevo) {
     const r = await fetch("https://api.brevo.com/v3/smtp/email", {
@@ -54,6 +55,7 @@ async function hantarEmel(ke: string, nama: string, subjek: string, teks: string
       body: JSON.stringify({
         sender: { name: namaPengirim, email: Deno.env.get("PENGIRIM_EMEL") },
         to: [{ email: ke, name: nama }], subject: subjek, textContent: teks, htmlContent: html,
+        ...(balasKe ? { replyTo: { email: balasKe } } : {}),
         ...(lampiran ? { attachment: [{ name: lampiran.nama, content: encodeBase64(lampiran.bait) }] } : {}),
       }),
     });
@@ -68,6 +70,7 @@ async function hantarEmel(ke: string, nama: string, subjek: string, teks: string
   try {
     await smtp.send({
       from: `${namaPengirim} <${user}>`, to: ke, subject: subjek, content: teks, html,
+      ...(balasKe ? { replyTo: balasKe } : {}),
       attachments: lampiran ? [{ filename: lampiran.nama, content: lampiran.bait, encoding: "binary", contentType: "application/pdf" }] : [],
     });
   } finally {
