@@ -165,10 +165,33 @@ Jabatan Perangkaan Malaysia, Wilayah Persekutuan`;
     kemasLipat();
   });
   $("#borangProgram").elements.sijil_aktif.addEventListener("change", kemasLipat);
-  $("#failTemplat").addEventListener("change", e => {
-    const f = e.target.files[0]; if (!f) return;
+  // Gambar templat ditukar ke JPEG ≤2339px: pelayan (had CPU ~2 s) tidak mampu nyahkod PNG besar.
+  function keJpeg(blob) {
+    return new Promise((ok, gagal) => {
+      const img = new Image();
+      img.onload = () => {
+        const skala = Math.min(1, 2339 / Math.max(img.width, img.height));
+        const c = document.createElement("canvas");
+        c.width = Math.round(img.width * skala); c.height = Math.round(img.height * skala);
+        const x = c.getContext("2d");
+        x.fillStyle = "#fff"; x.fillRect(0, 0, c.width, c.height);
+        x.drawImage(img, 0, 0, c.width, c.height);
+        URL.revokeObjectURL(img.src);
+        c.toBlob(b => b ? ok(new File([b], "templat.jpg", { type: "image/jpeg" })) : gagal(new Error("Gagal menukar templat")), "image/jpeg", 0.9);
+      };
+      img.onerror = () => gagal(new Error("Fail templat bukan gambar yang sah"));
+      img.src = URL.createObjectURL(blob);
+    });
+  }
+
+  $("#failTemplat").addEventListener("change", async e => {
+    let f = e.target.files[0]; if (!f) return;
     if (f.size > 10 * 1024 * 1024) { e.target.value = ""; return toast("Templat melebihi 10 MB.", true); }
-    st.templatBaru = f; $("#namaTemplat").textContent = f.name + " (belum disimpan)";
+    const nama = f.name;
+    if (f.type !== "application/pdf" && f.type !== "image/jpeg") {
+      try { f = await keJpeg(f); } catch (err) { e.target.value = ""; return toast(err.message, true); }
+    }
+    st.templatBaru = f; $("#namaTemplat").textContent = nama + " (belum disimpan)";
   });
 
   async function baitTemplat() {
@@ -264,6 +287,18 @@ Jabatan Perangkaan Malaysia, Wilayah Persekutuan`;
     f.elements.sijil_aktif.checked = !!p?.sijil_aktif;
     st.templatBaru = null; $("#failTemplat").value = "";
     $("#namaTemplat").textContent = p?.sijil_templat ? "Templat telah dimuat naik" : "Tiada templat (reka bentuk ringkas digunakan)";
+    // Templat PNG lama: tukar automatik ke JPEG; pentadbir hanya perlu klik Simpan.
+    if (p?.sijil_templat && /\.png$/i.test(p.sijil_templat)) {
+      (async () => {
+        try {
+          const { data, error } = await sb.storage.from("templat-sijil").download(p.sijil_templat);
+          if (error) throw error;
+          if (st.sedangEdit !== p) return;
+          st.templatBaru = await keJpeg(data);
+          $("#namaTemplat").textContent = "Templat PNG ditukar ke JPEG supaya sijil boleh dihantar — klik Simpan";
+        } catch { $("#namaTemplat").textContent = "Templat PNG terlalu berat untuk pelayan — sila muat naik semula"; }
+      })();
+    }
     st.teksSijil = JSON.parse(JSON.stringify(p?.sijil_teks?.length ? p.sijil_teks : TEKS_LALAI));
     paparBarisTeks();
     $("#pratontonSijil").hidden = true; $("#pautanPratonton").hidden = true;
@@ -421,9 +456,9 @@ Jabatan Perangkaan Malaysia, Wilayah Persekutuan`;
 
   async function hantarEmel(wargaIds) {
     const b = $("#btnHantarSemua span"); let siap = 0, gagal = 0;
-    for (let i = 0; i < wargaIds.length; i += 10) {
-      b.textContent = `Menghantar ${Math.min(i + 10, wargaIds.length)}/${wargaIds.length}…`;
-      const { data, error } = await sb.functions.invoke("hantar-pengesahan", { body: { program_id: st.semasa.id, warga_ids: wargaIds.slice(i, i + 10) } });
+    for (let i = 0; i < wargaIds.length; i += 5) {
+      b.textContent = `Menghantar ${Math.min(i + 5, wargaIds.length)}/${wargaIds.length}…`;
+      const { data, error } = await sb.functions.invoke("hantar-pengesahan", { body: { program_id: st.semasa.id, warga_ids: wargaIds.slice(i, i + 5) } });
       if (error || !data?.ok) { b.textContent = "Hantar e-mel"; return toast("Gagal: " + (data?.sebab || error?.message), true); }
       for (const r of Object.values(data.hasil)) r.ok ? siap++ : gagal++;
     }

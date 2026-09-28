@@ -107,6 +107,9 @@ async function prosesSatu(program: any, templat: Uint8Array | null, hadirId: str
       <div style="border-top:4px solid #c9a227;padding-top:14px">${esc(teks).replace(/\n/g, "<br>")}</div></div>`;
     let lampiran;
     if (program.sijil_aktif) {
+      // Nyahkod PNG besar melebihi had CPU fungsi (~2 s) — minta pentadbir tukar ke JPEG.
+      if (templat && templat[0] === 0x89 && templat[1] === 0x50 && templat.length > 400_000)
+        throw new Error("Templat sijil PNG terlalu besar untuk diproses. Buka tetapan program dan klik Simpan (templat akan ditukar ke JPEG).");
       const bait = await Sijil.jana(PDFLib, { templat, teks: program.sijil_teks, data });
       lampiran = { nama: `Sijil - ${Sijil.bersih(w.nama).replace(/[^\w ]+/g, "").trim()}.pdf`, bait };
     }
