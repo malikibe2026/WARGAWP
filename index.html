@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="ms">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Direktori Warga DOSM WP Kuala Lumpur</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo" aria-hidden="true">DOSM</div>
+      <div>
+        <h1 id="tajuk">Direktori Warga DOSM</h1>
+        <p id="subtajuk" class="muted"></p>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <span id="modLabel" class="badge"></span>
+      <button id="btnLogin" class="btn">Log Masuk Pentadbir</button>
+      <button id="btnLogout" class="btn" hidden>Log Keluar</button>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="toolbar">
+      <input id="carian" type="search" placeholder="Cari nama, jawatan, unit, telefon…" aria-label="Carian">
+      <select id="tapisUnit" aria-label="Tapis mengikut unit">
+        <option value="">Semua Bahagian / Unit</option>
+      </select>
+      <select id="susun" aria-label="Susunan">
+        <option value="nama">Susun: Nama</option>
+        <option value="unit">Susun: Unit</option>
+        <option value="gred">Susun: Gred (tinggi → rendah)</option>
+      </select>
+      <div class="view-toggle" role="group" aria-label="Paparan">
+        <button id="viewGrid" class="btn small active" title="Paparan kad">Kad</button>
+        <button id="viewTable" class="btn small" title="Paparan jadual">Jadual</button>
+      </div>
+    </section>
+
+    <section id="adminBar" class="adminbar" hidden>
+      <button id="btnTambah" class="btn primary">+ Tambah Warga</button>
+      <button id="btnImport" class="btn">Import CSV</button>
+      <button id="btnExport" class="btn">Eksport CSV</button>
+      <button id="btnCetak" class="btn">Cetak</button>
+      <input id="fileImport" type="file" accept=".csv,text/csv" hidden>
+    </section>
+
+    <p id="ringkasan" class="muted"></p>
+    <div id="senarai" class="grid"></div>
+    <div id="kosong" class="empty" hidden></div>
+  </main>
+
+  <!-- Butiran warga -->
+  <dialog id="dlgButiran" class="dialog">
+    <div id="butiranIsi"></div>
+    <div class="dialog-actions">
+      <button id="btnEditDariButiran" class="btn" hidden>Kemas Kini</button>
+      <button class="btn" data-close>Tutup</button>
+    </div>
+  </dialog>
+
+  <!-- Borang tambah / kemas kini -->
+  <dialog id="dlgBorang" class="dialog wide">
+    <form id="borang" method="dialog" novalidate>
+      <h2 id="borangTajuk">Tambah Warga</h2>
+      <div class="form-grid">
+        <div class="photo-edit">
+          <img id="pratonton" class="avatar xl" alt="Pratonton gambar">
+          <label class="btn small">Pilih Gambar
+            <input id="inputGambar" type="file" accept="image/*" hidden>
+          </label>
+          <button type="button" id="btnBuangGambar" class="btn small ghost">Buang Gambar</button>
+          <p class="hint">Gambar dikecilkan automatik ke 400px.</p>
+        </div>
+        <div class="fields">
+          <label>Nama Penuh *<input name="nama" required></label>
+          <div class="row">
+            <label>Jawatan<input name="jawatan" list="senaraiJawatan"></label>
+            <label class="narrow">Gred<input name="gred" placeholder="cth. E41"></label>
+          </div>
+          <label>Bahagian / Unit<input name="unit" list="senaraiUnit"></label>
+          <div class="row">
+            <label>Tel. Pejabat<input name="telefon_pejabat" inputmode="tel"></label>
+            <label>Tel. Bimbit<input name="telefon_bimbit" inputmode="tel"></label>
+          </div>
+          <label>E-mel<input name="emel" type="email"></label>
+          <div class="row">
+            <label>No. Kad Pengenalan <small>(tidak disimpan)</small>
+              <input id="inputIC" placeholder="Isi bila dapat — untuk kira umur" inputmode="numeric" autocomplete="off">
+              <small id="icInfo" class="hint"></small>
+            </label>
+            <label>Tarikh Lahir<input name="tarikh_lahir" type="date"></label>
+          </div>
+          <label>Tarikh Lapor Diri<input name="tarikh_lapor_diri" type="date"></label>
+          <label>Catatan<textarea name="catatan" rows="2"></textarea></label>
+        </div>
+      </div>
+      <p id="borangRalat" class="error" hidden></p>
+      <div class="dialog-actions">
+        <button type="button" id="btnPadam" class="btn danger" hidden>Padam</button>
+        <span class="spacer"></span>
+        <button type="button" class="btn" data-close>Batal</button>
+        <button type="submit" id="btnSimpan" class="btn primary">Simpan</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Log masuk -->
+  <dialog id="dlgLogin" class="dialog">
+    <form id="borangLogin" method="dialog">
+      <h2>Log Masuk Pentadbir</h2>
+      <div id="loginOnline" hidden>
+        <label>E-mel<input name="email" type="email" autocomplete="username"></label>
+        <label>Kata Laluan<input name="password" type="password" autocomplete="current-password"></label>
+      </div>
+      <div id="loginLocal" hidden>
+        <label>PIN<input name="pin" type="password" autocomplete="off"></label>
+      </div>
+      <p id="loginRalat" class="error" hidden></p>
+      <div class="dialog-actions">
+        <button type="button" class="btn" data-close>Batal</button>
+        <button type="submit" class="btn primary">Masuk</button>
+      </div>
+    </form>
+  </dialog>
+
+  <datalist id="senaraiUnit"></datalist>
+  <datalist id="senaraiJawatan"></datalist>
+  <div id="toast" class="toast" hidden></div>
+
+  <script src="config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="umur.js"></script>
+  <script src="storage.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
