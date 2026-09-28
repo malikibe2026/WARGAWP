@@ -6,7 +6,12 @@
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#dfe6ee"/>' +
     '<circle cx="50" cy="38" r="18" fill="#9fb0c3"/><path d="M16 92c4-20 18-30 34-30s30 10 34 30z" fill="#9fb0c3"/></svg>');
 
-  const keadaan = { data: [], admin: false, paparan: "grid", sedangEdit: null, gambarBaru: undefined };
+  // Gambar yang gagal dimuat (cth. belum dimuat naik) diganti dengan ikon lalai.
+  document.addEventListener("error", e => {
+    if (e.target.tagName === "IMG" && e.target.src !== TANPA_GAMBAR) e.target.src = TANPA_GAMBAR;
+  }, true);
+
+  const keadaan = { data: [], urutanUnit: new Map(), admin: false, paparan: "grid", sedangEdit: null, gambarBaru: undefined };
 
   // ---------- Utiliti ----------
   const esc = s => String(s ?? "").replace(/[&<>"']/g, c =>
@@ -48,9 +53,20 @@
     papar();
   }
 
+  // Kedudukan unit dalam carta = nombor susunan terkecil ahlinya.
+  function urutanUnit(unit) {
+    const m = keadaan.urutanUnit.get(unit || "");
+    return m == null ? Infinity : m;
+  }
+
   function isiPilihan() {
+    keadaan.urutanUnit = new Map();
+    for (const r of keadaan.data) {
+      const k = r.unit || "", v = r.susunan ?? Infinity;
+      if (!keadaan.urutanUnit.has(k) || v < keadaan.urutanUnit.get(k)) keadaan.urutanUnit.set(k, v);
+    }
     const unik = k => [...new Set(keadaan.data.map(r => r[k]).filter(Boolean))].sort((a, b) => a.localeCompare(b, "ms"));
-    const units = unik("unit");
+    const units = unik("unit").sort((a, b) => urutanUnit(a) - urutanUnit(b) || a.localeCompare(b, "ms"));
     const sel = $("#tapisUnit"), pilihan = sel.value;
     sel.innerHTML = '<option value="">Semua Bahagian / Unit</option>' +
       units.map(u => `<option>${esc(u)}</option>`).join("");
@@ -70,7 +86,10 @@
         .some(k => String(r[k] || "").toLowerCase().includes(q));
     });
     const ikutNama = (a, b) => (a.nama || "").localeCompare(b.nama || "", "ms");
-    hasil.sort(susun === "unit" ? (a, b) => (a.unit || "~").localeCompare(b.unit || "~", "ms") || ikutNama(a, b)
+    const ikutCarta = (a, b) => urutanUnit(a.unit) - urutanUnit(b.unit)
+      || (a.susunan ?? Infinity) - (b.susunan ?? Infinity) || ikutNama(a, b);
+    hasil.sort(susun === "carta" ? ikutCarta
+      : susun === "unit" ? (a, b) => (a.unit || "~").localeCompare(b.unit || "~", "ms") || ikutNama(a, b)
       : susun === "gred" ? (a, b) => nomborGred(b.gred) - nomborGred(a.gred) || ikutNama(a, b)
       : ikutNama);
     return hasil;
@@ -116,13 +135,16 @@
         </tr>`).join("") + "</tbody></table>";
     } else {
       bekas.className = "grid";
-      bekas.innerHTML = hasil.map(r => `
+      const berkumpulan = ["carta", "unit"].includes($("#susun").value);
+      let unitSebelum;
+      bekas.innerHTML = hasil.map(r => (berkumpulan && r.unit !== unitSebelum
+          ? `<h2 class="kumpulan">${esc((unitSebelum = r.unit) || "Tiada unit")}</h2>` : "") + `
         <article class="kad" data-id="${esc(r.id)}" tabindex="0">
           <img class="avatar" src="${esc(r.gambar_url || TANPA_GAMBAR)}" alt="Gambar ${esc(r.nama)}" loading="lazy">
           <div class="kad-isi">
             <h3>${esc(r.nama)}</h3>
             <p class="jawatan">${esc(r.jawatan || "")}${r.gred ? ` <span class="gred">${esc(r.gred)}</span>` : ""}</p>
-            ${r.unit ? `<p class="unit">${esc(r.unit)}</p>` : ""}
+            ${r.unit && !berkumpulan ? `<p class="unit">${esc(r.unit)}</p>` : ""}
             <p class="hubungi">
               ${r.telefon_pejabat ? `<span>☎ ${telLink(r.telefon_pejabat)}</span>` : ""}
               ${r.telefon_bimbit ? `<span>📱 ${telLink(r.telefon_bimbit)}</span>` : ""}
@@ -253,7 +275,7 @@
   const LAJUR_CSV = [
     ["nama", "Nama"], ["jawatan", "Jawatan"], ["gred", "Gred"], ["unit", "Unit"],
     ["telefon_pejabat", "Tel Pejabat"], ["telefon_bimbit", "Tel Bimbit"], ["emel", "Emel"],
-    ["tarikh_lahir", "Tarikh Lahir"], ["tarikh_lapor_diri", "Tarikh Lapor Diri"], ["catatan", "Catatan"],
+    ["tarikh_lahir", "Tarikh Lahir"], ["tarikh_lapor_diri", "Tarikh Lapor Diri"], ["catatan", "Catatan"], ["susunan", "Susunan"],
   ];
 
   function huraiCSV(teks) {
@@ -330,6 +352,41 @@
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
+  // ---------- Import gambar pukal ----------
+  // Nama fail dipadankan dengan gambar_url sedia ada (cth. gambar/nama-warga.jpg) atau slug nama.
+  function slug(s) {
+    return String(s || "").normalize("NFKD").replace(/[^\x00-\x7f]/g, "").toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 60);
+  }
+
+  async function importGambar(fail) {
+    const ikutFail = new Map();
+    for (const r of keadaan.data) {
+      const f = (r.gambar_url || "").split("/").pop();
+      if (f && !/^https?:|^data:/.test(r.gambar_url)) ikutFail.set(f.toLowerCase(), r);
+      ikutFail.set(slug(r.nama) + ".jpg", ikutFail.get(slug(r.nama) + ".jpg") || r);
+    }
+    const padan = [], tiada = [];
+    for (const f of fail) {
+      const r = ikutFail.get(f.name.toLowerCase());
+      r ? padan.push([f, r]) : tiada.push(f.name);
+    }
+    if (!padan.length) return toast("Tiada nama fail yang sepadan dengan warga.", true);
+    if (!confirm(`Muat naik ${padan.length} gambar?` + (tiada.length ? ` (${tiada.length} fail tidak sepadan akan diabaikan)` : ""))) return;
+    let siap = 0, gagal = [];
+    for (const [f, r] of padan) {
+      try {
+        const url = await Store.muatNaikGambar(await kecilkanGambar(f));
+        await Store.simpan({ ...r, gambar_url: url });
+        siap++;
+      } catch (err) { gagal.push(`${f.name}: ${err.message}`); }
+      toast(`Memuat naik gambar… ${siap + gagal.length}/${padan.length}`);
+    }
+    await muat();
+    toast(`${siap} gambar dimuat naik.` + (gagal.length ? ` ${gagal.length} gagal.` : ""), gagal.length > 0);
+    if (gagal.length || tiada.length) console.warn("Import gambar:", { gagal, tiada });
+  }
+
   // ---------- Sesi pentadbir ----------
   async function kemasSesi() {
     keadaan.admin = await Store.sesi();
@@ -383,6 +440,8 @@
     $("#btnImport").onclick = () => $("#fileImport").click();
     $("#fileImport").addEventListener("change", e => { const f = e.target.files[0]; e.target.value = ""; if (f) importCSV(f); });
     $("#btnExport").onclick = eksportCSV;
+    $("#btnImportGambar").onclick = () => $("#fileGambar").click();
+    $("#fileGambar").addEventListener("change", e => { const f = [...e.target.files]; e.target.value = ""; if (f.length) importGambar(f); });
     $("#btnCetak").onclick = () => window.print();
 
     $("#btnLogin").onclick = () => {

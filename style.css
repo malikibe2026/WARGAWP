@@ -73,6 +73,11 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--brand-2); o
 .topbar .btn { background: transparent; color: #fff; border-color: rgba(255,255,255,.5); }
 
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+.kumpulan {
+  grid-column: 1 / -1; margin: 14px 0 0; padding-bottom: 6px; font-size: 16px;
+  color: var(--brand); border-bottom: 2px solid var(--accent);
+}
+.kumpulan:first-child { margin-top: 0; }
 .kad {
   position: relative; display: flex; gap: 14px; padding: 14px; background: var(--panel);
   border: 1px solid var(--line); border-radius: var(--radius); cursor: pointer; transition: box-shadow .15s;
@@ -121,7 +126,7 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--brand-2); o
 .butiran h2 { margin-bottom: 2px; }
 .butiran dl { display: grid; grid-template-columns: max-content 1fr; gap: 6px 14px; margin: 12px 0; font-size: 14px; }
 .butiran dt { color: var(--muted); }
-.butiran dd { margin: 0; }
+.butiran dd { margin: 0; overflow-wrap: anywhere; }
 
 .toast {
   position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 50;
@@ -145,4 +150,5 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--brand-2); o
   body { background: #fff; }
   .grid { grid-template-columns: repeat(3, 1fr); gap: 8px; }
   .kad { break-inside: avoid; box-shadow: none; border-color: #999; }
+  .kumpulan { break-after: avoid; }
 }

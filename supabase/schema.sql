@@ -14,6 +14,7 @@ create table if not exists public.warga (
   tarikh_lapor_diri date,
   catatan           text,
   gambar_url        text,
+  susunan           integer,          -- kedudukan dalam carta organisasi
   created_at        timestamptz not null default now(),
   updated_at        timestamptz not null default now()
 );

@@ -29,6 +29,7 @@
         <option value="">Semua Bahagian / Unit</option>
       </select>
       <select id="susun" aria-label="Susunan">
+        <option value="carta">Susun: Ikut carta organisasi</option>
         <option value="nama">Susun: Nama</option>
         <option value="unit">Susun: Unit</option>
         <option value="gred">Susun: Gred (tinggi → rendah)</option>
@@ -43,8 +44,10 @@
       <button id="btnTambah" class="btn primary">+ Tambah Warga</button>
       <button id="btnImport" class="btn">Import CSV</button>
       <button id="btnExport" class="btn">Eksport CSV</button>
+      <button id="btnImportGambar" class="btn" title="Pilih banyak fail gambar sekali gus; dipadankan ikut nama fail">Import Gambar</button>
       <button id="btnCetak" class="btn">Cetak</button>
       <input id="fileImport" type="file" accept=".csv,text/csv" hidden>
+      <input id="fileGambar" type="file" accept="image/*" multiple hidden>
     </section>
 
     <p id="ringkasan" class="muted"></p>
@@ -79,6 +82,7 @@
           <div class="row">
             <label>Jawatan<input name="jawatan" list="senaraiJawatan"></label>
             <label class="narrow">Gred<input name="gred" placeholder="cth. E41"></label>
+            <label class="narrow">No. Susunan<input name="susunan" type="number" min="1" title="Kedudukan dalam carta; kosongkan untuk letak di hujung unit"></label>
           </div>
           <label>Bahagian / Unit<input name="unit" list="senaraiUnit"></label>
           <div class="row">

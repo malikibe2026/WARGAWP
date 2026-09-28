@@ -2,7 +2,7 @@
 (function (global) {
   const cfg = global.WARGA_CONFIG || {};
   const MEDAN = ["nama", "jawatan", "gred", "unit", "telefon_pejabat", "telefon_bimbit",
-    "emel", "tarikh_lahir", "tarikh_lapor_diri", "catatan", "gambar_url"];
+    "emel", "tarikh_lahir", "tarikh_lapor_diri", "catatan", "gambar_url", "susunan"];
 
   function bersihRekod(r) {
     const o = {};
@@ -10,6 +10,7 @@
       const v = r[k] == null ? "" : String(r[k]).trim();
       o[k] = v === "" ? null : v;
     }
+    o.susunan = o.susunan == null || isNaN(+o.susunan) ? null : Math.round(+o.susunan);
     return o;
   }
 
