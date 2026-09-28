@@ -96,7 +96,7 @@
       },
       async sesi() { return !!(await sb.auth.getSession()).data.session; },
       async logMasuk({ email, password }) {
-        const { error } = await sb.auth.signInWithPassword({ email, password });
+        const { error } = await sb.auth.signInWithPassword({ email: String(email || "").trim().toLowerCase(), password });
         if (error) throw new Error("Log masuk gagal: " + error.message);
       },
       async logKeluar() { await sb.auth.signOut(); },
