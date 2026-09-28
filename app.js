@@ -6,6 +6,14 @@
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#dfe6ee"/>' +
     '<circle cx="50" cy="38" r="18" fill="#9fb0c3"/><path d="M16 92c4-20 18-30 34-30s30 10 34 30z" fill="#9fb0c3"/></svg>');
 
+  const IKON = {
+    telefon: '<svg viewBox="0 0 24 24"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 1.9.7 2.8a2 2 0 0 1-.5 2.1L8 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/></svg>',
+    bimbit: '<svg viewBox="0 0 24 24"><rect x="6" y="2" width="12" height="20" rx="2.5"/><path d="M11 18h2"/></svg>',
+    emel: '<svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2.5"/><path d="m22 7-10 6L2 7"/></svg>',
+    salin: '<svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>',
+    edit: '<svg viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>',
+  };
+
   // Gambar yang gagal dimuat (cth. belum dimuat naik) diganti dengan ikon lalai.
   document.addEventListener("error", e => {
     if (e.target.tagName === "IMG" && e.target.src !== TANPA_GAMBAR) e.target.src = TANPA_GAMBAR;
@@ -42,7 +50,26 @@
   }
 
   // ---------- Muat & papar ----------
+  function paparRangka() {
+    const bekas = $("#senarai");
+    bekas.className = "grid";
+    bekas.innerHTML = Array.from({ length: 10 }, () => `
+      <div class="kad skel"><div class="kad-foto"></div>
+        <div class="kad-isi"><div class="garis" style="width:80%"></div><div class="garis" style="width:55%"></div></div>
+      </div>`).join("");
+  }
+
+  function kemasStatistik() {
+    const d = keadaan.data;
+    $("#statWarga").textContent = d.length || "–";
+    $("#statUnit").textContent = new Set(d.map(r => r.unit).filter(Boolean)).size || "–";
+    const akhir = d.map(r => r.updated_at).filter(Boolean).sort().pop();
+    $("#statKemas").textContent = akhir
+      ? new Date(akhir).toLocaleDateString("ms-MY", { day: "numeric", month: "short", year: "numeric" }) : "–";
+  }
+
   async function muat() {
+    if (!keadaan.data.length) paparRangka();
     try {
       keadaan.data = await Store.senarai();
     } catch (e) {
@@ -50,6 +77,7 @@
       toast("Gagal memuatkan data: " + e.message, true);
     }
     isiPilihan();
+    kemasStatistik();
     papar();
   }
 
@@ -71,6 +99,12 @@
     sel.innerHTML = '<option value="">Semua Bahagian / Unit</option>' +
       units.map(u => `<option>${esc(u)}</option>`).join("");
     sel.value = units.includes(pilihan) ? pilihan : "";
+    const kira = new Map();
+    for (const r of keadaan.data) if (r.unit) kira.set(r.unit, (kira.get(r.unit) || 0) + 1);
+    const cip = (nilai, label, n) => `<button class="chip${sel.value === nilai ? " active" : ""}" data-unit="${esc(nilai)}"
+      role="tab" aria-selected="${sel.value === nilai}" title="${esc(nilai || "Semua unit")}">${esc(label)}<span class="n">${n}</span></button>`;
+    $("#chips").innerHTML = cip("", "Semua", keadaan.data.length) +
+      units.map(u => cip(u, u.replace(/^Seksyen /, "").replace(/^Pejabat Perangkaan /, "Pejabat "), kira.get(u))).join("");
     $("#senaraiUnit").innerHTML = units.map(u => `<option value="${esc(u)}">`).join("");
     $("#senaraiJawatan").innerHTML = unik("jawatan").map(u => `<option value="${esc(u)}">`).join("");
   }
@@ -121,39 +155,52 @@
     if (keadaan.paparan === "table") {
       bekas.className = "table-wrap";
       bekas.innerHTML = `<table class="jadual"><thead><tr>
-        <th></th><th>Nama</th><th>Jawatan / Gred</th><th>Bahagian / Unit</th>
+        <th></th><th>Nama</th><th>Jawatan</th><th>Gred</th><th>Bahagian / Unit</th>
         <th>Tel. Pejabat</th><th>Tel. Bimbit</th><th>E-mel</th><th>Umur</th></tr></thead><tbody>` +
         hasil.map(r => `<tr data-id="${esc(r.id)}">
-          <td><img class="avatar sm" src="${esc(r.gambar_url || TANPA_GAMBAR)}" alt=""></td>
+          <td><img class="avatar-sm" src="${esc(r.gambar_url || TANPA_GAMBAR)}" alt="" loading="lazy"></td>
           <td class="nama">${esc(r.nama)}</td>
-          <td>${esc(r.jawatan)}${r.gred ? ` <span class="gred">${esc(r.gred)}</span>` : ""}</td>
+          <td>${esc(r.jawatan)}</td>
+          <td>${r.gred ? `<span class="gred">${esc(r.gred)}</span>` : ""}</td>
           <td>${esc(r.unit)}</td>
           <td>${telLink(r.telefon_pejabat)}</td>
           <td>${telLink(r.telefon_bimbit)}</td>
           <td>${r.emel ? `<a href="mailto:${esc(r.emel)}">${esc(r.emel)}</a>` : ""}</td>
           <td>${teksUmur(r) || '<span class="muted">—</span>'}</td>
         </tr>`).join("") + "</tbody></table>";
-    } else {
-      bekas.className = "grid";
-      const berkumpulan = ["carta", "unit"].includes($("#susun").value);
-      let unitSebelum;
-      bekas.innerHTML = hasil.map(r => (berkumpulan && r.unit !== unitSebelum
-          ? `<h2 class="kumpulan">${esc((unitSebelum = r.unit) || "Tiada unit")}</h2>` : "") + `
-        <article class="kad" data-id="${esc(r.id)}" tabindex="0">
-          <img class="avatar" src="${esc(r.gambar_url || TANPA_GAMBAR)}" alt="Gambar ${esc(r.nama)}" loading="lazy">
+      return;
+    }
+
+    bekas.className = "grid";
+    const berkumpulan = ["carta", "unit"].includes($("#susun").value);
+    const kiraUnit = new Map();
+    for (const r of hasil) kiraUnit.set(r.unit || "", (kiraUnit.get(r.unit || "") || 0) + 1);
+    const nomborTel = no => esc(String(no).split("/")[0].replace(/[^\d+]/g, ""));
+    let unitSebelum = {};
+    bekas.innerHTML = hasil.map(r => {
+      const baru = berkumpulan && r.unit !== unitSebelum;
+      const ketua = baru && $("#susun").value === "carta" && !$("#carian").value.trim();
+      if (baru) unitSebelum = r.unit;
+      return (baru ? `<div class="kumpulan"><h2>${esc(r.unit || "Tiada unit")}</h2><span class="kira">${kiraUnit.get(r.unit || "")} warga</span></div>` : "") + `
+        <article class="kad" data-id="${esc(r.id)}" tabindex="0" aria-label="${esc(r.nama)}">
+          <div class="kad-foto">
+            <img src="${esc(r.gambar_url || TANPA_GAMBAR)}" alt="Gambar ${esc(r.nama)}" loading="lazy">
+            ${ketua ? '<span class="ketua-tag">Ketua</span>' : ""}
+            ${keadaan.admin ? `<button class="icon-btn edit" data-edit="${esc(r.id)}" title="Kemas kini" aria-label="Kemas kini ${esc(r.nama)}">${IKON.edit}</button>` : ""}
+          </div>
           <div class="kad-isi">
             <h3>${esc(r.nama)}</h3>
-            <p class="jawatan">${esc(r.jawatan || "")}${r.gred ? ` <span class="gred">${esc(r.gred)}</span>` : ""}</p>
+            <p class="jawatan">${esc(r.jawatan || "")}</p>
+            ${r.gred ? `<span class="gred-tag">${esc(r.gred)}</span>` : ""}
             ${r.unit && !berkumpulan ? `<p class="unit">${esc(r.unit)}</p>` : ""}
-            <p class="hubungi">
-              ${r.telefon_pejabat ? `<span>☎ ${telLink(r.telefon_pejabat)}</span>` : ""}
-              ${r.telefon_bimbit ? `<span>📱 ${telLink(r.telefon_bimbit)}</span>` : ""}
-            </p>
-            ${r.emel ? `<p class="emel"><a href="mailto:${esc(r.emel)}">${esc(r.emel)}</a></p>` : ""}
           </div>
-          ${keadaan.admin ? `<button class="btn small edit" data-edit="${esc(r.id)}" title="Kemas kini">✎</button>` : ""}
-        </article>`).join("");
-    }
+          <div class="kad-aksi">
+            ${r.telefon_pejabat ? `<a href="tel:${nomborTel(r.telefon_pejabat)}" title="Pejabat: ${esc(r.telefon_pejabat)}" aria-label="Telefon pejabat">${IKON.telefon}</a>` : ""}
+            ${r.telefon_bimbit ? `<a href="tel:${nomborTel(r.telefon_bimbit)}" title="Bimbit: ${esc(r.telefon_bimbit)}" aria-label="Telefon bimbit">${IKON.bimbit}</a>` : ""}
+            ${r.emel ? `<a href="mailto:${esc(r.emel)}" title="${esc(r.emel)}" aria-label="E-mel">${IKON.emel}</a>` : ""}
+          </div>
+        </article>`;
+    }).join("");
   }
 
   function cari(id) { return keadaan.data.find(r => r.id === id); }
@@ -161,27 +208,36 @@
   function bukaButiran(id) {
     const r = cari(id);
     if (!r) return;
-    const baris = (label, nilai) => nilai ? `<dt>${label}</dt><dd>${nilai}</dd>` : "";
+    const kontak = (ikon, label, nilai, href) => nilai ? `
+      <div class="kontak-item">
+        <span class="kontak-ikon">${ikon}</span>
+        <span class="kontak-teks"><small>${label}</small><a href="${href}">${esc(nilai)}</a></span>
+        <button class="salin" data-salin="${esc(nilai)}" title="Salin" aria-label="Salin ${label}">${IKON.salin}</button>
+      </div>` : "";
+    const meta = (label, nilai) => nilai ? `<dt>${label}</dt><dd>${nilai}</dd>` : "";
     $("#butiranIsi").innerHTML = `
-      <div class="butiran">
-        <img class="avatar xl" src="${esc(r.gambar_url || TANPA_GAMBAR)}" alt="Gambar ${esc(r.nama)}">
-        <div>
+      <div class="profil">
+        <div class="profil-foto"><img src="${esc(r.gambar_url || TANPA_GAMBAR)}" alt="Gambar ${esc(r.nama)}"></div>
+        <div class="profil-isi">
+          ${r.unit ? `<span class="unit-tag">${esc(r.unit)}</span>` : ""}
           <h2>${esc(r.nama)}</h2>
           <p class="jawatan">${esc(r.jawatan || "")}${r.gred ? ` <span class="gred">${esc(r.gred)}</span>` : ""}</p>
-          <dl>
-            ${baris("Bahagian / Unit", esc(r.unit))}
-            ${baris("Tel. Pejabat", telLink(r.telefon_pejabat))}
-            ${baris("Tel. Bimbit", telLink(r.telefon_bimbit))}
-            ${baris("E-mel", r.emel ? `<a href="mailto:${esc(r.emel)}">${esc(r.emel)}</a>` : "")}
+          <div class="kontak">
+            ${kontak(IKON.telefon, "Tel. Pejabat", r.telefon_pejabat, `tel:${esc(String(r.telefon_pejabat || "").split("/")[0].replace(/[^\d+]/g, ""))}`)}
+            ${kontak(IKON.bimbit, "Tel. Bimbit", r.telefon_bimbit, `tel:${esc(String(r.telefon_bimbit || "").replace(/[^\d+]/g, ""))}`)}
+            ${kontak(IKON.emel, "E-mel", r.emel, `mailto:${esc(r.emel)}`)}
+          </div>
+          <dl class="meta">
             <dt>Umur</dt><dd>${teksUmur(r) || '<span class="muted">Belum dikemas kini</span>'}</dd>
-            ${baris("Tarikh Lapor Diri", formatTarikh(r.tarikh_lapor_diri))}
-            ${baris("Catatan", esc(r.catatan))}
+            ${meta("Tarikh Lapor Diri", formatTarikh(r.tarikh_lapor_diri))}
+            ${meta("Catatan", esc(r.catatan))}
           </dl>
-          ${r.updated_at ? `<p class="hint">Dikemas kini: ${new Date(r.updated_at).toLocaleString("ms-MY")}</p>` : ""}
+          ${r.updated_at ? `<p class="hint dikemas">Dikemas kini ${new Date(r.updated_at).toLocaleString("ms-MY")}</p>` : ""}
         </div>
       </div>`;
     const btn = $("#btnEditDariButiran");
     btn.hidden = !keadaan.admin;
+    btn.parentElement.hidden = !keadaan.admin;
     btn.onclick = () => { $("#dlgButiran").close(); bukaBorang(id); };
     $("#dlgButiran").showModal();
   }
@@ -401,7 +457,8 @@
     $("#tajuk").textContent = cfg.TAJUK || "Direktori Warga";
     $("#subtajuk").textContent = cfg.SUBTAJUK || "";
     const online = Store.mod === "dalam talian";
-    $("#modLabel").textContent = online ? "Dalam talian" : "Mod tempatan";
+    $("#modLabel span").textContent = online ? "Dalam talian" : "Mod tempatan";
+    $("#modLabel").classList.toggle("tempatan", !online);
     $("#modLabel").title = online ? "Data dikongsi melalui pangkalan data"
       : "Data disimpan dalam pelayar ini sahaja. Tetapkan Supabase dalam config.js untuk berkongsi.";
 
@@ -418,6 +475,33 @@
     });
     $("#senarai").addEventListener("keydown", e => {
       if (e.key === "Enter" && e.target.matches(".kad")) bukaButiran(e.target.dataset.id);
+    });
+
+    $("#chips").addEventListener("click", e => {
+      const c = e.target.closest("[data-unit]");
+      if (!c) return;
+      $("#tapisUnit").value = c.dataset.unit;
+      document.querySelectorAll(".chip").forEach(x => {
+        x.classList.toggle("active", x === c); x.setAttribute("aria-selected", x === c);
+      });
+      papar();
+      const atas = $(".filterbar").getBoundingClientRect().bottom;
+      const main = $(".main").getBoundingClientRect().top;
+      if (main < atas) window.scrollBy({ top: main - atas - 8, behavior: "smooth" });
+    });
+
+    document.addEventListener("click", async e => {
+      const b = e.target.closest("[data-salin]");
+      if (!b) return;
+      try { await navigator.clipboard.writeText(b.dataset.salin); toast("Disalin: " + b.dataset.salin); }
+      catch { toast("Tidak dapat menyalin.", true); }
+    });
+
+    document.addEventListener("keydown", e => {
+      if (e.key === "/" && !/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName) && !document.querySelector("dialog[open]")) {
+        e.preventDefault(); $("#carian").focus();
+      }
+      if (e.key === "Escape" && document.activeElement === $("#carian")) { $("#carian").value = ""; papar(); }
     });
 
     document.querySelectorAll("[data-close]").forEach(b => b.onclick = () => b.closest("dialog").close());

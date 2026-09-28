@@ -3,78 +3,147 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#071a33">
   <title>Direktori Warga DOSM WP Kuala Lumpur</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header class="topbar">
-    <div class="brand">
-      <div class="logo" aria-hidden="true">DOSM</div>
-      <div>
-        <h1 id="tajuk">Direktori Warga DOSM</h1>
-        <p id="subtajuk" class="muted"></p>
+  <header class="hero">
+    <nav class="nav wrap">
+      <div class="brand">
+        <div class="logo" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M4 20V11M9.5 20V5M15 20v-7M20.5 20V8"/></svg>
+        </div>
+        <div class="brand-text">
+          <span class="brand-t">DOSM</span>
+          <span class="brand-s">Wilayah Persekutuan</span>
+        </div>
       </div>
-    </div>
-    <div class="topbar-actions">
-      <span id="modLabel" class="badge"></span>
-      <button id="btnLogin" class="btn">Log Masuk Pentadbir</button>
-      <button id="btnLogout" class="btn" hidden>Log Keluar</button>
+      <div class="nav-actions">
+        <span id="modLabel" class="pill"><i class="dot"></i><span></span></span>
+        <button id="btnLogin" class="btn btn-glass">
+          <svg viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M15 12H3"/></svg>
+          <span>Log Masuk</span>
+        </button>
+        <button id="btnLogout" class="btn btn-glass" hidden>
+          <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+          <span>Log Keluar</span>
+        </button>
+      </div>
+    </nav>
+
+    <div class="hero-body wrap">
+      <p class="eyebrow">Direktori Rasmi Warga</p>
+      <h1 id="tajuk">Direktori Warga DOSM</h1>
+      <p id="subtajuk" class="lead"></p>
+
+      <label class="search">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input id="carian" type="search" placeholder="Cari nama, jawatan, unit, telefon atau e-mel" aria-label="Carian" autocomplete="off">
+        <kbd>/</kbd>
+      </label>
+
+      <div class="stats">
+        <div class="stat"><b id="statWarga">–</b><span>Warga</span></div>
+        <div class="stat"><b id="statUnit">–</b><span>Seksyen &amp; Pejabat</span></div>
+        <div class="stat"><b id="statKemas">–</b><span>Kemas kini terakhir</span></div>
+      </div>
     </div>
   </header>
 
-  <main class="wrap">
-    <section class="toolbar">
-      <input id="carian" type="search" placeholder="Cari nama, jawatan, unit, telefon…" aria-label="Carian">
-      <select id="tapisUnit" aria-label="Tapis mengikut unit">
-        <option value="">Semua Bahagian / Unit</option>
-      </select>
-      <select id="susun" aria-label="Susunan">
-        <option value="carta">Susun: Ikut carta organisasi</option>
-        <option value="nama">Susun: Nama</option>
-        <option value="unit">Susun: Unit</option>
-        <option value="gred">Susun: Gred (tinggi → rendah)</option>
-      </select>
-      <div class="view-toggle" role="group" aria-label="Paparan">
-        <button id="viewGrid" class="btn small active" title="Paparan kad">Kad</button>
-        <button id="viewTable" class="btn small" title="Paparan jadual">Jadual</button>
+  <div class="filterbar">
+    <div class="wrap filter-inner">
+      <div id="chips" class="chips" role="tablist" aria-label="Tapis mengikut unit"></div>
+      <div class="filter-tools">
+        <select id="susun" aria-label="Susunan">
+          <option value="carta">Ikut carta organisasi</option>
+          <option value="nama">Nama (A–Z)</option>
+          <option value="unit">Unit (A–Z)</option>
+          <option value="gred">Gred (tinggi → rendah)</option>
+        </select>
+        <div class="seg" role="group" aria-label="Paparan">
+          <button id="viewGrid" class="active" title="Paparan kad" aria-label="Paparan kad">
+            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+          </button>
+          <button id="viewTable" title="Paparan jadual" aria-label="Paparan jadual">
+            <svg viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg>
+          </button>
+        </div>
       </div>
-    </section>
+      <select id="tapisUnit" hidden aria-hidden="true"><option value=""></option></select>
+    </div>
+  </div>
 
-    <section id="adminBar" class="adminbar" hidden>
-      <button id="btnTambah" class="btn primary">+ Tambah Warga</button>
-      <button id="btnImport" class="btn">Import CSV</button>
-      <button id="btnExport" class="btn">Eksport CSV</button>
-      <button id="btnImportGambar" class="btn" title="Pilih banyak fail gambar sekali gus; dipadankan ikut nama fail">Import Gambar</button>
-      <button id="btnCetak" class="btn">Cetak</button>
+  <section id="adminBar" class="wrap adminbar" hidden>
+    <div class="admin-inner">
+      <span class="admin-label"><i class="dot"></i>Mod Pentadbir</span>
+      <div class="admin-actions">
+        <button id="btnTambah" class="btn btn-primary">
+          <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg><span>Tambah Warga</span>
+        </button>
+        <button id="btnImportGambar" class="btn btn-soft" title="Pilih banyak fail gambar sekali gus; dipadankan ikut nama fail">
+          <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/></svg><span>Import Gambar</span>
+        </button>
+        <button id="btnImport" class="btn btn-soft">
+          <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg><span>Import CSV</span>
+        </button>
+        <button id="btnExport" class="btn btn-soft">
+          <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg><span>Eksport CSV</span>
+        </button>
+        <button id="btnCetak" class="btn btn-soft">
+          <svg viewBox="0 0 24 24"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg><span>Cetak</span>
+        </button>
+      </div>
       <input id="fileImport" type="file" accept=".csv,text/csv" hidden>
       <input id="fileGambar" type="file" accept="image/*" multiple hidden>
-    </section>
+    </div>
+  </section>
 
-    <p id="ringkasan" class="muted"></p>
+  <main class="wrap main">
+    <p id="ringkasan" class="ringkasan"></p>
     <div id="senarai" class="grid"></div>
     <div id="kosong" class="empty" hidden></div>
   </main>
 
+  <footer class="footer">
+    <div class="wrap footer-inner">
+      <span>© Jabatan Perangkaan Malaysia, Wilayah Persekutuan Kuala Lumpur</span>
+      <span class="muted">Untuk kegunaan dalaman sahaja</span>
+    </div>
+  </footer>
+
   <!-- Butiran warga -->
-  <dialog id="dlgButiran" class="dialog">
+  <dialog id="dlgButiran" class="dialog dialog-profil">
+    <button class="icon-btn tutup" data-close aria-label="Tutup">
+      <svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>
+    </button>
     <div id="butiranIsi"></div>
     <div class="dialog-actions">
-      <button id="btnEditDariButiran" class="btn" hidden>Kemas Kini</button>
-      <button class="btn" data-close>Tutup</button>
+      <button id="btnEditDariButiran" class="btn btn-primary" hidden>
+        <svg viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg><span>Kemas Kini</span>
+      </button>
     </div>
   </dialog>
 
   <!-- Borang tambah / kemas kini -->
   <dialog id="dlgBorang" class="dialog wide">
     <form id="borang" method="dialog" novalidate>
-      <h2 id="borangTajuk">Tambah Warga</h2>
+      <div class="dialog-head">
+        <h2 id="borangTajuk">Tambah Warga</h2>
+        <button type="button" class="icon-btn" data-close aria-label="Tutup">
+          <svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
       <div class="form-grid">
         <div class="photo-edit">
-          <img id="pratonton" class="avatar xl" alt="Pratonton gambar">
-          <label class="btn small">Pilih Gambar
+          <img id="pratonton" class="avatar-xl" alt="Pratonton gambar">
+          <label class="btn btn-soft btn-sm">Pilih Gambar
             <input id="inputGambar" type="file" accept="image/*" hidden>
           </label>
-          <button type="button" id="btnBuangGambar" class="btn small ghost">Buang Gambar</button>
+          <button type="button" id="btnBuangGambar" class="btn btn-ghost btn-sm">Buang Gambar</button>
           <p class="hint">Gambar dikecilkan automatik ke 400px.</p>
         </div>
         <div class="fields">
@@ -103,18 +172,24 @@
       </div>
       <p id="borangRalat" class="error" hidden></p>
       <div class="dialog-actions">
-        <button type="button" id="btnPadam" class="btn danger" hidden>Padam</button>
+        <button type="button" id="btnPadam" class="btn btn-danger" hidden>Padam</button>
         <span class="spacer"></span>
-        <button type="button" class="btn" data-close>Batal</button>
-        <button type="submit" id="btnSimpan" class="btn primary">Simpan</button>
+        <button type="button" class="btn btn-ghost" data-close>Batal</button>
+        <button type="submit" id="btnSimpan" class="btn btn-primary">Simpan</button>
       </div>
     </form>
   </dialog>
 
   <!-- Log masuk -->
-  <dialog id="dlgLogin" class="dialog">
+  <dialog id="dlgLogin" class="dialog dialog-sm">
     <form id="borangLogin" method="dialog">
-      <h2>Log Masuk Pentadbir</h2>
+      <div class="login-head">
+        <div class="logo logo-lg" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M4 20V11M9.5 20V5M15 20v-7M20.5 20V8"/></svg>
+        </div>
+        <h2>Log Masuk Pentadbir</h2>
+        <p class="muted">Hanya pentadbir berdaftar boleh mengemas kini direktori.</p>
+      </div>
       <div id="loginOnline" hidden>
         <label>E-mel<input name="email" type="email" autocomplete="username"></label>
         <label>Kata Laluan<input name="password" type="password" autocomplete="current-password"></label>
@@ -124,8 +199,8 @@
       </div>
       <p id="loginRalat" class="error" hidden></p>
       <div class="dialog-actions">
-        <button type="button" class="btn" data-close>Batal</button>
-        <button type="submit" class="btn primary">Masuk</button>
+        <button type="button" class="btn btn-ghost" data-close>Batal</button>
+        <button type="submit" class="btn btn-primary">Masuk</button>
       </div>
     </form>
   </dialog>
