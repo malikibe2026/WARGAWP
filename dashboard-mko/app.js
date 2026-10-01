@@ -1144,7 +1144,9 @@
       for (let i = 0; i < Math.min(30, aoa.length); i++) {
         const peta = (aoa[i] || []).map(petaHeader);
         const skor = new Set(peta.filter(Boolean)).size;
-        if (skor >= 3 && (!terbaik || skor > terbaik.skor)) terbaik = { skor, aoa, i, peta, helaian: nama };
+        // Fail kecil (cth. No. Siri + satu lajur kemas kini) dibenarkan jika ada lajur kunci
+        const adaKunci = peta.includes("no_siri") || peta.includes("no_id");
+        if ((skor >= 3 || (skor >= 2 && adaKunci)) && (!terbaik || skor > terbaik.skor)) terbaik = { skor, aoa, i, peta, helaian: nama };
       }
     }
     if (!terbaik) throw new Error("Header tidak dijumpai. Pastikan baris header mengandungi lajur seperti 'NO ID', 'Nama Pendaftaran', 'Status Respon Lawatan Semasa'.");
@@ -1170,36 +1172,119 @@
     return { rekod, hilang, tidakDikenal, helaian: terbaik.helaian, nama: fail.name };
   }
 
+  // ---------- Gabung beberapa fail ikut No. Siri ----------
+  // Kunci padanan: No. Siri (atau NO ID jika No. Siri tiada). Sifar di depan diabaikan semasa memadan
+  // supaya "03507000001" (teks) sepadan dengan 3507000001 (nombor Excel).
+  function kunciRekod(r) {
+    const v = r.no_siri != null && r.no_siri !== "" ? r.no_siri : r.no_id;
+    if (v == null || v === "") return null;
+    const s = String(v).trim().toUpperCase().replace(/\s+/g, "");
+    return /^\d+$/.test(s) ? s.replace(/^0+(?=\d)/, "") : s;
+  }
+  const SISTEM = new Set(["id", "muat_naik_id", "_kat"]);
+  function gabungSumber(sumber) {
+    // sumber: [{ nama, rekod }] mengikut keutamaan menaik (yang kemudian mengatasi nilai terdahulu)
+    const peta = new Map(), tanpaKunci = [];
+    let konflik = 0;
+    const contoh = [];
+    const statistik = sumber.map((src) => {
+      const st = { nama: src.nama, rekod: src.rekod.length, padan: 0, baharu: 0, duplikat: 0, tanpaKunci: 0 };
+      const dilihat = new Set(), sebelum = new Set(peta.keys());
+      for (const asal of src.rekod) {
+        const r = {};
+        for (const k in asal) if (!SISTEM.has(k)) r[k] = asal[k];
+        const kunci = kunciRekod(r);
+        if (!kunci) { st.tanpaKunci++; tanpaKunci.push(r); continue; }
+        if (dilihat.has(kunci)) st.duplikat++;
+        else if (sebelum.has(kunci)) st.padan++;
+        dilihat.add(kunci);
+        const lama = peta.get(kunci);
+        if (!lama) { peta.set(kunci, r); st.baharu++; continue; }
+        for (const k in r) {
+          const v = r[k];
+          if (v == null || v === "") continue;                  // sel kosong tidak memadam nilai sedia ada
+          if (k === "no_siri" && lama.no_siri && String(lama.no_siri).length >= String(v).length) continue;  // kekalkan sifar di depan
+          if (lama[k] != null && lama[k] !== "" && String(lama[k]) !== String(v)) {
+            konflik++;
+            if (contoh.length < 5) contoh.push(`${lama.no_siri || kunci}: ${LABEL[k] || k} "${lama[k]}" → "${v}"`);
+          }
+          lama[k] = v;
+        }
+      }
+      return st;
+    });
+    const rekod = [...peta.values(), ...tanpaKunci];
+    for (const r of rekod) if (!r.msic_3 && r.msic_5) r.msic_3 = String(r.msic_5).replace(/\D/g, "").slice(0, 3) || null;
+    return { rekod, statistik, konflik, contoh, tanpaKunci: tanpaKunci.length };
+  }
+
   // ---------- Muat naik ----------
   let hasilBaca = null;
+  let failDibaca = [];
   async function pilihFail(e) {
-    const f = e.target.files[0];
+    const senarai = [...(e.target.files || [])];
+    failDibaca = [];
     hasilBaca = null;
     $("btnSahMuatNaik").disabled = true;
     $("mnRalat").textContent = "";
     $("semakan").innerHTML = "";
-    if (!f) return;
-    $("semakan").textContent = "Membaca fail…";
-    try {
-      const h = await bacaFail(f);
-      if (!h.rekod.length) throw new Error("Tiada baris data dijumpai di bawah header.");
-      hasilBaca = h;
-      const kat = {}; for (const r of h.rekod) { const k = kategori(r.status_respon_semasa); kat[k] = (kat[k] || 0) + 1; }
-      const tTidakSah = h.rekod.filter((r) => r.tarikh_terima == null).length;
-      $("semakan").innerHTML =
-        `<p><strong>${fmtN.format(h.rekod.length)}</strong> rekod dijumpai (helaian: ${esc(h.helaian)}).</p>` +
-        `<ul><li>Lajur dikenal pasti: ${LAJUR.length - h.hilang.length} / ${LAJUR.length}</li>` +
-        `<li>Kategori respon: ${KATEGORI.filter((c) => kat[c.k]).map((c) => esc(c.label.split(" ·")[0]) + " " + fmtN.format(kat[c.k])).join(", ")}</li>` +
-        `<li>Rekod tanpa Tarikh Terima: ${fmtN.format(tTidakSah)}</li></ul>` +
-        (h.hilang.includes("status_respon_semasa") ? `<p class="amaran">Lajur "Status Respon Lawatan Semasa" tidak dijumpai — kategori respon tidak dapat dikira.</p>` : "") +
-        (h.hilang.length ? `<p class="nota">Lajur tiada dalam fail ini (dibiarkan kosong): ${h.hilang.map((k) => esc(LABEL[k])).join("; ")}</p>` : "") +
-        (h.tidakDikenal.length ? `<p class="nota">Header diabaikan: ${h.tidakDikenal.map(esc).join("; ")}</p>` : "") +
-        (S.rekod.length ? `<p>Data semasa (${fmtN.format(S.rekod.length)} rekod) akan <strong>diganti</strong>.</p>` : "");
-      $("btnSahMuatNaik").disabled = false;
-    } catch (err) {
-      $("semakan").innerHTML = "";
-      $("mnRalat").textContent = err.message || String(err);
+    if (!senarai.length) return;
+    $("semakan").textContent = "Membaca " + senarai.length + " fail…";
+    const ralat = [];
+    for (const f of senarai) {
+      try {
+        const h = await bacaFail(f);
+        if (!h.rekod.length) throw new Error("tiada baris data di bawah header");
+        failDibaca.push(h);
+      } catch (err) { ralat.push(f.name + ": " + (err.message || err)); }
     }
+    $("mnRalat").textContent = ralat.length ? "Diabaikan — " + ralat.join(" | ") : "";
+    paparSemakan();
+  }
+  function paparSemakan() {
+    hasilBaca = null;
+    $("btnSahMuatNaik").disabled = true;
+    if (!failDibaca.length) { $("semakan").innerHTML = ""; return; }
+    const gabungLama = $("gabungSediaAda").checked && S.rekod.length;
+    const sumber = (gabungLama ? [{ nama: "Data sedia ada", rekod: S.rekod }] : []).concat(failDibaca);
+    const g = gabungSumber(sumber);
+    const banyak = sumber.length > 1;
+    hasilBaca = {
+      nama: (gabungLama ? [S.muatNaik?.nama_fail || "data sedia ada"] : []).concat(failDibaca.map((h) => h.nama)).join(" + ").slice(0, 500),
+      rekod: g.rekod,
+    };
+    // Lajur yang ada nilai dalam sekurang-kurangnya satu sumber
+    const adaNilai = new Set();
+    for (const r of g.rekod) for (const k in r) if (r[k] != null && r[k] !== "") adaNilai.add(k);
+    const hilang = LAJUR.map((l) => l[0]).filter((k) => !adaNilai.has(k));
+    const kat = {}; for (const r of g.rekod) { const k = kategori(r.status_respon_semasa); kat[k] = (kat[k] || 0) + 1; }
+    const tanpaSiriSemua = failDibaca.filter((h) => !h.rekod.some((r) => kunciRekod(r)));
+    const lajurDikenal = (h) => (h.lajur ? h.lajur : LAJUR.length - h.hilang.length);
+    let html = "";
+    if (banyak) {
+      html += `<table class="jadual semak-fail"><thead><tr><th>#</th><th>Sumber</th><th class="num">Rekod</th><th class="num">Lajur dikenal</th><th class="num">Padan No. Siri</th><th class="num">Baharu</th></tr></thead><tbody>` +
+        g.statistik.map((st, i) => {
+          const h = gabungLama ? (i === 0 ? null : failDibaca[i - 1]) : failDibaca[i];
+          return `<tr><td class="num">${i + 1}</td><td>${esc(st.nama)}${h ? ` <span class="nota">(${esc(h.helaian)})</span>` : ""}</td><td class="num">${fmtN.format(st.rekod)}</td>` +
+            `<td class="num">${h ? lajurDikenal(h) + " / " + LAJUR.length : "–"}</td><td class="num">${i === 0 ? "–" : fmtN.format(st.padan)}</td><td class="num">${fmtN.format(st.baharu)}</td></tr>`;
+        }).join("") + `</tbody></table>`;
+    }
+    html += `<p><strong>${fmtN.format(g.rekod.length)}</strong> rekod ${banyak ? "selepas digabung ikut <b>No. Siri</b>" : `dijumpai (helaian: ${esc(failDibaca[0].helaian)})`}.</p><ul>` +
+      `<li>Kategori respon: ${KATEGORI.filter((c) => kat[c.k]).map((c) => esc(c.label.split(" ·")[0]) + " " + fmtN.format(kat[c.k])).join(", ")}</li>` +
+      `<li>Rekod tanpa Tarikh Terima: ${fmtN.format(g.rekod.filter((r) => !r.tarikh_terima).length)}</li>` +
+      (banyak ? `<li>Nilai berbeza antara sumber: ${fmtN.format(g.konflik)}${g.konflik ? " — nilai daripada sumber yang <b>terkemudian</b> dalam senarai digunakan" : ""}</li>` : "") +
+      (g.statistik.some((st) => st.duplikat) ? `<li class="amaran">No. Siri berulang dalam fail yang sama: ${g.statistik.filter((st) => st.duplikat).map((st) => esc(st.nama) + " (" + st.duplikat + ")").join(", ")} — baris terakhir digunakan</li>` : "") +
+      (g.tanpaKunci && banyak ? `<li class="amaran">${fmtN.format(g.tanpaKunci)} baris tiada No. Siri — tidak dapat digabung, ditambah sebagai rekod berasingan</li>` : "") +
+      `</ul>` +
+      (g.contoh.length ? `<p class="nota">Contoh: ${g.contoh.map(esc).join("; ")}</p>` : "") +
+      (tanpaSiriSemua.length && banyak ? `<p class="amaran">Fail tanpa lajur No. Siri: ${tanpaSiriSemua.map((h) => esc(h.nama)).join(", ")}. Data fail ini tidak dapat dipadankan.</p>` : "") +
+      (hilang.includes("status_respon_semasa") ? `<p class="amaran">Tiada sumber yang ada "Status Respon Lawatan Semasa" — kategori respon tidak dapat dikira.</p>` : "") +
+      (hilang.length ? `<details><summary>${hilang.length} lajur tiada nilai dalam mana-mana sumber</summary><p class="nota">${hilang.map((k) => esc(LABEL[k])).join("; ")}</p></details>` : "") +
+      (failDibaca.some((h) => h.tidakDikenal.length) ? `<p class="nota">Header diabaikan: ${[...new Set(failDibaca.flatMap((h) => h.tidakDikenal))].map(esc).join("; ")}</p>` : "") +
+      (S.rekod.length && !gabungLama ? `<p>Data semasa (${fmtN.format(S.rekod.length)} rekod) akan <strong>diganti</strong>.</p>` : "");
+    $("semakan").innerHTML = html;
+    $("btnSahMuatNaik").disabled = !g.rekod.length;
+    $("btnSahMuatNaik").textContent = gabungLama ? "Gabung & simpan" : banyak ? "Gabung & ganti data" : "Ganti data";
   }
 
   async function sahMuatNaik() {
@@ -1300,11 +1385,16 @@
       toast(S.pentadbir ? "Log masuk berjaya. Anda boleh muat naik data." : "Log masuk berjaya, tetapi e-mel ini tiada kebenaran muat naik.", 5000);
     });
     $("btnMuatNaik").addEventListener("click", () => {
-      $("fail").value = ""; hasilBaca = null; $("semakan").innerHTML = ""; $("mnRalat").textContent = "";
+      $("fail").value = ""; hasilBaca = null; failDibaca = []; $("semakan").innerHTML = ""; $("mnRalat").textContent = "";
       $("btnSahMuatNaik").disabled = true;
+      $("btnSahMuatNaik").textContent = "Ganti data";
+      $("gabungSediaAda").checked = false;
+      $("gabungSediaAdaBox").hidden = !S.rekod.length;
+      $("bilSediaAda").textContent = fmtN.format(S.rekod.length);
       $("dMuatNaik").showModal();
     });
     $("fail").addEventListener("change", pilihFail);
+    $("gabungSediaAda").addEventListener("change", paparSemakan);
     const zon = document.querySelector(".zon-fail");
     ["dragenter", "dragover"].forEach((ev) => zon.addEventListener(ev, (e) => { e.preventDefault(); zon.classList.add("atas"); }));
     ["dragleave", "drop"].forEach((ev) => zon.addEventListener(ev, () => zon.classList.remove("atas")));

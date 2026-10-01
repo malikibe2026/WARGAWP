@@ -236,10 +236,15 @@
   <dialog id="dMuatNaik" class="dialog dialog-lebar">
     <div>
       <h2>Muat naik data terbaru</h2>
-      <p class="nota">Fail baharu akan <strong>menggantikan</strong> semua data semasa. Format: .xlsx, .xls atau .csv.</p>
+      <p class="nota">Format: .xlsx, .xls atau .csv. Boleh pilih <strong>beberapa fail</strong> (header berlainan pun boleh) — rekod digabung ikut <strong>No. Siri</strong>.
+        Jika nilai bercanggah, fail yang terkemudian dalam senarai digunakan.</p>
       <label class="zon-fail">
-        <input id="fail" type="file" accept=".xlsx,.xls,.csv">
-        <span>Pilih fail atau seret ke sini</span>
+        <input id="fail" type="file" accept=".xlsx,.xls,.csv" multiple>
+        <span>Pilih satu atau lebih fail, atau seret ke sini</span>
+      </label>
+      <label id="gabungSediaAdaBox" class="pilihan-gabung" hidden>
+        <input id="gabungSediaAda" type="checkbox">
+        <span><b>Gabung dengan data sedia ada</b> (<span id="bilSediaAda">0</span> rekod) — kemas kini ikut No. Siri, bukan ganti semua</span>
       </label>
       <div id="semakan" class="semakan"></div>
       <div id="kemajuan" class="kemajuan" hidden><div id="kemajuanBar"></div></div>

@@ -22,6 +22,13 @@ Klik pada mana-mana carta/peta untuk tapis silang. Tema terang/gelap. Sasaran % 
 
 Kategori kod respon: **A1** = 11 · **LK (Lain-lain Keputusan)** = 12,13,14,21,22,23,31,40 · **50** · **Kod B** = 71–77 · lain-lain · belum.
 
+## Gabung beberapa fail (kunci: No. Siri)
+- Dalam dialog muat naik, pilih **beberapa fail sekali gus** — header boleh berlainan (cth. fail status + fail nilai kewangan).
+- Rekod dipadankan ikut **No. Siri** (atau NO ID jika tiada). Sifar di depan diabaikan semasa memadan, jadi `03507000001` (teks) sepadan dengan `3507000001` (nombor Excel); paparan kekalkan sifar.
+- Sel kosong **tidak** memadam nilai sedia ada. Jika dua fail ada nilai berbeza untuk lajur sama, nilai daripada fail **terkemudian dalam senarai** digunakan; bilangan dan contoh percanggahan dipaparkan sebelum simpan.
+- Tandakan **Gabung dengan data sedia ada** untuk kemas kini data semasa (cth. fail kecil `No. Siri` + `Status Respon Lawatan Semasa`) tanpa ganti semua.
+- Rekod yang hanya ada dalam satu fail tetap dimasukkan (kesatuan). Semak lajur *Baharu* — rekod baharu daripada fail sekunder akan menambah jumlah kes.
+
 ## Peta
 Sempadan rasmi OpenDOSM (`peta/`). Nama daerah dipadankan secara automatik (abaikan huruf besar, "W.P.", "Daerah", Hulu/Ulu,
 kod 4 digit negeri+daerah). Nilai yang tidak dapat dipadankan dipaparkan dengan tanda ⚠ di bawah peta dan dalam jadual kedudukan.
