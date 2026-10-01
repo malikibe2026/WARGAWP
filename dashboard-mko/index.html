@@ -4,115 +4,221 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex, nofollow">
-  <title>Dashboard MKO</title>
+  <title>Statistik Utama Pertubuhan</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
+  <script>
+    try { const t = localStorage.getItem("sup_tema"); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
+  </script>
 </head>
 <body>
-  <header class="bar">
-    <div class="bar-kiri">
-      <button id="btnSlicer" class="ikon-btn hanya-mudah-alih" aria-label="Penapis">☰</button>
-      <div>
-        <h1 id="tajuk">Dashboard MKO</h1>
+  <header class="kepala">
+    <div class="kepala-kiri">
+      <div class="logo" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="22" height="22"><rect x="3" y="12" width="4" height="9" rx="1.2"/><rect x="10" y="7" width="4" height="14" rx="1.2"/><rect x="17" y="3" width="4" height="18" rx="1.2"/></svg>
+      </div>
+      <div class="kepala-teks">
+        <h1 id="tajuk">Dashboard Statistik Utama Pertubuhan</h1>
         <p id="info" class="info">Memuatkan data…</p>
       </div>
     </div>
-    <div class="bar-kanan">
-      <button id="btnMuatSemula" class="btn btn-hantu" title="Muat semula data">⟳ Muat semula</button>
-      <button id="btnMuatNaik" class="btn btn-utama">⬆ Muat naik fail</button>
-      <button id="btnLog" class="btn btn-hantu">Log masuk</button>
+    <div class="kepala-kanan">
+      <button id="btnTema" class="ikon" title="Tukar tema terang / gelap" aria-label="Tukar tema">
+        <svg viewBox="0 0 24 24" width="18" height="18"><path d="M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9z"/></svg>
+      </button>
+      <button id="btnMuatSemula" class="ikon" title="Muat semula data" aria-label="Muat semula">
+        <svg viewBox="0 0 24 24" width="18" height="18"><path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v5h-5" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <button id="btnMuatNaik" class="btn btn-utama" hidden>
+        <svg viewBox="0 0 24 24" width="16" height="16"><path d="M12 16V4m0 0-5 5m5-5 5 5M4 20h16" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>Muat naik data</span>
+      </button>
+      <button id="btnLog" class="btn btn-kaca">Log masuk</button>
     </div>
   </header>
 
-  <div class="susun">
-    <aside id="slicer" class="slicer" aria-label="Penapis">
-      <div class="slicer-kepala">
-        <strong>Penapis</strong>
-        <button id="btnKosong" class="pautan">Kosongkan semua</button>
-      </div>
-      <div id="slicerSenarai"></div>
-    </aside>
+  <nav class="tab" role="tablist" aria-label="Halaman laporan">
+    <button role="tab" data-hal="ringkasan" aria-selected="true">Ringkasan</button>
+    <button role="tab" data-hal="peta">Peta Daerah</button>
+    <button role="tab" data-hal="prestasi">Prestasi Pegawai</button>
+    <button role="tab" data-hal="nilai">Analisis Nilai</button>
+    <button role="tab" data-hal="rekod">Senarai Rekod</button>
+  </nav>
 
-    <main class="utama">
-      <div id="cip" class="cip-baris"></div>
+  <section class="penapis" aria-label="Penapis">
+    <div class="penapis-utama" id="penapisUtama"></div>
+    <div class="penapis-tindakan">
+      <button id="btnPenapisLain" class="btn btn-garis">
+        <svg viewBox="0 0 24 24" width="15" height="15"><path d="M3 5h18M6 12h12M10 19h4" fill="none" stroke-width="2" stroke-linecap="round"/></svg>
+        Penapis lain <span id="bilPenapisLain" class="bil" hidden></span>
+      </button>
+      <button id="btnKosong" class="pautan" hidden>Set semula</button>
+    </div>
+    <div id="cip" class="cip-baris"></div>
+  </section>
 
+  <main id="utama" class="utama">
+    <!-- RINGKASAN -->
+    <div class="halaman" data-hal="ringkasan">
       <section id="kpi" class="kpi-grid"></section>
-
-      <section class="grid">
-        <div class="kad lebar">
-          <div class="kad-kepala">
-            <h2>Kemajuan respon ikut <select id="pilihDimensi" aria-label="Pecahan ikut"></select></h2>
-            <div class="alat-kecil">
-              <label><input id="modPeratus" type="checkbox"> Peratus</label>
-              <label>Sasaran <input id="sasaran" type="number" min="0" max="100" step="1" value="45">%</label>
-              <span class="nota">Klik bar untuk tapis</span>
-            </div>
-          </div>
-          <div id="cDimensi" class="carta carta-tinggi"></div>
-        </div>
-
-        <div class="kad">
-          <div class="kad-kepala"><h2>Status Respon Lawatan Semasa</h2></div>
+      <section class="grid g-12">
+        <article class="kad s-8">
+          <header class="kad-kepala"><div><h2>Komposisi status respon</h2><p class="kad-sub">Status Respon Lawatan Semasa · klik untuk tapis</p></div></header>
+          <div id="cKomposisi" class="carta carta-komposisi"></div>
           <div id="cStatus" class="carta"></div>
-        </div>
-
-        <div class="kad">
-          <div class="kad-kepala"><h2>Kumulatif borang diterima</h2><span class="nota">ikut Tarikh Terima</span></div>
+        </article>
+        <article class="kad s-4 kad-penemuan">
+          <header class="kad-kepala"><div><h2>Penemuan utama</h2><p class="kad-sub">Dijana automatik daripada tapisan semasa</p></div></header>
+          <ul id="penemuan" class="penemuan"></ul>
+        </article>
+        <article class="kad s-6">
+          <header class="kad-kepala"><div><h2>Kemajuan borang diterima</h2><p class="kad-sub">Kumulatif ikut Tarikh Terima</p></div></header>
           <div id="cTarikh" class="carta"></div>
-        </div>
-
-        <div class="kad">
-          <div class="kad-kepala"><h2>Cara Terima</h2></div>
-          <div id="cCara" class="carta"></div>
-        </div>
-
-        <div class="kad">
-          <div class="kad-kepala"><h2>Status Rekod</h2></div>
-          <div id="cRekod" class="carta"></div>
-        </div>
-
-        <div class="kad">
-          <div class="kad-kepala"><h2>10 Kod Industri (3 digit) teratas</h2></div>
-          <div id="cMsic" class="carta"></div>
-        </div>
-
-        <div class="kad">
-          <div class="kad-kepala"><h2>Status respon: sebelum → semasa</h2><span class="nota">kategori</span></div>
+        </article>
+        <article class="kad s-6">
+          <header class="kad-kepala"><div><h2>Kadar respons ikut sektor</h2><p class="kad-sub">% kes yang ada kod respon · klik untuk tapis</p></div></header>
+          <div id="cSektor" class="carta"></div>
+        </article>
+        <article class="kad s-4">
+          <header class="kad-kepala"><div><h2>Cara terima</h2></div></header>
+          <div id="cCara" class="carta carta-kecil"></div>
+        </article>
+        <article class="kad s-4">
+          <header class="kad-kepala"><div><h2>Saiz pertubuhan (PMKS)</h2></div></header>
+          <div id="cPmks" class="carta carta-kecil"></div>
+        </article>
+        <article class="kad s-4">
+          <header class="kad-kepala"><div><h2>Peralihan status</h2><p class="kad-sub">Sebelum ↓ · Semasa →</p></div></header>
           <div id="matriks" class="matriks-bungkus"></div>
-        </div>
-
-        <div class="kad lebar">
-          <div class="kad-kepala">
-            <h2>Perbandingan nilai penyiasatan</h2>
-            <span class="nota">Jumlah bagi rekod yang ada nilai sebelum <em>dan</em> semasa</span>
-          </div>
-          <div class="jadual-bungkus"><table id="tKewangan" class="jadual"></table></div>
-        </div>
-
-        <div class="kad lebar">
-          <div class="kad-kepala">
-            <h2>Senarai rekod <span id="bilRekod" class="nota"></span></h2>
-            <div class="alat">
-              <input id="cari" type="search" placeholder="Cari No. Siri / nama / FE…" aria-label="Cari rekod">
-              <button id="btnEksport" class="btn btn-hantu">⬇ CSV</button>
-            </div>
-          </div>
-          <div class="jadual-bungkus"><table id="tRekod" class="jadual jadual-rekod"></table></div>
-          <div class="halaman">
-            <button id="pgSebelum" class="btn btn-hantu">‹</button>
-            <span id="pgInfo"></span>
-            <button id="pgSelepas" class="btn btn-hantu">›</button>
-          </div>
-        </div>
+        </article>
       </section>
+    </div>
 
-      <div id="kosong" class="kosong" hidden>
-        <h2>Belum ada data</h2>
-        <p>Log masuk sebagai pentadbir, kemudian klik <strong>Muat naik fail</strong> (Excel .xlsx atau CSV export MKO).</p>
+    <!-- PETA -->
+    <div class="halaman" data-hal="peta" hidden>
+      <section class="grid g-12">
+        <article class="kad s-8 kad-peta">
+          <header class="kad-kepala">
+            <div><h2>Peta daerah pentadbiran</h2><p class="kad-sub" id="petaSub">Klik daerah untuk tapis</p></div>
+            <div class="kawalan">
+              <div class="segmen" id="segPetaAras" role="group" aria-label="Aras peta">
+                <button data-v="lokasi" aria-pressed="true">Daerah lokasi</button>
+                <button data-v="pos">Daerah pos</button>
+                <button data-v="negeri">Negeri</button>
+              </div>
+              <select id="pilihUkuranPeta" aria-label="Ukuran peta">
+                <option value="kadar">Kadar respons (%)</option>
+                <option value="jumlah">Jumlah kes</option>
+                <option value="siap">Kes siap</option>
+                <option value="belum">Belum ada respon</option>
+                <option value="a1">A1 (%)</option>
+              </select>
+            </div>
+          </header>
+          <div id="cPeta" class="carta carta-peta"></div>
+          <p id="petaNota" class="nota"></p>
+        </article>
+        <article class="kad s-4">
+          <header class="kad-kepala"><div><h2>Kedudukan</h2><p class="kad-sub" id="kedudukanSub"></p></div></header>
+          <div class="jadual-bungkus jadual-tinggi"><table id="tKedudukan" class="jadual"></table></div>
+        </article>
+      </section>
+    </div>
+
+    <!-- PRESTASI -->
+    <div class="halaman" data-hal="prestasi" hidden>
+      <section class="grid g-12">
+        <article class="kad s-12">
+          <header class="kad-kepala">
+            <div><h2>Kemajuan respon ikut <select id="pilihDimensi" class="pilih-tajuk" aria-label="Pecahan ikut"></select></h2>
+              <p class="kad-sub">Bar disusun ikut % siap · garis merah = sasaran · klik bar untuk tapis</p></div>
+            <div class="kawalan">
+              <div class="segmen" id="segPeratus" role="group" aria-label="Unit">
+                <button data-v="1" aria-pressed="true">Peratus</button>
+                <button data-v="0">Bilangan</button>
+              </div>
+              <label class="sasaran">Sasaran <input id="sasaran" type="number" min="0" max="100" step="1" value="45"> %</label>
+            </div>
+          </header>
+          <div id="cDimensi" class="carta"></div>
+        </article>
+        <article class="kad s-12">
+          <header class="kad-kepala"><div><h2>Kad skor</h2><p class="kad-sub" id="skorSub"></p></div>
+            <button id="btnEksportSkor" class="btn btn-garis">Eksport CSV</button></header>
+          <div class="jadual-bungkus"><table id="tSkor" class="jadual"></table></div>
+        </article>
+      </section>
+    </div>
+
+    <!-- NILAI -->
+    <div class="halaman" data-hal="nilai" hidden>
+      <section class="grid g-12">
+        <article class="kad s-12">
+          <header class="kad-kepala"><div><h2>Perbandingan nilai penyiasatan</h2>
+            <p class="kad-sub">Rekod padan = ada nilai sebelum <em>dan</em> semasa. Median perubahan kurang terpengaruh oleh nilai ekstrem.</p></div></header>
+          <div class="jadual-bungkus"><table id="tKewangan" class="jadual"></table></div>
+        </article>
+        <article class="kad s-7">
+          <header class="kad-kepala">
+            <div><h2>Sebelum vs semasa</h2><p class="kad-sub">Skala log · titik jauh dari garis pepenjuru = perubahan besar</p></div>
+            <select id="pilihUkuranSerak" aria-label="Pemboleh ubah"></select>
+          </header>
+          <div id="cSerak" class="carta carta-tinggi"></div>
+        </article>
+        <article class="kad s-5">
+          <header class="kad-kepala">
+            <div><h2>Kes perlu semakan</h2><p class="kad-sub">Perubahan melebihi ambang · klik untuk butiran</p></div>
+            <label class="sasaran">Ambang ± <input id="ambang" type="number" min="5" max="1000" step="5" value="50"> %</label>
+          </header>
+          <div class="jadual-bungkus jadual-tinggi"><table id="tSemakan" class="jadual jadual-klik"></table></div>
+        </article>
+      </section>
+    </div>
+
+    <!-- REKOD -->
+    <div class="halaman" data-hal="rekod" hidden>
+      <article class="kad">
+        <header class="kad-kepala">
+          <div><h2>Senarai rekod <span id="bilRekod" class="kad-sub"></span></h2></div>
+          <div class="kawalan">
+            <input id="cari" type="search" class="cari" placeholder="Cari No. Siri, nama atau pegawai…" aria-label="Cari rekod">
+            <button id="btnEksport" class="btn btn-garis">Eksport CSV</button>
+          </div>
+        </header>
+        <div class="jadual-bungkus"><table id="tRekod" class="jadual jadual-klik"></table></div>
+        <div class="muka">
+          <button id="pgSebelum" class="btn btn-garis" aria-label="Sebelum">‹</button>
+          <span id="pgInfo"></span>
+          <button id="pgSelepas" class="btn btn-garis" aria-label="Selepas">›</button>
+        </div>
+      </article>
+    </div>
+
+    <div id="kosong" class="kosong" hidden>
+      <div class="kosong-ikon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="40" height="40"><rect x="3" y="12" width="4" height="9" rx="1.2"/><rect x="10" y="7" width="4" height="14" rx="1.2"/><rect x="17" y="3" width="4" height="18" rx="1.2"/></svg>
       </div>
-    </main>
-  </div>
+      <h2>Belum ada data</h2>
+      <p>Log masuk sebagai pentadbir, kemudian klik <strong>Muat naik data</strong> dan pilih export MKO (Excel atau CSV).</p>
+    </div>
+  </main>
 
-  <!-- Log masuk -->
+  <footer class="kaki">
+    <span>Kategori respon: A1 = 11 · LK (Lain-lain Keputusan) = 12, 13, 14, 21, 22, 23, 31, 40 · 50 = Salah Penyiasatan · Kod B = 71–77</span>
+    <span id="kakiMasa"></span>
+  </footer>
+
+  <!-- Laci penapis lain -->
+  <aside id="laci" class="laci" aria-label="Penapis lain" hidden>
+    <div class="laci-kepala"><strong>Penapis lain</strong><button class="ikon" data-tutup-laci aria-label="Tutup">✕</button></div>
+    <div id="laciIsi" class="laci-isi"></div>
+  </aside>
+  <div id="laciLatar" class="laci-latar" hidden></div>
+
+  <div id="popover" class="popover" hidden></div>
+
   <dialog id="dLog" class="dialog">
     <form id="fLog" method="dialog">
       <h2>Log masuk pentadbir</h2>
@@ -121,29 +227,30 @@
       <label>Kata laluan <input id="logKata" type="password" required autocomplete="current-password"></label>
       <p id="logRalat" class="ralat"></p>
       <div class="dialog-butang">
-        <button type="button" class="btn btn-hantu" data-tutup>Batal</button>
+        <button type="button" class="btn btn-garis" data-tutup>Batal</button>
         <button type="submit" class="btn btn-utama">Log masuk</button>
       </div>
     </form>
   </dialog>
 
-  <!-- Muat naik -->
   <dialog id="dMuatNaik" class="dialog dialog-lebar">
     <div>
       <h2>Muat naik data terbaru</h2>
-      <p class="nota">Fail baharu akan <strong>menggantikan</strong> semua data semasa. Format: .xlsx, .xls atau .csv (baris pertama = header).</p>
-      <input id="fail" type="file" accept=".xlsx,.xls,.csv">
+      <p class="nota">Fail baharu akan <strong>menggantikan</strong> semua data semasa. Format: .xlsx, .xls atau .csv.</p>
+      <label class="zon-fail">
+        <input id="fail" type="file" accept=".xlsx,.xls,.csv">
+        <span>Pilih fail atau seret ke sini</span>
+      </label>
       <div id="semakan" class="semakan"></div>
       <div id="kemajuan" class="kemajuan" hidden><div id="kemajuanBar"></div></div>
       <p id="mnRalat" class="ralat"></p>
       <div class="dialog-butang">
-        <button type="button" class="btn btn-hantu" data-tutup>Tutup</button>
+        <button type="button" class="btn btn-garis" data-tutup>Tutup</button>
         <button id="btnSahMuatNaik" type="button" class="btn btn-utama" disabled>Ganti data</button>
       </div>
     </div>
   </dialog>
 
-  <!-- Butiran rekod -->
   <dialog id="dButiran" class="dialog dialog-lebar">
     <div>
       <h2 id="butiranTajuk"></h2>

@@ -1,4 +1,4 @@
-// Dashboard MKO — baca data aktif dari Supabase, tapis silang ala Power BI, muat naik fail ganti data.
+// Dashboard Statistik Utama Pertubuhan — data aktif dari Supabase, tapis silang ala Power BI, peta daerah, muat naik fail ganti data.
 (function () {
   "use strict";
   const cfg = window.MKO_CONFIG || {};
@@ -117,7 +117,7 @@
   // ---------- Kategori status respon (kod MKO) ----------
   const KATEGORI = [
     { k: "A1", label: "A1 · Lengkap (11)", warna: "--s1" },
-    { k: "LK", label: "LK · Layak Kira", warna: "--s3" },
+    { k: "LK", label: "LK · Lain-lain Keputusan", warna: "--s3" },
     { k: "50", label: "50 · Salah Penyiasatan", warna: "--s7" },
     { k: "KodB", label: "Kod B · Dalam proses (71–77)", warna: "--s4" },
     { k: "Lain", label: "Kod lain", warna: "--s5" },
@@ -140,24 +140,29 @@
   const S = {
     rekod: [], muatNaik: null, pentadbir: false, sesi: null,
     tapis: {},             // dim -> Set(nilai)
-    dimensi: null, peratus: false, sasaran: 45,
+    hal: "ringkasan",
+    dimensi: null, peratus: true, sasaran: 45, ambang: 50, ukuranSerak: "pendapatan",
+    petaAras: "lokasi", petaUkuran: "kadar",
     cari: "", halaman: 0, susunK: null, susunArah: 1,
     carta: {},
   };
   const KOSONG = "(Tiada)";
-  const SLICER = [
-    ["_kat", "Kategori Respon"],
-    ["pegawai_kerja_luar", "Pegawai Kerja Luar"],
-    ["penyelia", "Penyelia"],
-    ["pegawai", "Pegawai"],
-    ["pejabat_operasi", "Pejabat Perangkaan / Operasi"],
-    ["daerah_lokasi_semasa", "Daerah Lokasi (Semasa)"],
-    ["daerah_pos_semasa", "Daerah Pos (Semasa)"],
-    ["kod_survei", "Kod Banci / Survei"],
+  // Penapis utama (sentiasa kelihatan) dan penapis lain (dalam laci)
+  const PENAPIS_UTAMA = [
     ["sektor", "Sektor"],
     ["subsektor", "Subsektor"],
-    ["msic_3", "Kod Industri 3 digit"],
+    ["pegawai_kerja_luar", "Pegawai Kerja Luar"],
+  ];
+  const PENAPIS_LAIN = [
+    ["_kat", "Kategori Respon"],
+    ["penyelia", "Penyelia"],
+    ["pegawai", "Pegawai"],
+    ["daerah_lokasi_semasa", "Daerah Lokasi (Semasa)"],
+    ["daerah_pos_semasa", "Daerah Pos (Semasa)"],
     ["pmks", "PMKS"],
+    ["msic_3", "Kod Industri 3 digit"],
+    ["pejabat_operasi", "Pejabat Perangkaan / Operasi"],
+    ["kod_survei", "Kod Survei"],
     ["jenis_sampel", "Jenis Sampel"],
     ["daftar_kes", "Daftar Kes"],
     ["bbu_sbu", "BBU / SBU"],
@@ -169,6 +174,9 @@
     ["negeri", "Negeri"],
     ["siri_kekerapan", "Siri Kekerapan"],
   ];
+  const SEMUA_PENAPIS = PENAPIS_UTAMA.concat(PENAPIS_LAIN);
+  const LABEL_DIM = Object.fromEntries(SEMUA_PENAPIS);
+  LABEL_DIM._petaDaerah = "Daerah (peta)";
   const DIMENSI = [
     ["pegawai_kerja_luar", "Pegawai Kerja Luar"],
     ["penyelia", "Penyelia"],
@@ -192,6 +200,7 @@
     return v == null || v === "" ? KOSONG : String(v);
   };
   const labelNilai = (d, v) => (d === "_kat" ? KAT_LABEL[v] || v : v);
+  const adaLajur = (k) => S.rekod.some((r) => r[k] != null && r[k] !== "");
 
   // ---------- Utiliti ----------
   const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) =>
@@ -217,6 +226,37 @@
     const [y, m, d] = String(iso).slice(0, 10).split("-");
     return d + "/" + m + "/" + y;
   }
+  const median = (a) => {
+    if (!a.length) return NaN;
+    const s = a.slice().sort((x, y) => x - y), m = s.length >> 1;
+    return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+  };
+  function kiraKat(R) {
+    const o = { _n: R.length };
+    for (const c of KATEGORI) o[c.k] = 0;
+    for (const r of R) o[r._kat]++;
+    o.siap = o._n - o.Belum;
+    return o;
+  }
+  function kumpulKat(R, fnKunci) {
+    const m = new Map();
+    for (const r of R) {
+      const k = fnKunci(r);
+      if (k == null) continue;
+      if (!m.has(k)) m.set(k, []);
+      m.get(k).push(r);
+    }
+    return m;
+  }
+  function unduh(nama, baris) {
+    const sel = (v) => { const s = v == null ? "" : String(v); return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+    const blob = new Blob(["﻿" + baris.map((b) => b.map(sel).join(",")).join("\r\n")], { type: "text/csv;charset=utf-8" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = nama;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  }
 
   // ---------- Muat data ----------
   async function muatData(senyap) {
@@ -226,6 +266,7 @@
       if (e1) throw e1;
       const aktif = mn && mn[0];
       if (senyap && aktif && S.muatNaik && aktif.id === S.muatNaik.id) return;
+      if (senyap && !aktif && !S.muatNaik) return;
       S.muatNaik = aktif || null;
       if (!aktif) { S.rekod = []; papar(); return; }
       $("info").textContent = "Memuatkan " + fmtN.format(aktif.bil_rekod) + " rekod…";
@@ -240,6 +281,7 @@
       }
       for (const r of semua) r._kat = kategori(r.status_respon_semasa);
       S.rekod = semua;
+      S.geoCache = null;
       sediaDimensi();
       bersihTapisLapuk();
       papar();
@@ -249,7 +291,6 @@
       $("info").textContent = "Gagal memuatkan data: " + (e.message || e);
     }
   }
-  // Pilihan "ikut" hanya untuk lajur yang ada >1 nilai dalam data semasa
   function sediaDimensi() {
     const ada = DIMENSI.filter(([k]) => new Set(S.rekod.map((r) => nilaiDim(r, k))).size > 1);
     const senarai = ada.length ? ada : DIMENSI.slice(0, 1);
@@ -257,10 +298,15 @@
     const pilih = $("pilihDimensi");
     pilih.innerHTML = senarai.map(([k, l]) => `<option value="${k}">${esc(l)}</option>`).join("");
     pilih.value = S.dimensi;
-    lajurJadual = LAJUR_JADUAL.filter(([k]) => S.rekod.some((r) => r[k] != null && r[k] !== ""));
+    lajurJadual = LAJUR_JADUAL.filter(([k]) => adaLajur(k));
+    const uk = UKURAN.filter(([k]) => adaLajur(k + "_semasa") || adaLajur(k + "_sebelum"));
+    $("pilihUkuranSerak").innerHTML = (uk.length ? uk : UKURAN).map(([k, l]) => `<option value="${k}">${esc(l)}</option>`).join("");
+    if (!uk.some(([k]) => k === S.ukuranSerak) && uk.length) S.ukuranSerak = uk[0][0];
+    $("pilihUkuranSerak").value = S.ukuranSerak;
   }
   function bersihTapisLapuk() {
     for (const d of Object.keys(S.tapis)) {
+      if (d === "_petaDaerah") { delete S.tapis[d]; continue; }
       const ada = new Set(S.rekod.map((r) => nilaiDim(r, d)));
       for (const v of [...S.tapis[d]]) if (!ada.has(v)) S.tapis[d].delete(v);
       if (!S.tapis[d].size) delete S.tapis[d];
@@ -276,179 +322,202 @@
     return true;
   }
   const ditapis = (kecuali) => S.rekod.filter((r) => lulus(r, kecuali));
-  function togolTapis(d, v, tunggal) {
-    const s = S.tapis[d] || new Set();
-    if (tunggal && !(s.size === 1 && s.has(v))) { s.clear(); s.add(v); }
-    else if (s.has(v)) s.delete(v); else s.add(v);
-    if (s.size) S.tapis[d] = s; else delete S.tapis[d];
+  function setTapis(d, nilai) {
+    if (nilai && nilai.size) S.tapis[d] = nilai; else delete S.tapis[d];
     S.halaman = 0;
     papar();
+  }
+  // Klik pada carta: pilih satu nilai sahaja; klik lagi untuk buang
+  function klikTapis(d, nilai) {
+    const v = [].concat(nilai);
+    const s = S.tapis[d];
+    const sama = s && s.size === v.length && v.every((x) => s.has(x));
+    setTapis(d, sama ? null : new Set(v));
   }
 
   // ---------- Paparan ----------
   function papar() {
     const mn = S.muatNaik;
     $("info").textContent = mn
-      ? "Data: " + (mn.nama_fail || "–") + " · " + fmtN.format(S.rekod.length) + " rekod · dikemas kini " +
+      ? (mn.nama_fail || "–") + " · " + fmtN.format(S.rekod.length) + " rekod · dikemas kini " +
         new Date(mn.created_at).toLocaleString("ms-MY", { dateStyle: "medium", timeStyle: "short" })
       : "Belum ada data dimuat naik";
     const ada = S.rekod.length > 0;
     $("kosong").hidden = ada;
-    document.querySelector(".grid").hidden = !ada;
-    $("kpi").hidden = !ada;
-    paparSlicer();
-    paparCip();
+    document.querySelectorAll(".halaman").forEach((el) => (el.hidden = !ada || el.dataset.hal !== S.hal));
+    document.querySelector(".penapis").hidden = !ada;
+    paparPenapis();
     if (!ada) return;
+    paparHalaman();
+    if (!$("popover").hidden) paparPopover();
+  }
+  function paparHalaman() {
     const R = ditapis();
-    paparKpi(R);
-    cartaDimensi(R);
-    cartaStatus(R);
-    cartaTarikh(R);
-    cartaBar("cCara", R, "cara_terima", 12);
-    cartaBar("cRekod", R, "status_rekod", 12);
-    cartaBar("cMsic", R, "msic_3", 10);
-    paparMatriks(R);
-    paparKewangan(R);
-    paparRekod(R);
+    if (S.hal === "ringkasan") {
+      paparKpi(R); cartaKomposisi(R); cartaStatus(R); cartaTarikh(R); cartaKadarIkut(R);
+      cartaBar("cCara", R, "cara_terima", 8);
+      cartaBar("cPmks", R, adaLajur("pmks") ? "pmks" : "bbu_sbu", 8);
+      paparMatriks(R); paparPenemuan(R);
+    } else if (S.hal === "peta") paparPeta(R);
+    else if (S.hal === "prestasi") { cartaDimensi(R); paparSkor(R); }
+    else if (S.hal === "nilai") { paparKewangan(R); cartaSerak(R); paparSemakan(R); }
+    else if (S.hal === "rekod") paparRekod(R);
+    requestAnimationFrame(() => Object.values(S.carta).forEach((c) => {
+      if (c.getDom().offsetParent) c.resize();
+    }));
   }
 
-  function paparKpi(R) {
-    const n = R.length;
-    const kira = {}; for (const c of KATEGORI) kira[c.k] = 0;
-    for (const r of R) kira[r._kat]++;
-    const siap = n - kira.Belum;
-    const terima = R.filter((r) => r.tarikh_terima).length;
-    const kad = [
-      ["Jumlah kes", fmtN.format(n), "rekod dalam tapisan", null, "--ink-2"],
-      ["Siap (ada kod respon)", fmtN.format(siap), fmtP(siap / n) + " daripada jumlah", siap / n, "--s1"],
-      ["A1 · Lengkap", fmtN.format(kira.A1), fmtP(kira.A1 / n), kira.A1 / n, "--s1"],
-      ["LK · Layak Kira", fmtN.format(kira.LK), fmtP(kira.LK / n), kira.LK / n, "--s3"],
-      ["Kod B · Dalam proses", fmtN.format(kira.KodB), fmtP(kira.KodB / n), kira.KodB / n, "--s4"],
-      ["Borang diterima", fmtN.format(terima), "ada Tarikh Terima · " + fmtP(terima / n), terima / n, "--s7"],
-    ];
-    $("kpi").innerHTML = kad.map(([l, v, s, p, c]) =>
-      `<div class="kpi" style="--c:var(${c})"><div class="label">${esc(l)}</div><div class="nilai">${v}</div>` +
-      `<div class="sub">${esc(s)}</div>${p == null ? "" : `<div class="meter"><div style="width:${Math.min(100, p * 100)}%"></div></div>`}</div>`
-    ).join("");
+  // ---------- Penapis (dropdown + laci) ----------
+  function teksPilihan(d) {
+    const s = S.tapis[d];
+    if (!s || !s.size) return "Semua";
+    const v = [...s].map((x) => labelNilai(d, x));
+    return v.length === 1 ? v[0] : v.length + " dipilih";
   }
-
-  function paparSlicer() {
-    const bekas = $("slicerSenarai");
-    const buka = new Set([...bekas.querySelectorAll("details[open]")].map((x) => x.dataset.d));
-    const cariLama = {};
-    bekas.querySelectorAll("input[type=search]").forEach((i) => (cariLama[i.dataset.d] = i.value));
-    const html = [];
-    for (const [d, label] of SLICER) {
-      const asas = ditapis(d);
-      const kira = new Map();
-      for (const r of S.rekod) kira.set(nilaiDim(r, d), 0);
-      if (kira.size <= 1 && !S.tapis[d]) continue;   // tiada pilihan bermakna
-      for (const r of asas) { const v = nilaiDim(r, d); kira.set(v, kira.get(v) + 1); }
-      let nilai = [...kira.keys()];
-      if (d === "_kat") nilai = KATEGORI.map((c) => c.k).filter((k) => kira.has(k));
-      else nilai.sort((a, b) => kira.get(b) - kira.get(a) || a.localeCompare(b, "ms", { numeric: true }));
-      const pilih = S.tapis[d];
-      const q = (cariLama[d] || "").toLowerCase();
-      const item = nilai.filter((v) => !q || labelNilai(d, v).toLowerCase().includes(q)).map((v) =>
-        `<label class="sl-item${kira.get(v) ? "" : " sifar"}"><input type="checkbox" data-d="${d}" value="${esc(v)}"${pilih && pilih.has(v) ? " checked" : ""}>` +
-        `<span class="t" title="${esc(labelNilai(d, v))}">${esc(labelNilai(d, v))}</span><span class="n">${fmtN.format(kira.get(v))}</span></label>`
-      ).join("");
-      html.push(`<details class="sl" data-d="${d}"${buka.has(d) || pilih ? " open" : ""}><summary><span>${esc(label)}</span>` +
-        `${pilih ? `<span class="aktif">${pilih.size} dipilih</span>` : `<span class="nota">${nilai.length}</span>`}</summary>` +
-        `<div class="sl-badan">${nilai.length > 8 ? `<input type="search" data-d="${d}" placeholder="Cari…" value="${esc(cariLama[d] || "")}">` : ""}` +
-        `<div class="sl-senarai">${item}</div></div></details>`);
-    }
-    bekas.innerHTML = html.join("") || '<p class="nota">Tiada penapis.</p>';
+  function htmlDd(d, label) {
+    const aktif = S.tapis[d] && S.tapis[d].size;
+    const kosong = !adaLajur(d) && d !== "_kat";
+    return `<button type="button" class="dd${aktif ? " aktif" : ""}" data-dd="${d}"${kosong ? ' disabled title="Lajur ini tiada dalam data"' : ""}>` +
+      `<span class="dd-label">${esc(label)}</span><span class="dd-nilai">${kosong ? "Tiada data" : esc(teksPilihan(d))}</span></button>`;
   }
-
-  function paparCip() {
+  function paparPenapis() {
+    $("penapisUtama").innerHTML = PENAPIS_UTAMA.map(([d, l]) => htmlDd(d, l)).join("");
+    const lain = PENAPIS_LAIN.filter(([d]) => d === "_kat" || new Set(S.rekod.map((r) => nilaiDim(r, d))).size > 1 || S.tapis[d]);
+    $("laciIsi").innerHTML = lain.map(([d, l]) => htmlDd(d, l)).join("") || '<p class="nota">Tiada penapis tambahan.</p>';
+    const bilLain = Object.keys(S.tapis).filter((d) => !PENAPIS_UTAMA.some(([k]) => k === d)).length;
+    $("bilPenapisLain").hidden = !bilLain;
+    $("bilPenapisLain").textContent = bilLain;
+    $("btnKosong").hidden = !Object.keys(S.tapis).length;
+    // Cip untuk penapis yang datang dari klik carta / laci
     const c = [];
     for (const d in S.tapis) {
-      const label = (SLICER.find((x) => x[0] === d) || [d, d])[1];
-      const v = [...S.tapis[d]].map((x) => labelNilai(d, x));
-      c.push(`<span class="cip"><strong>${esc(label)}:</strong> ${esc(v.length > 3 ? v.slice(0, 3).join(", ") + " +" + (v.length - 3) : v.join(", "))}` +
+      if (PENAPIS_UTAMA.some(([k]) => k === d)) continue;
+      const v = d === "_petaDaerah" ? [S.petaLabelTapis || "daerah dipilih"] : [...S.tapis[d]].map((x) => labelNilai(d, x));
+      c.push(`<span class="cip"><strong>${esc(LABEL_DIM[d] || d)}:</strong> ${esc(v.length > 3 ? v.slice(0, 3).join(", ") + " +" + (v.length - 3) : v.join(", "))}` +
         `<button data-buang="${d}" aria-label="Buang penapis">×</button></span>`);
     }
     $("cip").innerHTML = c.join("");
   }
 
+  let ddAktif = null;
+  function bukaPopover(btn) {
+    ddAktif = btn.dataset.dd;
+    const pv = $("popover");
+    pv.hidden = false;
+    pv.innerHTML = `<div class="pv-atas"><input type="search" placeholder="Cari ${esc(LABEL_DIM[ddAktif] || "")}…" aria-label="Cari pilihan"></div>` +
+      `<div class="pv-senarai"></div><div class="pv-bawah"><button class="pautan" data-pv="semua">Pilih semua</button><button class="pautan" data-pv="kosong">Kosongkan</button></div>`;
+    const r = btn.getBoundingClientRect();
+    const lebar = Math.max(280, r.width);
+    pv.style.width = lebar + "px";
+    pv.style.left = Math.min(r.left, window.innerWidth - lebar - 12) + "px";
+    pv.style.top = Math.min(r.bottom + 6, window.innerHeight - 240) + "px";
+    paparPopover();
+    pv.querySelector("input").focus();
+  }
+  function tutupPopover() { $("popover").hidden = true; ddAktif = null; }
+  function nilaiPopover() {
+    const d = ddAktif;
+    const kira = new Map();
+    for (const r of S.rekod) kira.set(nilaiDim(r, d), 0);
+    for (const r of ditapis(d)) { const v = nilaiDim(r, d); kira.set(v, kira.get(v) + 1); }
+    let nilai = [...kira.keys()];
+    if (d === "_kat") nilai = KATEGORI.map((c) => c.k).filter((k) => kira.has(k));
+    else nilai.sort((a, b) => (kira.get(b) > 0) - (kira.get(a) > 0) || a.localeCompare(b, "ms", { numeric: true }));
+    return { nilai, kira };
+  }
+  function paparPopover() {
+    if (!ddAktif) return;
+    const pv = $("popover");
+    const q = (pv.querySelector("input").value || "").toLowerCase();
+    const { nilai, kira } = nilaiPopover();
+    const pilih = S.tapis[ddAktif];
+    pv.querySelector(".pv-senarai").innerHTML = nilai.filter((v) => !q || labelNilai(ddAktif, v).toLowerCase().includes(q)).map((v) =>
+      `<label class="opsyen${kira.get(v) ? "" : " sifar"}"><input type="checkbox" value="${esc(v)}"${pilih && pilih.has(v) ? " checked" : ""}>` +
+      `<span class="t" title="${esc(labelNilai(ddAktif, v))}">${esc(labelNilai(ddAktif, v))}</span><span class="n">${fmtN.format(kira.get(v))}</span></label>`
+    ).join("") || '<p class="nota" style="padding:8px">Tiada padanan.</p>';
+  }
+
+  // ---------- KPI ----------
+  function paparKpi(R) {
+    const k = kiraKat(R), n = k._n || 1;
+    const kadar = k.siap / n;
+    const C = 2 * Math.PI * 40;
+    const sas = S.sasaran;
+    const hero = `<div class="kpi kpi-hero">
+      <svg class="cincin" viewBox="0 0 100 100" role="img" aria-label="Kadar respons ${fmtP(kadar)}">
+        <circle class="lat" cx="50" cy="50" r="40" fill="none" stroke-width="10"/>
+        <circle class="isi" cx="50" cy="50" r="40" fill="none" stroke-width="10" stroke-linecap="round"
+          stroke-dasharray="${C}" stroke-dashoffset="${C * (1 - Math.min(1, kadar))}" transform="rotate(-90 50 50)"/>
+        <text x="50" y="57" text-anchor="middle">${Math.round(kadar * 100)}%</text>
+      </svg>
+      <div><div class="label">Kadar respons</div>
+        <div class="nilai">${fmtN.format(k.siap)} <span style="font-size:15px;color:var(--muted);font-weight:600">/ ${fmtN.format(k._n)}</span></div>
+        <div class="sub">${sas ? (kadar * 100 >= sas ? `<span class="naik">✓ Capai sasaran ${sas}%</span>` :
+          `Perlu <b>${fmtN.format(Math.max(0, Math.ceil(sas / 100 * k._n) - k.siap))}</b> kes lagi untuk ${sas}%`) : "kes ada kod respon"}</div></div></div>`;
+    const kad = [
+      ["Jumlah pertubuhan", fmtN.format(k._n), "dalam tapisan semasa", null, "--ink-2"],
+      ["A1 · Lengkap", fmtN.format(k.A1), fmtP(k.A1 / n) + " daripada jumlah", k.A1 / n, "--s1"],
+      ["LK · Lain-lain Keputusan", fmtN.format(k.LK), fmtP(k.LK / n) + " daripada jumlah", k.LK / n, "--s3"],
+      ["Kod B · Dalam proses", fmtN.format(k.KodB), fmtP(k.KodB / n) + " · perlu susulan", k.KodB / n, "--s4"],
+      ["Belum ada respon", fmtN.format(k.Belum), fmtP(k.Belum / n) + " daripada jumlah", k.Belum / n, "--s0"],
+    ];
+    $("kpi").innerHTML = hero + kad.map(([l, v, s, p, c]) =>
+      `<div class="kpi" style="--c:var(${c})"><div class="label"><i></i>${esc(l)}</div><div class="nilai">${v}</div>` +
+      `<div class="sub">${esc(s)}</div>${p == null ? "" : `<div class="meter"><div style="width:${Math.min(100, p * 100)}%"></div></div>`}</div>`
+    ).join("");
+  }
+
   // ---------- Carta ----------
   function carta(id) {
-    if (!S.carta[id]) {
-      S.carta[id] = echarts.init($(id), null, { renderer: "svg" });
-    }
+    const el = $(id);
+    if (!S.carta[id] || S.carta[id].getDom() !== el) S.carta[id] = echarts.init(el, null, { renderer: "svg" });
     return S.carta[id];
+  }
+  function tooltipAsas() {
+    return {
+      backgroundColor: css("--surface"), borderColor: css("--border-strong"), borderWidth: 1, padding: [8, 12],
+      textStyle: { color: css("--ink"), fontSize: 12.5, fontFamily: "Inter, system-ui, sans-serif" },
+      extraCssText: "box-shadow:0 8px 24px rgba(16,24,40,.16);border-radius:10px;",
+    };
   }
   function asasTema() {
     return {
-      textStyle: { fontFamily: "system-ui, -apple-system, Segoe UI, sans-serif", color: css("--ink-2") },
-      tooltip: {
-        backgroundColor: css("--surface"), borderColor: css("--border"), textStyle: { color: css("--ink"), fontSize: 12 },
-        extraCssText: "box-shadow:0 4px 16px rgba(0,0,0,.15);border-radius:6px;",
-      },
-      animationDuration: 300,
+      textStyle: { fontFamily: "Inter, system-ui, -apple-system, Segoe UI, sans-serif", color: css("--ink-2") },
+      tooltip: tooltipAsas(),
+      animationDuration: 400, animationEasing: "cubicOut",
     };
   }
   const paksi = () => ({
     axisLine: { lineStyle: { color: css("--axis") } }, axisTick: { show: false },
     axisLabel: { color: css("--muted"), fontSize: 11 }, splitLine: { lineStyle: { color: css("--grid") } },
   });
+  const tanda = (warna) => `<span style="display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:7px;background:${warna}"></span>`;
+  function kosongkanCarta(ch, teks) {
+    ch.setOption({ graphic: [{ type: "text", left: "center", top: "middle", style: { text: teks, fill: css("--muted"), fontSize: 13 } }] }, true);
+  }
 
-  function cartaDimensi(R) {
-    const d = S.dimensi;
-    const kumpul = new Map();
-    for (const r of R) {
-      const v = nilaiDim(r, d);
-      if (!kumpul.has(v)) kumpul.set(v, Object.fromEntries(KATEGORI.map((c) => [c.k, 0])));
-      kumpul.get(v)[r._kat]++;
-    }
-    const jumlah = (o) => Object.values(o).reduce((a, b) => a + b, 0);
-    const peratusSiap = (o) => (jumlah(o) - o.Belum) / jumlah(o);
-    let baris = [...kumpul.entries()].sort((a, b) => jumlah(b[1]) - jumlah(a[1])).slice(0, 25);
-    if (S.peratus) baris.sort((a, b) => peratusSiap(b[1]) - peratusSiap(a[1]));
-    baris.reverse();
-    const kat = KATEGORI.filter((c) => baris.some(([, o]) => o[c.k]));
-    const pc = S.peratus;
-    const sas = S.sasaran;
-    const ch = carta("cDimensi");
-    const sempit = $("cDimensi").clientWidth < 640;
-    const atas = sempit ? 78 : 34;
-    $("cDimensi").style.height = Math.max(240, baris.length * 26 + atas + 46) + "px";
-    ch.resize();
+  function cartaKomposisi(R) {
+    const k = kiraKat(R), n = k._n || 1;
+    const kat = KATEGORI.filter((c) => k[c.k]);
+    const ch = carta("cKomposisi");
     ch.setOption({
       ...asasTema(),
-      legend: { top: 0, left: 0, itemWidth: 10, itemHeight: 10, textStyle: { color: css("--ink-2"), fontSize: 11 } },
-      grid: { left: 8, right: 64, top: atas, bottom: 8, containLabel: true },
-      tooltip: { ...asasTema().tooltip, trigger: "axis", axisPointer: { type: "shadow" },
-        formatter: (ps) => {
-          const o = kumpul.get(ps[0].name); const t = jumlah(o); const siap = t - o.Belum;
-          return `<strong>${esc(ps[0].name)}</strong><br>Jumlah: ${fmtN.format(t)} · Siap: ${fmtN.format(siap)} (${fmtP(siap / t)})<br>` +
-            (pc && sas ? (siap / t * 100 >= sas ? "✓ CAPAI sasaran " : "Bawah sasaran ") + sas + "% · baki " + fmtN.format(Math.max(0, Math.round(sas / 100 * t) - siap)) + " kes<br>" : "") +
-            KATEGORI.filter((c) => o[c.k]).map((c) => `<span style="display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:6px;background:${css(c.warna)}"></span>${esc(c.label)}: ${fmtN.format(o[c.k])} (${fmtP(o[c.k] / t)})`).join("<br>");
-        } },
-      xAxis: { type: "value", ...paksi(), max: pc ? 100 : null,
-        axisLabel: { ...paksi().axisLabel, formatter: pc ? "{value}%" : null } },
-      yAxis: { type: "category", data: baris.map((b) => b[0]), ...paksi(), splitLine: { show: false },
-        axisLabel: { color: css("--ink-2"), fontSize: 11, width: 170, overflow: "truncate",
-          formatter: (v) => { const o = kumpul.get(v); const t = jumlah(o); return (pc && sas && (t - o.Belum) / t * 100 >= sas ? "✓ " : "") + v; } } },
+      grid: { left: 0, right: 0, top: 4, bottom: 4 },
+      tooltip: { ...tooltipAsas(), trigger: "item",
+        formatter: (p) => `${tanda(p.color)}<b>${esc(p.seriesName)}</b><br>${fmtN.format(k[kat[p.seriesIndex].k])} kes · ${fmtP(p.value / 100)}` },
+      xAxis: { type: "value", max: 100, show: false },
+      yAxis: { type: "category", data: ["Komposisi"], show: false },
       series: kat.map((c, i) => ({
-        name: c.label, type: "bar", stack: "s", barMaxWidth: 18,
-        itemStyle: { color: css(c.warna), borderColor: css("--surface"), borderWidth: 1,
-          borderRadius: i === kat.length - 1 ? [0, 4, 4, 0] : 0 },
-        emphasis: { focus: "series" },
-        data: baris.map(([, o]) => (pc ? Math.round((o[c.k] / jumlah(o)) * 1000) / 10 : o[c.k])),
-        markLine: i === 0 && pc && sas ? { symbol: "none", silent: true,
-          lineStyle: { color: css("--bad"), type: "dashed", width: 2 },
-          label: { formatter: "Sasaran " + sas + "%", color: css("--bad"), fontSize: 11, position: "end" },
-          data: [{ xAxis: sas }] } : undefined,
-        label: i === kat.length - 1 ? {
-          show: true, position: "right", color: css("--ink-2"), fontSize: 11,
-          formatter: (p) => { const o = kumpul.get(p.name); const t = jumlah(o); return fmtP((t - o.Belum) / t); },
-        } : undefined,
+        name: c.label, type: "bar", stack: "k", barWidth: 30,
+        data: [Math.round((k[c.k] / n) * 1000) / 10],
+        itemStyle: { color: css(c.warna), borderColor: css("--surface"), borderWidth: 2,
+          borderRadius: [i === 0 ? 8 : 0, i === kat.length - 1 ? 8 : 0, i === kat.length - 1 ? 8 : 0, i === 0 ? 8 : 0] },
+        label: { show: k[c.k] / n >= 0.07, position: "inside", color: "#fff", fontWeight: 700, fontSize: 12,
+          formatter: () => c.label.split(" ·")[0] + "  " + fmtP(k[c.k] / n) },
       })),
     }, true);
     ch.off("click");
-    ch.on("click", (p) => togolTapis(d, p.name, true));
+    ch.on("click", (p) => klikTapis("_kat", kat[p.seriesIndex].k));
   }
 
   function cartaStatus(R) {
@@ -459,48 +528,90 @@
     }
     const susun = [...kira.entries()].sort((a, b) => (a[0] === KOSONG) - (b[0] === KOSONG) ||
       a[0].localeCompare(b[0], "ms", { numeric: true }));
+    const katDari = (k) => KATEGORI.find((c) => c.k === kategori(k === KOSONG ? "" : k));
     const ch = carta("cStatus");
     ch.setOption({
       ...asasTema(),
-      grid: { left: 8, right: 12, top: 16, bottom: 8, containLabel: true },
-      tooltip: { ...asasTema().tooltip, trigger: "item",
-        formatter: (p) => `<strong>${esc(p.name)}</strong><br>${esc(KAT_LABEL[kategori(p.name === KOSONG ? "" : p.name)])}<br>${fmtN.format(p.value)} rekod (${fmtP(p.value / R.length)})` },
+      legend: { bottom: 0, left: "center", itemWidth: 10, itemHeight: 10, itemGap: 16, textStyle: { color: css("--ink-2"), fontSize: 11.5 },
+        data: KATEGORI.filter((c) => susun.some(([k]) => katDari(k).k === c.k)).map((c) => ({ name: c.label, itemStyle: { color: css(c.warna) } })) },
+      grid: { left: 4, right: 8, top: 22, bottom: 36, containLabel: true },
+      tooltip: { ...tooltipAsas(), trigger: "item",
+        formatter: (p) => `<b>Kod ${esc(p.name)}</b><br>${esc(katDari(p.name).label)}<br>${fmtN.format(p.value)} kes (${fmtP(p.value / R.length)})` },
       xAxis: { type: "category", data: susun.map((s) => s[0]), ...paksi(), splitLine: { show: false },
-        axisLabel: { color: css("--muted"), fontSize: 11, interval: 0, rotate: susun.length > 10 ? 45 : 0,
-          formatter: (v) => (v.length > 14 ? v.slice(0, 13) + "…" : v) } },
+        axisLabel: { color: css("--muted"), fontSize: 11, interval: 0, rotate: susun.length > 14 ? 45 : 0,
+          formatter: (v) => (v.length > 12 ? v.slice(0, 11) + "…" : v) } },
       yAxis: { type: "value", ...paksi() },
-      series: [{ type: "bar", barMaxWidth: 28,
-        data: susun.map(([k, v]) => ({ value: v, itemStyle: { color: css(KATEGORI.find((c) => c.k === kategori(k === KOSONG ? "" : k)).warna), borderRadius: [4, 4, 0, 0] } })),
-        label: { show: susun.length <= 14, position: "top", color: css("--ink-2"), fontSize: 11, formatter: (p) => fmtN.format(p.value) } }],
+      series: KATEGORI.map((c) => ({
+        name: c.label, type: "bar", stack: "s", barMaxWidth: 30,
+        data: susun.map(([k, v]) => (katDari(k).k === c.k ? v : null)),
+        itemStyle: { color: css(c.warna), borderRadius: [5, 5, 0, 0] },
+        label: { show: susun.length <= 16, position: "top", color: css("--ink-2"), fontSize: 11, formatter: (p) => (p.value ? fmtN.format(p.value) : "") },
+      })),
     }, true);
     ch.off("click");
-    ch.on("click", (p) => togolTapis("status_respon_semasa", p.name, true));
+    ch.on("click", (p) => klikTapis("status_respon_semasa", p.name));
   }
 
   function cartaTarikh(R) {
     const kira = new Map();
     for (const r of R) if (r.tarikh_terima) kira.set(r.tarikh_terima, (kira.get(r.tarikh_terima) || 0) + 1);
     const hari = [...kira.keys()].sort();
+    const ch = carta("cTarikh");
+    if (!hari.length) return kosongkanCarta(ch, "Tiada Tarikh Terima dalam tapisan");
     let k = 0;
     const kum = hari.map((h) => (k += kira.get(h)));
-    const ch = carta("cTarikh");
+    const n = R.length || 1;
+    const sas = S.sasaran;
     ch.setOption({
       ...asasTema(),
-      grid: { left: 8, right: 16, top: 16, bottom: 8, containLabel: true },
-      tooltip: { ...asasTema().tooltip, trigger: "axis",
-        axisPointer: { type: "line", lineStyle: { color: css("--axis") } },
-        formatter: (ps) => `<strong>${tarikhPapar(hari[ps[0].dataIndex])}</strong><br>Diterima hari ini: ${fmtN.format(kira.get(hari[ps[0].dataIndex]))}<br>Kumulatif: ${fmtN.format(ps[0].value)} (${fmtP(ps[0].value / R.length)})` },
+      grid: { left: 4, right: 48, top: 22, bottom: 4, containLabel: true },
+      tooltip: { ...tooltipAsas(), trigger: "axis", axisPointer: { type: "line", lineStyle: { color: css("--axis") } },
+        formatter: (ps) => { const i = ps[0].dataIndex; return `<b>${tarikhPapar(hari[i])}</b><br>Diterima hari ini: ${fmtN.format(kira.get(hari[i]))}<br>Kumulatif: <b>${fmtN.format(kum[i])}</b> (${fmtP(kum[i] / n)})`; } },
       xAxis: { type: "category", data: hari.map(tarikhPapar), boundaryGap: false, ...paksi(), splitLine: { show: false } },
-      yAxis: { type: "value", ...paksi() },
-      series: [{ type: "line", data: kum, smooth: false, symbol: "circle", symbolSize: hari.length > 40 ? 0 : 8,
-        lineStyle: { width: 2, color: css("--s1") }, itemStyle: { color: css("--s1"), borderColor: css("--surface"), borderWidth: 2 },
-        areaStyle: { color: css("--s1"), opacity: 0.10 } }],
-      graphic: hari.length ? [] : [{ type: "text", left: "center", top: "middle",
-        style: { text: "Tiada Tarikh Terima dalam tapisan", fill: css("--muted"), fontSize: 12 } }],
+      yAxis: { type: "value", ...paksi(), max: (v) => Math.max(v.max, sas ? Math.ceil(sas / 100 * n) : 0) },
+      series: [{ type: "line", data: kum, smooth: 0.2, showSymbol: hari.length <= 31, symbol: "circle", symbolSize: 7,
+        lineStyle: { width: 2.5, color: css("--s1") }, itemStyle: { color: css("--s1"), borderColor: css("--surface"), borderWidth: 2 },
+        areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: css("--s1") + "40" }, { offset: 1, color: css("--s1") + "00" }]) },
+        endLabel: { show: true, formatter: (p) => fmtN.format(p.value), color: css("--ink"), fontWeight: 700, fontSize: 12 },
+        markLine: sas ? { symbol: "none", silent: true, lineStyle: { color: css("--bad"), type: "dashed", width: 1.5 },
+          label: { formatter: `Sasaran ${sas}% (${fmtN.format(Math.ceil(sas / 100 * n))})`, color: css("--bad"), fontSize: 11, position: "insideStartTop" },
+          data: [{ yAxis: Math.ceil(sas / 100 * n) }] } : undefined }],
     }, true);
   }
 
+  // Kadar respons ikut sektor (atau lajur lain jika sektor tiada)
+  function cartaKadarIkut(R) {
+    const d = ["sektor", "subsektor", "msic_3", "kod_survei"].find(adaLajur) || "sektor";
+    const tajuk = { sektor: "sektor", subsektor: "subsektor", msic_3: "kod industri (3 digit)", kod_survei: "kod survei" }[d];
+    document.querySelector("#cSektor").closest(".kad").querySelector("h2").textContent = "Kadar respons ikut " + tajuk;
+    const kumpul = kumpulKat(R, (r) => nilaiDim(r, d));
+    let baris = [...kumpul.entries()].map(([k, rs]) => { const c = kiraKat(rs); return [k, c.siap / c._n, c]; })
+      .sort((a, b) => b[2]._n - a[2]._n).slice(0, 12).sort((a, b) => a[1] - b[1]);
+    const ch = carta("cSektor");
+    const sas = S.sasaran;
+    ch.setOption({
+      ...asasTema(),
+      grid: { left: 4, right: 70, top: 10, bottom: 4, containLabel: true },
+      tooltip: { ...tooltipAsas(), trigger: "item",
+        formatter: (p) => { const c = baris[p.dataIndex][2]; return `<b>${esc(p.name)}</b><br>Kadar respons: <b>${fmtP(c.siap / c._n)}</b><br>${fmtN.format(c.siap)} siap / ${fmtN.format(c._n)} kes<br>A1 ${fmtN.format(c.A1)} · LK ${fmtN.format(c.LK)} · Kod B ${fmtN.format(c.KodB)}`; } },
+      xAxis: { type: "value", max: 100, ...paksi(), axisLabel: { ...paksi().axisLabel, formatter: "{value}%" } },
+      yAxis: { type: "category", data: baris.map((b) => b[0]), ...paksi(), splitLine: { show: false },
+        axisLabel: { color: css("--ink-2"), fontSize: 11.5, width: 150, overflow: "truncate" } },
+      series: [{ type: "bar", barMaxWidth: 16, data: baris.map((b) => Math.round(b[1] * 1000) / 10),
+        itemStyle: { color: css("--s1"), borderRadius: [0, 5, 5, 0] },
+        showBackground: true, backgroundStyle: { color: css("--grid"), borderRadius: [0, 5, 5, 0] },
+        label: { show: true, position: "right", color: css("--ink-2"), fontSize: 11.5,
+          formatter: (p) => p.value.toFixed(1) + "%  (" + fmtN.format(baris[p.dataIndex][2]._n) + ")" },
+        markLine: sas ? { symbol: "none", silent: true, lineStyle: { color: css("--bad"), type: "dashed", width: 1.5 },
+          label: { show: false }, data: [{ xAxis: sas }] } : undefined }],
+    }, true);
+    ch.off("click");
+    ch.on("click", (p) => klikTapis(d, p.name));
+  }
+
   function cartaBar(id, R, d, had) {
+    const tajukEl = $(id).closest(".kad").querySelector("h2");
+    if (id === "cPmks") tajukEl.textContent = d === "pmks" ? "Saiz pertubuhan (PMKS)" : "BBU / SBU";
     const kira = new Map();
     for (const r of R) { const v = nilaiDim(r, d); kira.set(v, (kira.get(v) || 0) + 1); }
     let s = [...kira.entries()].sort((a, b) => b[1] - a[1]);
@@ -512,18 +623,19 @@
     const ch = carta(id);
     ch.setOption({
       ...asasTema(),
-      grid: { left: 8, right: 48, top: 8, bottom: 8, containLabel: true },
-      tooltip: { ...asasTema().tooltip, trigger: "item",
-        formatter: (p) => `<strong>${esc(p.name)}</strong><br>${fmtN.format(p.value)} rekod (${fmtP(p.value / R.length)})` },
-      xAxis: { type: "value", ...paksi() },
+      grid: { left: 4, right: 56, top: 6, bottom: 4, containLabel: true },
+      tooltip: { ...tooltipAsas(), trigger: "item",
+        formatter: (p) => `<b>${esc(p.name)}</b><br>${fmtN.format(p.value)} kes (${fmtP(p.value / R.length)})` },
+      xAxis: { type: "value", ...paksi(), axisLabel: { show: false }, splitLine: { show: false }, axisLine: { show: false } },
       yAxis: { type: "category", data: s.map((x) => x[0]), ...paksi(), splitLine: { show: false },
-        axisLabel: { color: css("--ink-2"), fontSize: 11, width: 130, overflow: "truncate" } },
+        axisLabel: { color: css("--ink-2"), fontSize: 11.5, width: 120, overflow: "truncate" } },
       series: [{ type: "bar", barMaxWidth: 16, data: s.map((x) => x[1]),
-        itemStyle: { color: css("--s1"), borderRadius: [0, 4, 4, 0] },
-        label: { show: true, position: "right", color: css("--ink-2"), fontSize: 11, formatter: (p) => fmtN.format(p.value) } }],
+        itemStyle: { color: css("--s1"), borderRadius: [0, 5, 5, 0] },
+        showBackground: true, backgroundStyle: { color: css("--grid"), borderRadius: [0, 5, 5, 0] },
+        label: { show: true, position: "right", color: css("--ink-2"), fontSize: 11.5, formatter: (p) => fmtN.format(p.value) } }],
     }, true);
     ch.off("click");
-    ch.on("click", (p) => { if (p.name !== "Lain-lain") togolTapis(d, p.name, true); });
+    ch.on("click", (p) => { if (p.name !== "Lain-lain") klikTapis(d, p.name); });
   }
 
   function paparMatriks(R) {
@@ -533,33 +645,370 @@
     const maks = Math.max(1, ...k.flatMap((a) => k.map((b) => m[a][b])));
     const pendek = { A1: "A1", LK: "LK", "50": "50", KodB: "Kod B", Lain: "Lain", Belum: "Belum" };
     const biru = css("--s1");
-    let h = `<table class="matriks"><thead><tr><th class="baris">Sebelum ↓ / Semasa →</th>${k.map((b) => `<th>${pendek[b]}</th>`).join("")}</tr></thead><tbody>`;
+    let h = `<table class="matriks"><thead><tr><th class="baris"></th>${k.map((b) => `<th>${pendek[b]}</th>`).join("")}</tr></thead><tbody>`;
     for (const a of k) {
       h += `<tr><th class="baris">${pendek[a]}</th>`;
       for (const b of k) {
         const v = m[a][b]; const t = v / maks;
-        h += `<td style="background:color-mix(in srgb, ${biru} ${Math.round(t * 85)}%, transparent);color:${t > 0.5 ? "#fff" : "inherit"}" title="Sebelum ${esc(KAT_LABEL[a])} → Semasa ${esc(KAT_LABEL[b])}: ${v}">${v ? fmtN.format(v) : "·"}</td>`;
+        h += `<td style="background:color-mix(in srgb, ${biru} ${Math.round(6 + t * 80)}%, transparent);color:${t > 0.5 ? "#fff" : "inherit"}" title="Sebelum ${esc(KAT_LABEL[a])} → Semasa ${esc(KAT_LABEL[b])}: ${v}">${v ? fmtN.format(v) : "·"}</td>`;
       }
       h += "</tr>";
     }
     $("matriks").innerHTML = h + "</tbody></table>";
   }
 
+  // ---------- Penemuan automatik ----------
+  function paparPenemuan(R) {
+    const out = [];
+    const k = kiraKat(R), n = k._n;
+    const sas = S.sasaran;
+    const kadar = k.siap / (n || 1);
+    if (sas) {
+      out.push(kadar * 100 >= sas
+        ? ["baik", "✓", `Kadar respons <b>${fmtP(kadar)}</b> telah melepasi sasaran ${sas}%.`]
+        : ["amaran", "!", `Kadar respons <b>${fmtP(kadar)}</b>; perlu <b>${fmtN.format(Math.ceil(sas / 100 * n) - k.siap)}</b> kes lagi untuk capai sasaran ${sas}%.`]);
+    }
+    const terbaikTerendah = (d, nama, min) => {
+      if (!adaLajur(d)) return;
+      const g = [...kumpulKat(R, (r) => (r[d] == null || r[d] === "" ? null : String(r[d]))).entries()]
+        .map(([v, rs]) => [v, kiraKat(rs)]).filter(([, c]) => c._n >= min);
+      if (g.length < 2) return;
+      g.sort((a, b) => b[1].siap / b[1]._n - a[1].siap / a[1]._n);
+      const [t, ct] = g[0], [r, cr] = g[g.length - 1];
+      out.push(["", "↑", `${nama} tertinggi: <b>${esc(t)}</b> (${fmtP(ct.siap / ct._n)}); terendah: <b>${esc(r)}</b> (${fmtP(cr.siap / cr._n)}, ${fmtN.format(cr.Belum)} kes belum).`]);
+    };
+    terbaikTerendah("pegawai_kerja_luar", "Pegawai Kerja Luar", 5);
+    terbaikTerendah("daerah_lokasi_semasa", "Daerah", 5);
+    if (k.KodB) out.push(["amaran", "B", `<b>${fmtN.format(k.KodB)}</b> kes masih Kod B (dalam proses) — perlu susulan sebelum boleh dikira siap.`]);
+    const tarikh = R.map((r) => r.tarikh_terima).filter(Boolean).sort();
+    if (tarikh.length) {
+      const akhir = new Date(tarikh[tarikh.length - 1] + "T00:00:00");
+      const h7 = new Date(akhir); h7.setDate(h7.getDate() - 6);
+      const h14 = new Date(akhir); h14.setDate(h14.getDate() - 13);
+      const iso = (d) => d.toISOString().slice(0, 10);
+      const ini = tarikh.filter((t) => t >= iso(h7)).length;
+      const lepas = tarikh.filter((t) => t >= iso(h14) && t < iso(h7)).length;
+      const ub = lepas ? (ini - lepas) / lepas : NaN;
+      out.push([isFinite(ub) && ub < 0 ? "amaran" : "baik", "⏱", `7 hari terakhir (hingga ${tarikhPapar(iso(akhir))}): <b>${fmtN.format(ini)}</b> borang diterima` +
+        (isFinite(ub) ? `, ${ub >= 0 ? "naik" : "turun"} ${fmtP(Math.abs(ub))} berbanding 7 hari sebelumnya.` : ".")]);
+    }
+    const p = R.filter((r) => r.pendapatan_sebelum > 0 && r.pendapatan_semasa != null).map((r) => r.pendapatan_semasa / r.pendapatan_sebelum - 1);
+    if (p.length >= 5) out.push(["", "RM", `Median perubahan pendapatan: <b>${(median(p) >= 0 ? "+" : "") + fmtP(median(p))}</b> (${fmtN.format(p.length)} pertubuhan padan).`]);
+    const semak = kesSemakan(R).length;
+    if (semak) out.push(["amaran", "?", `<b>${fmtN.format(semak)}</b> rekod berubah lebih ±${S.ambang}% berbanding penyiasatan sebelum — lihat tab <b>Analisis Nilai</b>.`]);
+    $("penemuan").innerHTML = out.slice(0, 7).map(([j, t, h]) => `<li><span class="tanda ${j}">${t}</span><span>${h}</span></li>`).join("") ||
+      '<li class="nota">Tiada penemuan untuk tapisan ini.</li>';
+  }
+
+  // ---------- Peta ----------
+  let GEO = null;
+  const normNama = (s) => String(s == null ? "" : s).normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase()
+    .replace(/^\s*\d+\s*[-–:.)]?\s*/, "")
+    .replace(/wilayah persekutuan|w\.\s*p\.?|\bwp\b|\bdaerah\b|\bbahagian\b|\bjajahan\b/g, "")
+    .replace(/\bhulu\b/g, "ulu").replace(/\bpulau pinang\b/g, "pulaupinang").replace(/\bpenang\b/g, "pulaupinang")
+    .replace(/\bmalacca\b/g, "melaka").replace(/[^a-z0-9]/g, "");
+  async function muatGeo() {
+    if (GEO) return GEO;
+    const [d, n] = await Promise.all([fetch("peta/daerah.json").then((r) => r.json()), fetch("peta/negeri.json").then((r) => r.json())]);
+    const idxD = new Map(), idxN = new Map(), kodD = new Map(), kodN = new Map();
+    for (const f of d.features) {
+      const p = f.properties;
+      p.name = p.code_state + "_" + p.code_district;
+      p.label = p.district;
+      kodD.set(p.name, f);
+      const k = normNama(p.district);
+      if (!idxD.has(k)) idxD.set(k, []);
+      idxD.get(k).push(f);
+    }
+    for (const f of n.features) {
+      const p = f.properties;
+      p.name = String(p.code_state);
+      p.label = p.state;
+      kodN.set(p.name, f);
+      idxN.set(normNama(p.state), f);
+    }
+    GEO = { d, n, idxD, idxN, kodD, kodN };
+    return GEO;
+  }
+  function padanNegeri(v) {
+    if (v == null || v === "") return null;
+    const s = String(v).trim();
+    const m = s.match(/^(\d{1,2})\b/);
+    if (m && GEO.kodN.has(String(+m[1]))) return GEO.kodN.get(String(+m[1]));
+    return GEO.idxN.get(normNama(s)) || null;
+  }
+  function padanDaerah(v, negeri) {
+    if (v == null || v === "") return null;
+    const s = String(v).trim();
+    const m = s.match(/^(\d{2})(\d{2})\b/);
+    if (m && GEO.kodD.has(+m[1] + "_" + +m[2])) return GEO.kodD.get(+m[1] + "_" + +m[2]);
+    const calon = GEO.idxD.get(normNama(s));
+    if (calon && calon.length === 1) return calon[0];
+    if (calon && calon.length > 1) {
+      const fn = padanNegeri(negeri);
+      if (fn) { const c = calon.find((f) => f.properties.code_state === fn.properties.code_state); if (c) return c; }
+      return calon[0];
+    }
+    const nn = GEO.idxN.get(normNama(s));   // cth. "Kuala Lumpur" -> daerah W.P. Kuala Lumpur
+    if (nn) { const c = GEO.d.features.filter((f) => f.properties.code_state === nn.properties.code_state); if (c.length === 1) return c[0]; }
+    return null;
+  }
+  function lajurPeta() {
+    if (S.petaAras === "negeri") return "negeri";
+    return S.petaAras === "pos" ? "daerah_pos_semasa" : "daerah_lokasi_semasa";
+  }
+  function nilaiUkuran(c) {
+    const n = c._n || 1;
+    return { kadar: (c.siap / n) * 100, jumlah: c._n, siap: c.siap, belum: c.Belum, a1: (c.A1 / n) * 100 }[S.petaUkuran];
+  }
+  const UKURAN_PETA = { kadar: ["Kadar respons", true], jumlah: ["Jumlah kes", false], siap: ["Kes siap", false], belum: ["Belum ada respon", false], a1: ["A1", true] };
+
+  async function paparPeta(R) {
+    const ch = carta("cPeta");
+    try { await muatGeo(); } catch (e) { kosongkanCarta(ch, "Fail peta tidak dapat dimuatkan"); return; }
+    if (S.hal !== "peta") return;
+    const negeriAras = S.petaAras === "negeri";
+    const lajur = lajurPeta();
+    // Padankan setiap nilai mentah kepada poligon
+    const padan = new Map(), tak = new Map();   // kunci poligon -> {rs, mentah:Set}
+    for (const r of R) {
+      const v = r[lajur];
+      const f = negeriAras ? padanNegeri(v) : padanDaerah(v, r.negeri);
+      if (!f) { const k = v == null || v === "" ? KOSONG : String(v); tak.set(k, (tak.get(k) || []).concat([r])); continue; }
+      const k = f.properties.name;
+      if (!padan.has(k)) padan.set(k, { f, rs: [], mentah: new Set() });
+      const o = padan.get(k); o.rs.push(r); o.mentah.add(v == null || v === "" ? KOSONG : String(v));
+    }
+    // Kawasan peta: negeri yang ada data (aras daerah), seluruh Malaysia (aras negeri)
+    let ciri;
+    if (negeriAras) ciri = GEO.n.features;
+    else {
+      const negeri = new Set([...padan.values()].map((o) => o.f.properties.code_state));
+      // KL & Putrajaya terlalu kecil untuk berdiri sendiri — papar bersama Selangor sebagai konteks
+      const kodSel = GEO.n.features.find((f) => normNama(f.properties.state) === "selangor");
+      if (kodSel && [...negeri].some((k) => GEO.n.features.some((f) => f.properties.code_state === k && /kualalumpur|putrajaya/.test(normNama(f.properties.state)))))
+        negeri.add(kodSel.properties.code_state);
+      ciri = negeri.size ? GEO.d.features.filter((f) => negeri.has(f.properties.code_state)) : GEO.d.features;
+    }
+    const namaPeta = "peta_" + (negeriAras ? "negeri" : [...new Set(ciri.map((f) => f.properties.code_state))].sort().join("-"));
+    if (!echarts.getMap(namaPeta)) echarts.registerMap(namaPeta, { type: "FeatureCollection", features: ciri });
+    const [labelUk, pct] = UKURAN_PETA[S.petaUkuran];
+    const data = [...padan.entries()].map(([k, o]) => { const c = kiraKat(o.rs); return { name: k, value: Math.round(nilaiUkuran(c) * 10) / 10, c, mentah: [...o.mentah], label: o.f.properties.label }; });
+    const nilai = data.map((d) => d.value);
+    // Julat ikut data supaya beza antara kawasan jelas (seperti Power BI)
+    let min = nilai.length ? Math.min(...nilai) : 0, maks = nilai.length ? Math.max(...nilai) : 1;
+    if (pct) { min = Math.max(0, Math.floor(min / 5) * 5); maks = Math.min(100, Math.ceil(maks / 5) * 5); }
+    else { min = 0; }
+    if (maks <= min) maks = min + 1;
+    const labelDari = new Map(ciri.map((f) => [f.properties.name, f.properties.label]));
+    S.petaData = data;
+    ch.setOption({
+      ...asasTema(),
+      tooltip: { ...tooltipAsas(), trigger: "item",
+        formatter: (p) => {
+          const d = p.data;
+          if (!d) return `<b>${esc(labelDari.get(p.name) || p.name)}</b><br><span style="color:${css("--muted")}">Tiada kes dalam tapisan</span>`;
+          const c = d.c;
+          return `<b>${esc(d.label)}</b><br>${labelUk}: <b>${pct ? d.value.toFixed(1) + "%" : fmtN.format(d.value)}</b><br>` +
+            `Jumlah ${fmtN.format(c._n)} · Siap ${fmtN.format(c.siap)} (${fmtP(c.siap / c._n)})<br>A1 ${fmtN.format(c.A1)} · LK ${fmtN.format(c.LK)} · Kod B ${fmtN.format(c.KodB)} · Belum ${fmtN.format(c.Belum)}`;
+        } },
+      visualMap: { type: "continuous", min, max: maks, calculable: false, orient: "horizontal", left: 8, bottom: 6,
+        itemWidth: 12, itemHeight: Math.max(90, Math.min(180, $("cPeta").clientWidth - 230)), text: [pct ? maks + "%" : fmtN.format(maks), (pct ? min + "%" : "0") + "  " + labelUk], textStyle: { color: css("--ink-2"), fontSize: 11.5 },
+        inRange: { color: [css("--seq-1"), css("--seq-2"), css("--seq-3"), css("--seq-4"), css("--seq-5")] } },
+      series: [{
+        type: "map", map: namaPeta, roam: true, scaleLimit: { min: 0.8, max: 12 }, selectedMode: false,
+        layoutCenter: ["50%", "48%"], layoutSize: "92%",
+        itemStyle: { areaColor: css("--surface-2"), borderColor: css("--border-strong"), borderWidth: 0.8 },
+        emphasis: { itemStyle: { areaColor: css("--gold") || "#c99a2e", borderColor: css("--ink"), borderWidth: 1.2 },
+          label: { show: true, color: css("--ink"), fontWeight: 700, fontSize: 12 } },
+        label: { show: ciri.length <= 40, color: css("--ink"), fontSize: 11, fontWeight: 600, textBorderColor: css("--surface"), textBorderWidth: 2.5,
+          formatter: (p) => (p.data ? (labelDari.get(p.name) || "").replace(/^W\.P\. /, "") : "") },
+        data,
+      }],
+    }, true);
+    ch.off("click");
+    ch.on("click", (p) => {
+      if (!p.data) return;
+      S.petaLabelTapis = p.data.label;
+      klikTapis(lajur, p.data.mentah);
+    });
+    // Nota padanan
+    const takN = [...tak.values()].reduce((a, b) => a + b.length, 0);
+    $("petaSub").textContent = (negeriAras ? "Ikut negeri" : "Ikut " + LABEL[lajur]) + " · klik kawasan untuk tapis · tatal untuk zum";
+    $("petaNota").innerHTML = takN
+      ? `⚠ ${fmtN.format(takN)} kes (${fmtN.format(tak.size)} nilai) tidak dapat dipadankan dengan sempadan peta: ${[...tak.keys()].slice(0, 6).map(esc).join(", ")}${tak.size > 6 ? "…" : ""}`
+      : (data.length === 1 && !negeriAras ? "Semua kes berada dalam satu daerah pentadbiran. Sempadan rasmi DOSM tidak memecahkan W.P. Kuala Lumpur kepada daerah kecil." : "Sumber sempadan: OpenDOSM.");
+    // Jadual kedudukan (termasuk nilai yang tidak dipadankan)
+    const baris = data.map((d) => [d.label, d.c, d.mentah, true]).concat([...tak.entries()].map(([k, rs]) => [k, kiraKat(rs), [k], false]));
+    baris.sort((a, b) => b[1].siap / b[1]._n - a[1].siap / a[1]._n || b[1]._n - a[1]._n);
+    $("kedudukanSub").textContent = "Disusun ikut kadar respons · " + fmtN.format(baris.length) + " kawasan";
+    $("tKedudukan").innerHTML = `<thead><tr><th>#</th><th>${negeriAras ? "Negeri" : "Daerah"}</th><th class="num">Kes</th><th>Kadar respons</th></tr></thead><tbody>` +
+      baris.map(([l, c, , ok], i) => `<tr data-mentah="${esc(JSON.stringify([...([].concat(baris[i][2]))]))}" data-label="${esc(l)}" class="${ok ? "" : "tiada-peta"}" style="cursor:pointer">` +
+        `<td class="num">${i + 1}</td><td>${esc(l)}${ok ? "" : ' <span class="nota" title="Tiada di peta">⚠</span>'}</td><td class="num">${fmtN.format(c._n)}</td>` +
+        `<td><span class="bar-mini"><i style="width:${(c.siap / c._n) * 100}%"></i></span>${fmtP(c.siap / c._n)}</td></tr>`).join("") + "</tbody>";
+  }
+
+  // ---------- Prestasi ----------
+  function statusSasaran(p) {
+    const sas = S.sasaran;
+    if (!sas) return "";
+    if (p * 100 >= sas) return '<span class="pil capai">✓ Capai</span>';
+    if (p * 100 >= sas - 10) return '<span class="pil hampir">Hampir</span>';
+    return '<span class="pil jauh">Bawah sasaran</span>';
+  }
+  function cartaDimensi(R) {
+    const d = S.dimensi;
+    const kumpul = new Map();
+    for (const r of R) {
+      const v = nilaiDim(r, d);
+      if (!kumpul.has(v)) kumpul.set(v, Object.fromEntries(KATEGORI.map((c) => [c.k, 0])));
+      kumpul.get(v)[r._kat]++;
+    }
+    const jumlah = (o) => Object.values(o).reduce((a, b) => a + b, 0);
+    const peratusSiap = (o) => (jumlah(o) - o.Belum) / jumlah(o);
+    let baris = [...kumpul.entries()].sort((a, b) => jumlah(b[1]) - jumlah(a[1])).slice(0, 30);
+    if (S.peratus) baris.sort((a, b) => peratusSiap(b[1]) - peratusSiap(a[1]));
+    baris.reverse();
+    const kat = KATEGORI.filter((c) => baris.some(([, o]) => o[c.k]));
+    const pc = S.peratus, sas = S.sasaran;
+    const el = $("cDimensi");
+    const sempit = el.clientWidth < 640;
+    const atas = sempit ? 84 : 40;
+    el.style.height = Math.max(260, baris.length * 30 + atas + 40) + "px";
+    const ch = carta("cDimensi");
+    ch.resize();
+    ch.setOption({
+      ...asasTema(),
+      legend: { top: 0, left: 0, itemWidth: 10, itemHeight: 10, itemGap: 16, textStyle: { color: css("--ink-2"), fontSize: 11.5 } },
+      grid: { left: 4, right: 70, top: atas, bottom: 4, containLabel: true },
+      tooltip: { ...tooltipAsas(), trigger: "axis", axisPointer: { type: "shadow", shadowStyle: { color: css("--accent-soft") } },
+        formatter: (ps) => {
+          const o = kumpul.get(ps[0].name); const t = jumlah(o); const siap = t - o.Belum;
+          return `<b>${esc(ps[0].name)}</b><br>Jumlah ${fmtN.format(t)} · Siap <b>${fmtN.format(siap)}</b> (${fmtP(siap / t)})<br>` +
+            (sas ? (siap / t * 100 >= sas ? `<span style="color:${css("--good")}">✓ Capai sasaran ${sas}%</span>` : `Baki ke sasaran ${sas}%: <b>${fmtN.format(Math.max(0, Math.ceil(sas / 100 * t) - siap))}</b> kes`) + "<br>" : "") +
+            KATEGORI.filter((c) => o[c.k]).map((c) => `${tanda(css(c.warna))}${esc(c.label)}: ${fmtN.format(o[c.k])} (${fmtP(o[c.k] / t)})`).join("<br>");
+        } },
+      xAxis: { type: "value", ...paksi(), max: pc ? 100 : null, axisLabel: { ...paksi().axisLabel, formatter: pc ? "{value}%" : null } },
+      yAxis: { type: "category", data: baris.map((b) => b[0]), ...paksi(), splitLine: { show: false },
+        axisLabel: { color: css("--ink-2"), fontSize: 12, width: 170, overflow: "truncate", fontWeight: 500 } },
+      series: kat.map((c, i) => ({
+        name: c.label, type: "bar", stack: "s", barMaxWidth: 20,
+        itemStyle: { color: css(c.warna), borderColor: css("--surface"), borderWidth: 1.5,
+          borderRadius: i === kat.length - 1 ? [0, 5, 5, 0] : i === 0 ? [5, 0, 0, 5] : 0 },
+        emphasis: { focus: "series" },
+        data: baris.map(([, o]) => (pc ? Math.round((o[c.k] / jumlah(o)) * 1000) / 10 : o[c.k])),
+        markLine: i === 0 && pc && sas ? { symbol: "none", silent: true, lineStyle: { color: css("--bad"), type: "dashed", width: 2 },
+          label: { formatter: "Sasaran " + sas + "%", color: css("--bad"), fontSize: 11, fontWeight: 700, position: "end" }, data: [{ xAxis: sas }] } : undefined,
+        label: i === kat.length - 1 ? { show: true, position: "right", color: css("--ink"), fontSize: 12, fontWeight: 700,
+          formatter: (p) => fmtP(peratusSiap(kumpul.get(p.name))) } : undefined,
+      })),
+    }, true);
+    ch.off("click");
+    ch.on("click", (p) => klikTapis(d, p.name));
+  }
+  let skorSemasa = [];
+  function paparSkor(R) {
+    const d = S.dimensi;
+    const label = (DIMENSI.find((x) => x[0] === d) || [d, d])[1];
+    const g = [...kumpulKat(R, (r) => nilaiDim(r, d)).entries()].map(([v, rs]) => [v, kiraKat(rs)])
+      .sort((a, b) => b[1].siap / b[1]._n - a[1].siap / a[1]._n || b[1]._n - a[1]._n);
+    const sas = S.sasaran;
+    const baki = (c) => Math.max(0, Math.ceil((sas / 100) * c._n) - c.siap);
+    const T = kiraKat(R);
+    skorSemasa = [[label, "Jumlah", "Siap", "% Siap", "A1", "LK", "50", "Kod B", "Belum", "Baki ke sasaran"]]
+      .concat(g.map(([v, c]) => [v, c._n, c.siap, (c.siap / c._n * 100).toFixed(1), c.A1, c.LK, c["50"], c.KodB, c.Belum, sas ? baki(c) : ""]));
+    const capai = g.filter(([, c]) => sas && c.siap / c._n * 100 >= sas).length;
+    $("skorSub").textContent = sas ? `${capai} daripada ${g.length} capai sasaran ${sas}%` : `${g.length} kumpulan`;
+    const sel = (c) => `<td class="num">${fmtN.format(c._n)}</td><td class="num">${fmtN.format(c.siap)}</td>` +
+      `<td><span class="bar-mini"><i style="width:${Math.min(100, c.siap / c._n * 100)}%"></i></span>${fmtP(c.siap / c._n)}</td>` +
+      `<td class="num">${fmtN.format(c.A1)}</td><td class="num">${fmtN.format(c.LK)}</td><td class="num">${fmtN.format(c["50"])}</td>` +
+      `<td class="num">${fmtN.format(c.KodB)}</td><td class="num">${fmtN.format(c.Belum)}</td><td class="num">${sas ? fmtN.format(baki(c)) : "–"}</td>`;
+    $("tSkor").innerHTML = `<thead><tr><th>#</th><th>${esc(label)}</th><th class="num">Jumlah</th><th class="num">Siap</th><th>% Siap</th>` +
+      `<th class="num">A1</th><th class="num">LK</th><th class="num">50</th><th class="num">Kod B</th><th class="num">Belum</th><th class="num">Baki</th><th>Status</th></tr></thead><tbody>` +
+      g.map(([v, c], i) => `<tr><td class="num">${i + 1}</td><td><b>${esc(v)}</b></td>${sel(c)}<td>${statusSasaran(c.siap / c._n)}</td></tr>`).join("") +
+      `<tr class="jumlah"><td></td><td>Jumlah</td>${sel(T)}<td>${statusSasaran(T.siap / (T._n || 1))}</td></tr></tbody>`;
+  }
+
+  // ---------- Analisis nilai ----------
   function paparKewangan(R) {
-    let h = `<thead><tr><th>Item</th><th class="num">Bil. rekod padan</th><th class="num">Sebelum</th><th class="num">Semasa</th><th class="num">Perubahan</th><th class="num">Jumlah semasa (semua rekod)</th></tr></thead><tbody>`;
+    let h = `<thead><tr><th>Pemboleh ubah</th><th class="num">Rekod padan</th><th class="num">Jumlah sebelum</th><th class="num">Jumlah semasa</th>` +
+      `<th class="num">Perubahan jumlah</th><th class="num">Median perubahan</th><th class="num">Jumlah semasa (semua)</th></tr></thead><tbody>`;
     for (const [k, label, rm] of UKURAN) {
       let n = 0, a = 0, b = 0, semua = 0;
+      const ub = [];
       for (const r of R) {
         const s0 = r[k + "_sebelum"], s1 = r[k + "_semasa"];
         if (s1 != null) semua += +s1;
-        if (s0 != null && s1 != null) { n++; a += +s0; b += +s1; }
+        if (s0 != null && s1 != null) { n++; a += +s0; b += +s1; if (+s0 > 0) ub.push(s1 / s0 - 1); }
       }
-      const ub = a ? (b - a) / Math.abs(a) : NaN;
-      const kelas = !isFinite(ub) ? "" : ub >= 0 ? "naik" : "turun";
-      h += `<tr><td>${esc(label)}</td><td class="num">${fmtN.format(n)}</td><td class="num">${n ? ringkas(a, rm) : "–"}</td><td class="num">${n ? ringkas(b, rm) : "–"}</td>` +
-        `<td class="num ${kelas}">${isFinite(ub) ? (ub >= 0 ? "▲ " : "▼ ") + fmtP(Math.abs(ub)) : "–"}</td><td class="num">${ringkas(semua, rm)}</td></tr>`;
+      const uj = a ? (b - a) / Math.abs(a) : NaN, md = median(ub);
+      const kl = (x) => (!isFinite(x) ? "" : x >= 0 ? "naik" : "turun");
+      const tx = (x) => (isFinite(x) ? (x >= 0 ? "▲ " : "▼ ") + fmtP(Math.abs(x)) : "–");
+      h += `<tr><td><b>${esc(label)}</b></td><td class="num">${fmtN.format(n)}</td><td class="num">${n ? ringkas(a, rm) : "–"}</td><td class="num">${n ? ringkas(b, rm) : "–"}</td>` +
+        `<td class="num ${kl(uj)}">${tx(uj)}</td><td class="num ${kl(md)}">${tx(md)}</td><td class="num">${ringkas(semua, rm)}</td></tr>`;
     }
     $("tKewangan").innerHTML = h + "</tbody>";
+  }
+  function kesSemakan(R) {
+    const amb = S.ambang / 100;
+    const out = [];
+    for (const r of R) {
+      for (const [k, label, rm] of UKURAN) {
+        const a = r[k + "_sebelum"], b = r[k + "_semasa"];
+        if (a == null || b == null || !(a > 0)) continue;
+        const ub = b / a - 1;
+        if (Math.abs(ub) > amb) out.push({ r, k, label, rm, a, b, ub });
+      }
+    }
+    return out.sort((x, y) => Math.abs(y.ub) - Math.abs(x.ub));
+  }
+  function paparSemakan(R) {
+    const x = kesSemakan(R);
+    const rekodUnik = new Set(x.map((o) => o.r.id)).size;
+    $("tSemakan").closest(".kad").querySelector(".kad-sub").textContent =
+      `${fmtN.format(rekodUnik)} rekod · ${fmtN.format(x.length)} nilai melebihi ±${S.ambang}% · klik untuk butiran`;
+    $("tSemakan").innerHTML = `<thead><tr><th>No. Siri / Nama</th><th>Pemboleh ubah</th><th class="num">Sebelum</th><th class="num">Semasa</th><th class="num">Ubah</th></tr></thead><tbody>` +
+      (x.slice(0, 300).map((o) => `<tr data-id="${o.r.id}"><td class="nama" title="${esc(o.r.nama)}"><b>${esc(o.r.no_siri || o.r.no_id || "")}</b> ${esc(o.r.nama || "")}</td>` +
+        `<td>${esc(o.label)}</td><td class="num">${ringkas(o.a, o.rm)}</td><td class="num">${ringkas(o.b, o.rm)}</td>` +
+        `<td class="num ${o.ub >= 0 ? "naik" : "turun"}">${o.ub >= 0 ? "+" : ""}${(o.ub * 100).toFixed(0)}%</td></tr>`).join("") ||
+        `<tr><td colspan="5" class="nota">Tiada nilai melebihi ambang.</td></tr>`) + "</tbody>";
+  }
+  function cartaSerak(R) {
+    const k = S.ukuranSerak;
+    const u = UKURAN.find((x) => x[0] === k) || UKURAN[0];
+    const amb = S.ambang / 100;
+    const dalam = [], luar = [];
+    let mn = Infinity, mx = 0;
+    for (const r of R) {
+      const a = r[k + "_sebelum"], b = r[k + "_semasa"];
+      if (!(a > 0) || !(b > 0)) continue;
+      mn = Math.min(mn, a, b); mx = Math.max(mx, a, b);
+      (Math.abs(b / a - 1) > amb ? luar : dalam).push([a, b, r.id, r.nama || "", r.no_siri || r.no_id || ""]);
+    }
+    const ch = carta("cSerak");
+    if (!dalam.length && !luar.length) return kosongkanCarta(ch, "Tiada rekod dengan nilai sebelum & semasa > 0");
+    const pendek = (v) => (v >= 1e9 ? v / 1e9 + " bil" : v >= 1e6 ? v / 1e6 + " j" : v >= 1e3 ? v / 1e3 + " k" : String(v));
+    const paksiLog = (nama, jarak) => ({ type: "log", name: nama, nameLocation: "middle", nameGap: jarak, nameTextStyle: { color: css("--muted"), fontSize: 11.5 },
+      ...paksi(), axisLabel: { ...paksi().axisLabel, formatter: pendek } });
+    const titik = (nama, data, warna) => ({ name: nama, type: "scatter", data: data.slice(0, 6000), symbolSize: 8,
+      itemStyle: { color: warna, opacity: 0.75, borderColor: css("--surface"), borderWidth: 1 } });
+    ch.setOption({
+      ...asasTema(),
+      legend: { top: 0, right: 0, itemWidth: 10, itemHeight: 10, textStyle: { color: css("--ink-2"), fontSize: 11.5 } },
+      grid: { left: 30, right: 20, top: 34, bottom: 30, containLabel: true },
+      tooltip: { ...tooltipAsas(), trigger: "item",
+        formatter: (p) => { const [a, b, , nama, siri] = p.data; return `<b>${esc(siri)}</b> ${esc(nama)}<br>Sebelum: ${ringkas(a, u[2])}<br>Semasa: ${ringkas(b, u[2])}<br>Ubah: <b>${b / a >= 1 ? "+" : ""}${((b / a - 1) * 100).toFixed(1)}%</b>`; } },
+      xAxis: paksiLog(u[1] + " — sebelum", 30),
+      yAxis: paksiLog(u[1] + " — semasa", 50),
+      series: [
+        titik("Dalam ambang ±" + S.ambang + "%", dalam, css("--s1")),
+        { ...titik("Melebihi ambang", luar, css("--s4")),
+          markLine: { symbol: "none", silent: true, lineStyle: { color: css("--muted"), type: "dashed", width: 1 }, label: { show: false },
+            data: [[{ coord: [mn, mn] }, { coord: [mx, mx] }]] } },
+      ],
+    }, true);
+    ch.off("click");
+    ch.on("click", (p) => butiran(p.data[2]));
   }
 
   // ---------- Jadual rekod ----------
@@ -809,6 +1258,29 @@
   }
 
   // ---------- Peristiwa ----------
+  function simpanPaparan() {
+    try { localStorage.setItem("sup_paparan", JSON.stringify({ sasaran: S.sasaran, peratus: S.peratus, ambang: S.ambang, hal: S.hal })); } catch (e) { /* abaikan */ }
+  }
+  function tukarHalaman(h) {
+    S.hal = h;
+    document.querySelectorAll(".tab [role=tab]").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.hal === h)));
+    simpanPaparan();
+    papar();
+  }
+  function segmen(id, fn) {
+    $(id).addEventListener("click", (e) => {
+      const b = e.target.closest("button[data-v]");
+      if (!b) return;
+      $(id).querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+      fn(b.dataset.v);
+    });
+  }
+  function bukaLaci(buka) {
+    $("laci").hidden = !buka;
+    $("laciLatar").hidden = !buka;
+    if (!buka) tutupPopover();
+  }
+
   function ikat() {
     document.querySelectorAll("[data-tutup]").forEach((b) => b.addEventListener("click", () => b.closest("dialog").close()));
     $("btnLog").addEventListener("click", async () => {
@@ -833,47 +1305,93 @@
       $("dMuatNaik").showModal();
     });
     $("fail").addEventListener("change", pilihFail);
+    const zon = document.querySelector(".zon-fail");
+    ["dragenter", "dragover"].forEach((ev) => zon.addEventListener(ev, (e) => { e.preventDefault(); zon.classList.add("atas"); }));
+    ["dragleave", "drop"].forEach((ev) => zon.addEventListener(ev, () => zon.classList.remove("atas")));
+    zon.addEventListener("drop", (e) => {
+      e.preventDefault();
+      if (e.dataTransfer.files.length) { $("fail").files = e.dataTransfer.files; pilihFail({ target: $("fail") }); }
+    });
     $("btnSahMuatNaik").addEventListener("click", sahMuatNaik);
     $("btnMuatSemula").addEventListener("click", () => { S.muatNaik = null; muatData(); });
+    $("btnTema").addEventListener("click", () => {
+      const gelap = document.documentElement.dataset.theme
+        ? document.documentElement.dataset.theme === "dark"
+        : window.matchMedia("(prefers-color-scheme: dark)").matches;
+      document.documentElement.dataset.theme = gelap ? "light" : "dark";
+      try { localStorage.setItem("sup_tema", document.documentElement.dataset.theme); } catch (e) { /* abaikan */ }
+      if (S.rekod.length) papar();
+    });
 
-    $("slicerSenarai").addEventListener("change", (e) => {
-      const t = e.target;
-      if (t.type === "checkbox") togolTapis(t.dataset.d, t.value, false);
+    // Tab
+    document.querySelector(".tab").addEventListener("click", (e) => {
+      const b = e.target.closest("[role=tab]");
+      if (b) tukarHalaman(b.dataset.hal);
     });
-    $("slicerSenarai").addEventListener("input", (e) => {
-      const t = e.target;
-      if (t.type !== "search") return;
-      const q = t.value.toLowerCase();
-      t.closest(".sl-badan").querySelectorAll(".sl-item").forEach((el) => {
-        el.hidden = !el.textContent.toLowerCase().includes(q);
-      });
+
+    // Dropdown penapis
+    document.addEventListener("click", (e) => {
+      const dd = e.target.closest(".dd");
+      if (dd && !dd.disabled) {
+        if (ddAktif === dd.dataset.dd && !$("popover").hidden) tutupPopover(); else bukaPopover(dd);
+        return;
+      }
+      if (!e.target.closest("#popover")) tutupPopover();
     });
+    $("popover").addEventListener("change", (e) => {
+      const t = e.target;
+      if (t.type !== "checkbox") return;
+      const s = new Set(S.tapis[ddAktif] || []);
+      if (t.checked) s.add(t.value); else s.delete(t.value);
+      setTapis(ddAktif, s);
+    });
+    $("popover").addEventListener("input", (e) => { if (e.target.type === "search") paparPopover(); });
+    $("popover").addEventListener("click", (e) => {
+      const b = e.target.closest("[data-pv]");
+      if (!b) return;
+      if (b.dataset.pv === "kosong") setTapis(ddAktif, null);
+      else {
+        const q = ($("popover").querySelector("input").value || "").toLowerCase();
+        const { nilai, kira } = nilaiPopover();
+        setTapis(ddAktif, new Set(nilai.filter((v) => kira.get(v) && (!q || labelNilai(ddAktif, v).toLowerCase().includes(q)))));
+      }
+    });
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape") { tutupPopover(); bukaLaci(false); } });
+    $("btnPenapisLain").addEventListener("click", () => bukaLaci(true));
+    $("laciLatar").addEventListener("click", () => bukaLaci(false));
+    document.querySelector("[data-tutup-laci]").addEventListener("click", () => bukaLaci(false));
     $("btnKosong").addEventListener("click", () => { S.tapis = {}; S.halaman = 0; papar(); });
     $("cip").addEventListener("click", (e) => {
       const d = e.target.dataset.buang;
       if (d) { delete S.tapis[d]; S.halaman = 0; papar(); }
     });
-    $("btnSlicer").addEventListener("click", () => $("slicer").classList.toggle("buka"));
-    document.addEventListener("click", (e) => {
-      const sl = $("slicer");
-      if (sl.classList.contains("buka") && !sl.contains(e.target) && e.target !== $("btnSlicer")) sl.classList.remove("buka");
+
+    // Peta
+    segmen("segPetaAras", (v) => { S.petaAras = v; papar(); });
+    $("pilihUkuranPeta").addEventListener("change", (e) => { S.petaUkuran = e.target.value; papar(); });
+    $("tKedudukan").addEventListener("click", (e) => {
+      const tr = e.target.closest("tr[data-mentah]");
+      if (!tr) return;
+      S.petaLabelTapis = tr.dataset.label;
+      klikTapis(lajurPeta(), JSON.parse(tr.dataset.mentah));
     });
 
-    const pilih = $("pilihDimensi");
-    pilih.addEventListener("change", () => { S.dimensi = pilih.value; papar(); });
-    try {
-      const t = JSON.parse(localStorage.getItem("mko_paparan") || "{}");
-      if (t.sasaran != null) S.sasaran = t.sasaran;
-      if (t.peratus != null) S.peratus = t.peratus;
-    } catch (e) { /* abaikan */ }
-    const simpanPaparan = () => { try { localStorage.setItem("mko_paparan", JSON.stringify({ sasaran: S.sasaran, peratus: S.peratus })); } catch (e) { /* abaikan */ } };
-    $("modPeratus").checked = S.peratus;
-    $("sasaran").value = S.sasaran;
-    $("modPeratus").addEventListener("change", (e) => { S.peratus = e.target.checked; simpanPaparan(); papar(); });
+    // Prestasi
+    $("pilihDimensi").addEventListener("change", (e) => { S.dimensi = e.target.value; papar(); });
+    segmen("segPeratus", (v) => { S.peratus = v === "1"; simpanPaparan(); papar(); });
     $("sasaran").addEventListener("change", (e) => {
       const v = Math.max(0, Math.min(100, +e.target.value || 0)); S.sasaran = v; e.target.value = v; simpanPaparan(); papar();
     });
+    $("btnEksportSkor").addEventListener("click", () => unduh("kad-skor-" + new Date().toISOString().slice(0, 10) + ".csv", skorSemasa));
 
+    // Nilai
+    $("pilihUkuranSerak").addEventListener("change", (e) => { S.ukuranSerak = e.target.value; papar(); });
+    $("ambang").addEventListener("change", (e) => {
+      const v = Math.max(5, Math.min(1000, +e.target.value || 50)); S.ambang = v; e.target.value = v; simpanPaparan(); papar();
+    });
+    $("tSemakan").addEventListener("click", (e) => { const tr = e.target.closest("tr[data-id]"); if (tr) butiran(tr.dataset.id); });
+
+    // Rekod
     let tunda;
     $("cari").addEventListener("input", (e) => {
       clearTimeout(tunda);
@@ -897,7 +1415,7 @@
     let saizTunda;
     window.addEventListener("resize", () => {
       clearTimeout(saizTunda);
-      saizTunda = setTimeout(() => Object.values(S.carta).forEach((c) => c.resize()), 150);
+      saizTunda = setTimeout(() => { tutupPopover(); if (S.rekod.length) paparHalaman(); }, 200);
     });
     window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => S.rekod.length && papar());
     document.addEventListener("visibilitychange", () => { if (!document.hidden) muatData(true); });
@@ -905,13 +1423,24 @@
 
   // ---------- Mula ----------
   async function mula() {
-    document.title = cfg.TAJUK || "Dashboard MKO";
-    $("tajuk").textContent = cfg.TAJUK || "Dashboard MKO";
-    $("btnMuatNaik").hidden = true;
+    const tajuk = cfg.TAJUK || "Dashboard Statistik Utama Pertubuhan";
+    document.title = tajuk;
+    $("tajuk").textContent = tajuk;
+    try {
+      const t = JSON.parse(localStorage.getItem("sup_paparan") || "{}");
+      if (t.sasaran != null) S.sasaran = t.sasaran;
+      if (t.peratus != null) S.peratus = t.peratus;
+      if (t.ambang != null) S.ambang = t.ambang;
+      if (t.hal && document.querySelector(`.tab [data-hal="${t.hal}"]`)) S.hal = t.hal;
+    } catch (e) { /* abaikan */ }
+    $("sasaran").value = S.sasaran;
+    $("ambang").value = S.ambang;
+    $("segPeratus").querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String((b.dataset.v === "1") === S.peratus)));
+    document.querySelectorAll(".tab [role=tab]").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.hal === S.hal)));
     ikat();
-    sb.auth.onAuthStateChange(() => {});
     await semakSesi();
     await muatData();
+    $("kakiMasa").textContent = "Dipaparkan " + new Date().toLocaleString("ms-MY", { dateStyle: "medium", timeStyle: "short" });
     if (cfg.SEMAK_SETIAP_SAAT > 0) setInterval(() => { if (!document.hidden) muatData(true); }, cfg.SEMAK_SETIAP_SAAT * 1000);
   }
   mula();
