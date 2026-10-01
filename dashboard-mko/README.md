@@ -8,6 +8,19 @@ dashboard terus memaparkan data baharu (pelayar lain menyemak data baharu setiap
   nama syarikat dan nilai kewangan.
 - **Muat naik:** hanya e-mel dalam jadual `pentadbir` yang log masuk.
 
+## Status pencapaian pertubuhan
+Ukuran utama dashboard ialah **% Selesai** berdasarkan lajur **Status Rekod**:
+
+| Tahap | Status Rekod dalam fail |
+|---|---|
+| Selesai | Selesai |
+| Semakan SMD | Semakan SMD |
+| Semakan DOSM Negeri | Semakan DOSM Negeri, Semakan Khas, Semakan Khas - DOSM Negeri |
+| Pinda Semula | Pinda Semula - … (dikembalikan untuk pembetulan) |
+| Dalam Proses | Dalam Proses (peringkat FE) |
+
+Jika fail tiada Status Rekod, dashboard kembali menggunakan kadar respons (ada kod respon).
+
 ## Halaman
 | Tab | Kandungan |
 |---|---|
@@ -34,7 +47,9 @@ Kategori kod respon: **A1** = 11 · **LK (Lain-lain Keputusan)** = 12,13,14,21,2
 - Rekod yang hanya ada dalam satu fail tetap dimasukkan (kesatuan). Semak lajur *Baharu* — rekod baharu daripada fail sekunder akan menambah jumlah kes.
 
 ## Peta
-Sempadan rasmi OpenDOSM (`peta/`). Nama daerah dipadankan secara automatik (abaikan huruf besar, "W.P.", "Daerah", Hulu/Ulu,
+Sempadan rasmi OpenDOSM (`peta/`): daerah, negeri dan **parlimen**. Daerah diambil daripada lajur *Semasa*; jika kosong, lajur *Label* digunakan.
+**W.P. Kuala Lumpur dipecah ikut 11 parlimen** apabila fail ada lajur `Parlimen` (cth. `P.117 Segambut`, `P117` atau `Segambut`).
+Tab Peta juga ada aras *Parlimen* untuk semua negeri. Nama daerah dipadankan secara automatik (abaikan huruf besar, "W.P.", "Daerah", Hulu/Ulu,
 kod 4 digit negeri+daerah). Nilai yang tidak dapat dipadankan dipaparkan dengan tanda ⚠ di bawah peta dan dalam jadual kedudukan.
 Nota: sempadan DOSM menganggap **W.P. Kuala Lumpur sebagai satu daerah** — jika semua kes dalam KL, peta akan menunjukkan satu kawasan sahaja.
 

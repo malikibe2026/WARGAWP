@@ -64,34 +64,39 @@
     <div class="halaman" data-hal="ringkasan">
       <section id="kpi" class="kpi-grid"></section>
       <section class="grid g-12">
-        <article class="kad s-8">
-          <header class="kad-kepala"><div><h2>Komposisi status respon</h2><p class="kad-sub">Status Respon Lawatan Semasa · klik untuk tapis</p></div></header>
-          <div id="cKomposisi" class="carta carta-komposisi"></div>
-          <div id="cStatus" class="carta"></div>
+        <article class="kad s-8" data-perlu-tahap>
+          <header class="kad-kepala"><div><h2>Status pencapaian pertubuhan</h2><p class="kad-sub">Ikut Status Rekod · aliran Dalam Proses → Semakan DOSM Negeri → Semakan SMD → Selesai · klik untuk tapis</p></div></header>
+          <div id="cAliranBar" class="carta carta-komposisi"></div>
+          <div id="cAliran" class="carta carta-aliran"></div>
         </article>
         <article class="kad s-4 kad-penemuan">
           <header class="kad-kepala"><div><h2>Penemuan utama</h2><p class="kad-sub">Dijana automatik daripada tapisan semasa</p></div></header>
           <ul id="penemuan" class="penemuan"></ul>
         </article>
         <article class="kad s-6">
+          <header class="kad-kepala"><div><h2>Pencapaian ikut pejabat</h2><p class="kad-sub">% setiap tahap · garis merah = sasaran · klik untuk tapis</p></div></header>
+          <div id="cIkut" class="carta"></div>
+        </article>
+        <article class="kad s-6">
           <header class="kad-kepala"><div><h2>Kemajuan borang diterima</h2><p class="kad-sub">Kumulatif ikut Tarikh Terima</p></div></header>
           <div id="cTarikh" class="carta"></div>
         </article>
-        <article class="kad s-6">
-          <header class="kad-kepala"><div><h2>Kadar respons ikut sektor</h2><p class="kad-sub">% kes yang ada kod respon · klik untuk tapis</p></div></header>
-          <div id="cSektor" class="carta"></div>
+        <article class="kad s-8">
+          <header class="kad-kepala"><div><h2>Status respon lawatan semasa</h2><p class="kad-sub">Kategori kod respon · klik untuk tapis</p></div></header>
+          <div id="cKomposisi" class="carta carta-komposisi"></div>
+          <div id="cStatus" class="carta"></div>
         </article>
         <article class="kad s-4">
+          <header class="kad-kepala"><div><h2>Respon × tahap pencapaian</h2><p class="kad-sub">Bilangan pertubuhan</p></div></header>
+          <div id="matriks" class="matriks-bungkus"></div>
+        </article>
+        <article class="kad s-6">
           <header class="kad-kepala"><div><h2>Cara terima</h2></div></header>
           <div id="cCara" class="carta carta-kecil"></div>
         </article>
-        <article class="kad s-4">
+        <article class="kad s-6">
           <header class="kad-kepala"><div><h2>Saiz pertubuhan (PMKS)</h2></div></header>
           <div id="cPmks" class="carta carta-kecil"></div>
-        </article>
-        <article class="kad s-4">
-          <header class="kad-kepala"><div><h2>Peralihan status</h2><p class="kad-sub">Sebelum ↓ · Semasa →</p></div></header>
-          <div id="matriks" class="matriks-bungkus"></div>
         </article>
       </section>
     </div>
@@ -106,13 +111,14 @@
               <div class="segmen" id="segPetaAras" role="group" aria-label="Aras peta">
                 <button data-v="lokasi" aria-pressed="true">Daerah lokasi</button>
                 <button data-v="pos">Daerah pos</button>
+                <button data-v="parlimen">Parlimen</button>
                 <button data-v="negeri">Negeri</button>
               </div>
               <select id="pilihUkuranPeta" aria-label="Ukuran peta">
+                <option value="selesai">% Selesai</option>
+                <option value="belumSelesai">Belum selesai (bilangan)</option>
+                <option value="jumlah">Jumlah pertubuhan</option>
                 <option value="kadar">Kadar respons (%)</option>
-                <option value="jumlah">Jumlah kes</option>
-                <option value="siap">Kes siap</option>
-                <option value="belum">Belum ada respon</option>
                 <option value="a1">A1 (%)</option>
               </select>
             </div>
@@ -132,9 +138,13 @@
       <section class="grid g-12">
         <article class="kad s-12">
           <header class="kad-kepala">
-            <div><h2>Kemajuan respon ikut <select id="pilihDimensi" class="pilih-tajuk" aria-label="Pecahan ikut"></select></h2>
-              <p class="kad-sub">Bar disusun ikut % siap · garis merah = sasaran · klik bar untuk tapis</p></div>
+            <div><h2>Pencapaian ikut <select id="pilihDimensi" class="pilih-tajuk" aria-label="Pecahan ikut"></select></h2>
+              <p class="kad-sub">Bar disusun ikut % · garis merah = sasaran · klik bar untuk tapis</p></div>
             <div class="kawalan">
+              <div class="segmen" id="segUkurPrestasi" role="group" aria-label="Ukuran">
+                <button data-v="tahap" aria-pressed="true">Tahap pencapaian</button>
+                <button data-v="respon">Kategori respon</button>
+              </div>
               <div class="segmen" id="segPeratus" role="group" aria-label="Unit">
                 <button data-v="1" aria-pressed="true">Peratus</button>
                 <button data-v="0">Bilangan</button>
@@ -206,7 +216,7 @@
   </main>
 
   <footer class="kaki">
-    <span>Kategori respon: A1 = 11 · LK (Lain-lain Keputusan) = 12, 13, 14, 21, 22, 23, 31, 40 · 50 = Salah Penyiasatan · Kod B = 71–77</span>
+    <span>Tahap pencapaian ikut Status Rekod (Selesai · Semakan SMD · Semakan DOSM Negeri · Pinda Semula · Dalam Proses). Kategori respon: A1 = 11 · LK (Lain-lain Keputusan) = 12, 13, 14, 21, 22, 23, 31, 40 · 50 · Kod B = 71–77</span>
     <span id="kakiMasa"></span>
   </footer>
 
