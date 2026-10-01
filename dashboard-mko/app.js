@@ -1158,28 +1158,43 @@
       if (k && !guna.has(k)) guna.set(k, idx);
       else if (!k && header[idx] != null && String(header[idx]).trim()) tidakDikenal.push(String(header[idx]).trim());
     });
-    const rekod = [];
+    if (!guna.has("no_siri")) throw new Error("Lajur 'No. Siri' tidak dijumpai — No. Siri (12 digit) wajib sebagai kunci rekod.");
+    const rekod = [], siriSalah = [], contohLapik = [];
+    let siriLapik = 0;
     for (let b = i + 1; b < aoa.length; b++) {
       const row = aoa[b];
       if (!row || row.every((v) => v == null || String(v).trim() === "")) continue;
       const r = {};
       for (const [k, idx] of guna) r[k] = tukarNilai(k, row[idx]);
       if (!r.no_id && !r.nama && !r.no_siri) continue;   // baris jumlah / nota
+      const ns = normSiri(r.no_siri);
+      if (!ns.nilai) { siriSalah.push({ baris: b + 1, nilai: ns.status === "kosong" ? "(kosong)" : ns.asal }); continue; }
+      if (ns.status === "lapik") { siriLapik++; if (contohLapik.length < 3) contohLapik.push(ns.asal + " → " + ns.nilai); }
+      r.no_siri = ns.nilai;
       if (!r.msic_3 && r.msic_5) r.msic_3 = String(r.msic_5).replace(/\D/g, "").slice(0, 3) || null;
       rekod.push(r);
     }
     const hilang = LAJUR.map((l) => l[0]).filter((k) => !guna.has(k) && !(k === "msic_3" && guna.has("msic_5")));
-    return { rekod, hilang, tidakDikenal, helaian: terbaik.helaian, nama: fail.name };
+    return { rekod, hilang, tidakDikenal, helaian: terbaik.helaian, nama: fail.name, siriSalah, siriLapik, contohLapik };
   }
 
   // ---------- Gabung beberapa fail ikut No. Siri ----------
   // Kunci padanan: No. Siri (atau NO ID jika No. Siri tiada). Sifar di depan diabaikan semasa memadan
   // supaya "03507000001" (teks) sepadan dengan 3507000001 (nombor Excel).
+  // No. Siri mesti tepat 12 digit. Excel selalu membuang sifar di depan (cth. 012345678901 -> 12345678901),
+  // jadi nilai nombor yang kurang daripada 12 digit dilapik dengan sifar. Lebih 12 digit / ada huruf = tidak sah.
+  const PANJANG_SIRI = 12;
+  function normSiri(v) {
+    if (v == null || String(v).trim() === "") return { status: "kosong", nilai: null };
+    const s = String(v).trim().replace(/[\s\-']/g, "");
+    if (!/^\d+$/.test(s)) return { status: "salah", nilai: null, asal: String(v) };
+    if (s.length > PANJANG_SIRI) return { status: "salah", nilai: null, asal: String(v) };
+    if (s.length < PANJANG_SIRI) return { status: "lapik", nilai: s.padStart(PANJANG_SIRI, "0"), asal: s };
+    return { status: "ok", nilai: s };
+  }
   function kunciRekod(r) {
-    const v = r.no_siri != null && r.no_siri !== "" ? r.no_siri : r.no_id;
-    if (v == null || v === "") return null;
-    const s = String(v).trim().toUpperCase().replace(/\s+/g, "");
-    return /^\d+$/.test(s) ? s.replace(/^0+(?=\d)/, "") : s;
+    const n = normSiri(r.no_siri);
+    return n.nilai;
   }
   const SISTEM = new Set(["id", "muat_naik_id", "_kat"]);
   function gabungSumber(sumber) {
@@ -1195,6 +1210,7 @@
         for (const k in asal) if (!SISTEM.has(k)) r[k] = asal[k];
         const kunci = kunciRekod(r);
         if (!kunci) { st.tanpaKunci++; tanpaKunci.push(r); continue; }
+        r.no_siri = kunci;
         if (dilihat.has(kunci)) st.duplikat++;
         else if (sebelum.has(kunci)) st.padan++;
         dilihat.add(kunci);
@@ -1203,7 +1219,6 @@
         for (const k in r) {
           const v = r[k];
           if (v == null || v === "") continue;                  // sel kosong tidak memadam nilai sedia ada
-          if (k === "no_siri" && lama.no_siri && String(lama.no_siri).length >= String(v).length) continue;  // kekalkan sifar di depan
           if (lama[k] != null && lama[k] !== "" && String(lama[k]) !== String(v)) {
             konflik++;
             if (contoh.length < 5) contoh.push(`${lama.no_siri || kunci}: ${LABEL[k] || k} "${lama[k]}" → "${v}"`);
@@ -1213,7 +1228,7 @@
       }
       return st;
     });
-    const rekod = [...peta.values(), ...tanpaKunci];
+    const rekod = [...peta.values()];   // rekod tanpa No. Siri 12 digit tidak dimuat naik
     for (const r of rekod) if (!r.msic_3 && r.msic_5) r.msic_3 = String(r.msic_5).replace(/\D/g, "").slice(0, 3) || null;
     return { rekod, statistik, konflik, contoh, tanpaKunci: tanpaKunci.length };
   }
@@ -1262,11 +1277,12 @@
     const lajurDikenal = (h) => (h.lajur ? h.lajur : LAJUR.length - h.hilang.length);
     let html = "";
     if (banyak) {
-      html += `<table class="jadual semak-fail"><thead><tr><th>#</th><th>Sumber</th><th class="num">Rekod</th><th class="num">Lajur dikenal</th><th class="num">Padan No. Siri</th><th class="num">Baharu</th></tr></thead><tbody>` +
+      html += `<table class="jadual semak-fail"><thead><tr><th>#</th><th>Sumber</th><th class="num">Rekod</th><th class="num">Lajur dikenal</th><th class="num">Padan No. Siri</th><th class="num">Baharu</th><th class="num">Ditolak</th></tr></thead><tbody>` +
         g.statistik.map((st, i) => {
           const h = gabungLama ? (i === 0 ? null : failDibaca[i - 1]) : failDibaca[i];
           return `<tr><td class="num">${i + 1}</td><td>${esc(st.nama)}${h ? ` <span class="nota">(${esc(h.helaian)})</span>` : ""}</td><td class="num">${fmtN.format(st.rekod)}</td>` +
-            `<td class="num">${h ? lajurDikenal(h) + " / " + LAJUR.length : "–"}</td><td class="num">${i === 0 ? "–" : fmtN.format(st.padan)}</td><td class="num">${fmtN.format(st.baharu)}</td></tr>`;
+            `<td class="num">${h ? lajurDikenal(h) + " / " + LAJUR.length : "–"}</td><td class="num">${i === 0 ? "–" : fmtN.format(st.padan)}</td><td class="num">${fmtN.format(st.baharu)}</td>` +
+            `<td class="num${h && h.siriSalah.length ? " turun" : ""}">${h ? fmtN.format(h.siriSalah.length) : "–"}</td></tr>`;
         }).join("") + `</tbody></table>`;
     }
     html += `<p><strong>${fmtN.format(g.rekod.length)}</strong> rekod ${banyak ? "selepas digabung ikut <b>No. Siri</b>" : `dijumpai (helaian: ${esc(failDibaca[0].helaian)})`}.</p><ul>` +
@@ -1274,7 +1290,7 @@
       `<li>Rekod tanpa Tarikh Terima: ${fmtN.format(g.rekod.filter((r) => !r.tarikh_terima).length)}</li>` +
       (banyak ? `<li>Nilai berbeza antara sumber: ${fmtN.format(g.konflik)}${g.konflik ? " — nilai daripada sumber yang <b>terkemudian</b> dalam senarai digunakan" : ""}</li>` : "") +
       (g.statistik.some((st) => st.duplikat) ? `<li class="amaran">No. Siri berulang dalam fail yang sama: ${g.statistik.filter((st) => st.duplikat).map((st) => esc(st.nama) + " (" + st.duplikat + ")").join(", ")} — baris terakhir digunakan</li>` : "") +
-      (g.tanpaKunci && banyak ? `<li class="amaran">${fmtN.format(g.tanpaKunci)} baris tiada No. Siri — tidak dapat digabung, ditambah sebagai rekod berasingan</li>` : "") +
+      (g.tanpaKunci ? `<li class="amaran">${fmtN.format(g.tanpaKunci)} rekod sedia ada tiada No. Siri 12 digit — tidak dimasukkan</li>` : "") +
       `</ul>` +
       (g.contoh.length ? `<p class="nota">Contoh: ${g.contoh.map(esc).join("; ")}</p>` : "") +
       (tanpaSiriSemua.length && banyak ? `<p class="amaran">Fail tanpa lajur No. Siri: ${tanpaSiriSemua.map((h) => esc(h.nama)).join(", ")}. Data fail ini tidak dapat dipadankan.</p>` : "") +
@@ -1282,6 +1298,15 @@
       (hilang.length ? `<details><summary>${hilang.length} lajur tiada nilai dalam mana-mana sumber</summary><p class="nota">${hilang.map((k) => esc(LABEL[k])).join("; ")}</p></details>` : "") +
       (failDibaca.some((h) => h.tidakDikenal.length) ? `<p class="nota">Header diabaikan: ${[...new Set(failDibaca.flatMap((h) => h.tidakDikenal))].map(esc).join("; ")}</p>` : "") +
       (S.rekod.length && !gabungLama ? `<p>Data semasa (${fmtN.format(S.rekod.length)} rekod) akan <strong>diganti</strong>.</p>` : "");
+    // Semakan No. Siri 12 digit
+    const salah = failDibaca.flatMap((h) => h.siriSalah.map((x) => ({ ...x, fail: h.nama })));
+    const lapik = failDibaca.reduce((a, h) => a + h.siriLapik, 0);
+    const contohLapik = failDibaca.flatMap((h) => h.contohLapik).slice(0, 3);
+    html = (salah.length
+      ? `<p class="amaran"><b>${fmtN.format(salah.length)} baris ditolak</b> kerana No. Siri bukan 12 digit (kosong, ada huruf atau lebih 12 digit). Baris ini <b>tidak</b> dimuat naik.</p>` +
+        `<details><summary>Lihat baris ditolak</summary><p class="nota">${salah.slice(0, 30).map((x) => `${esc(x.fail)} baris ${x.baris}: ${esc(x.nilai)}`).join("<br>")}${salah.length > 30 ? "<br>…" : ""}</p></details>`
+      : `<p class="naik">✓ Semua No. Siri sah (12 digit).</p>`) +
+      (lapik ? `<p class="nota">${fmtN.format(lapik)} No. Siri kurang 12 digit (sifar di depan dibuang oleh Excel) dilapik dengan sifar, cth. ${contohLapik.map(esc).join(", ")}. Semak jika ini betul.</p>` : "") + html;
     $("semakan").innerHTML = html;
     $("btnSahMuatNaik").disabled = !g.rekod.length;
     $("btnSahMuatNaik").textContent = gabungLama ? "Gabung & simpan" : banyak ? "Gabung & ganti data" : "Ganti data";

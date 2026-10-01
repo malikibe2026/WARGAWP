@@ -35,6 +35,9 @@ create table public.rekod (
   catatan_mko text, catatan_negeri text, ditambah_oleh text, dikemaskini_oleh text, tarikh_dikemaskini text
 );
 create index rekod_muat_naik_idx on public.rekod (muat_naik_id);
+-- No. Siri wajib tepat 12 digit dan unik dalam setiap muat naik
+alter table public.rekod add constraint rekod_no_siri_12_digit check (no_siri is not null and no_siri ~ '^[0-9]{12}$');
+create unique index rekod_no_siri_unik on public.rekod (muat_naik_id, no_siri);
 
 alter table public.muat_naik enable row level security;
 alter table public.rekod enable row level security;

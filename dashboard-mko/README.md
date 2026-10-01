@@ -24,7 +24,11 @@ Kategori kod respon: **A1** = 11 · **LK (Lain-lain Keputusan)** = 12,13,14,21,2
 
 ## Gabung beberapa fail (kunci: No. Siri)
 - Dalam dialog muat naik, pilih **beberapa fail sekali gus** — header boleh berlainan (cth. fail status + fail nilai kewangan).
-- Rekod dipadankan ikut **No. Siri** (atau NO ID jika tiada). Sifar di depan diabaikan semasa memadan, jadi `03507000001` (teks) sepadan dengan `3507000001` (nombor Excel); paparan kekalkan sifar.
+- Rekod dipadankan ikut **No. Siri**, yang mesti **tepat 12 digit**:
+  - kurang 12 digit (Excel buang sifar di depan) → dilapik sifar, cth. `35070000021` → `035070000021` (dilaporkan sebelum simpan);
+  - lebih 12 digit, ada huruf, atau kosong → baris **ditolak** dan disenaraikan (nombor baris Excel);
+  - sengkang/ruang dibuang (`0350-7000-0026` → `035070000026`).
+  Pangkalan data turut menolak No. Siri yang bukan 12 digit atau berulang dalam satu muat naik.
 - Sel kosong **tidak** memadam nilai sedia ada. Jika dua fail ada nilai berbeza untuk lajur sama, nilai daripada fail **terkemudian dalam senarai** digunakan; bilangan dan contoh percanggahan dipaparkan sebelum simpan.
 - Tandakan **Gabung dengan data sedia ada** untuk kemas kini data semasa (cth. fail kecil `No. Siri` + `Status Respon Lawatan Semasa`) tanpa ganti semua.
 - Rekod yang hanya ada dalam satu fail tetap dimasukkan (kesatuan). Semak lajur *Baharu* — rekod baharu daripada fail sekunder akan menambah jumlah kes.
