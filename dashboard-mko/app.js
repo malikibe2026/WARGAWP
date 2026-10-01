@@ -99,10 +99,36 @@
     ["pendapatan", "pendapatan"], ["perbelanjaan", "perbelanjaan"], ["hartatetap", "harta_tetap"],
     ["bilanganpekerja", "pekerja"], ["gajiupah", "gaji"], ["stokakhir", "stok_akhir"], ["nilaijualan", "nilai_jualan"],
   ];
+  // Nama lajur alternatif (cth. fail rangka / kawalan yang bukan export MKO)
+  const ALIAS = {
+    siri: "no_siri", nosr: "no_siri", nombosiri: "no_siri", nombersiri: "no_siri", nomborsiri: "no_siri",
+    nama: "nama", namapertubuhan: "nama", namasyarikat: "nama", namaperniagaan: "nama", namaentiti: "nama", namaestablishment: "nama",
+    namafe: "pegawai_kerja_luar", enumerator: "pegawai_kerja_luar", pkl: "pegawai_kerja_luar", namapkl: "pegawai_kerja_luar",
+    sv: "penyelia", namapenyelia: "penyelia",
+    daerah: "daerah_lokasi_semasa", daerahpentadbiran: "daerah_lokasi_semasa",
+    statusrespon: "status_respon_semasa", kodrespon: "status_respon_semasa", respon: "status_respon_semasa", status: "status_respon_semasa",
+    msic: "msic_5", kodmsic: "msic_5", msic2008: "msic_5", kodindustri: "msic_5", msic5digit: "msic_5", msic3digit: "msic_3",
+    saiz: "pmks", saizpertubuhan: "pmks", kategoripmks: "pmks",
+  };
+  function petaAlias(n) {
+    if (ALIAS[n]) return ALIAS[n];
+    if (/^no(\.)?siri/.test(n) || n.startsWith("nosiri")) return "no_siri";
+    if (n.includes("pegawaikerjaluar")) return "pegawai_kerja_luar";
+    if (n.includes("penyelia")) return "penyelia";
+    if (n.includes("statusrespon") || n.includes("koderespon")) return n.includes("sebelum") ? "status_respon_sebelum" : "status_respon_semasa";
+    if (n.includes("tarikhterima")) return "tarikh_terima";
+    if (n.startsWith("namapertubuhan") || n.startsWith("namasyarikat")) return "nama";
+    if (n.startsWith("subsektor")) return "subsektor";
+    if (n.startsWith("sektor")) return "sektor";
+    if (n.startsWith("daerah")) return n.includes("pos") ? "daerah_pos_semasa" : "daerah_lokasi_semasa";
+    return null;
+  }
   function petaHeader(h) {
     const n = norm(h);
     if (!n) return null;
     if (HEADER_TETAP[n]) return HEADER_TETAP[n];
+    const alias = petaAlias(n);
+    if (alias) return alias;
     if (n.startsWith("kodindustrimsic2008")) return n.slice(19).startsWith("3") ? "msic_3" : "msic_5";
     if (n.startsWith("kodindustrimsic")) return /3(digit)?$/.test(n) ? "msic_3" : "msic_5";
     for (const [awal, kunci] of AWALAN_UKURAN) {
@@ -1138,20 +1164,33 @@
     const buf = await fail.arrayBuffer();
     const csv = /\.csv$/i.test(fail.name);
     const wb = XLSX.read(buf, csv ? { type: "array", raw: true, codepage: 65001 } : { type: "array" });
-    let terbaik = null;
+    let terbaik = null, calonHeader = null;
     for (const nama of wb.SheetNames) {
       const aoa = XLSX.utils.sheet_to_json(wb.Sheets[nama], { header: 1, raw: true, defval: null, blankrows: false });
       for (let i = 0; i < Math.min(30, aoa.length); i++) {
-        const peta = (aoa[i] || []).map(petaHeader);
-        const skor = new Set(peta.filter(Boolean)).size;
-        // Fail kecil (cth. No. Siri + satu lajur kemas kini) dibenarkan jika ada lajur kunci
-        const adaKunci = peta.includes("no_siri") || peta.includes("no_id");
-        if ((skor >= 3 || (skor >= 2 && adaKunci)) && (!terbaik || skor > terbaik.skor)) terbaik = { skor, aoa, i, peta, helaian: nama };
+        // Cuba header satu baris, dan header dua baris (sel bergabung di atas, cth. "Pendapatan (RM)" / "Survei Sebelum")
+        const atas = aoa[i] || [], bawah = aoa[i + 1] || [];
+        let isi = null;
+        const atasIsi = atas.map((v) => (v != null && String(v).trim() !== "" ? (isi = String(v).trim()) : isi));
+        const dua = Array.from({ length: Math.max(atas.length, bawah.length) }, (_, c) =>
+          bawah[c] != null && String(bawah[c]).trim() !== "" ? (atasIsi[c] || "") + " " + String(bawah[c]).trim() : atas[c]);
+        for (const [header, baris] of [[atas, 1], [dua, 2]]) {
+          const peta = header.map(petaHeader);
+          const skor = new Set(peta.filter(Boolean)).size;
+          // Fail kecil (cth. No. Siri + satu lajur) dibenarkan jika ada lajur kunci
+          const adaKunci = peta.includes("no_siri");
+          if ((skor >= 3 || (skor >= 1 && adaKunci)) && (!terbaik || skor > terbaik.skor))
+            terbaik = { skor, aoa, i: i + baris - 1, peta, header, helaian: nama };
+        }
+      }
+      if (!calonHeader) {
+        const r = aoa.slice(0, 15).find((b) => b && b.filter((v) => v != null && String(v).trim() !== "").length >= 3);
+        if (r) calonHeader = { helaian: nama, sel: r.filter((v) => v != null && String(v).trim() !== "").map(String) };
       }
     }
-    if (!terbaik) throw new Error("Header tidak dijumpai. Pastikan baris header mengandungi lajur seperti 'NO ID', 'Nama Pendaftaran', 'Status Respon Lawatan Semasa'.");
-    const { aoa, i, peta } = terbaik;
-    const header = aoa[i];
+    if (!terbaik) throw new Error("Lajur 'No. Siri' tidak dijumpai dalam mana-mana helaian." +
+      (calonHeader ? ` Header yang dijumpai (helaian ${calonHeader.helaian}): ${calonHeader.sel.slice(0, 15).join(" | ")}${calonHeader.sel.length > 15 ? " …" : ""}` : ""));
+    const { aoa, i, peta, header } = terbaik;
     const guna = new Map();   // kunci -> indeks lajur pertama
     const tidakDikenal = [];
     peta.forEach((k, idx) => {
