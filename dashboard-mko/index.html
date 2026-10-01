@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="ms">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Dashboard MKO</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="bar">
+    <div class="bar-kiri">
+      <button id="btnSlicer" class="ikon-btn hanya-mudah-alih" aria-label="Penapis">☰</button>
+      <div>
+        <h1 id="tajuk">Dashboard MKO</h1>
+        <p id="info" class="info">Memuatkan data…</p>
+      </div>
+    </div>
+    <div class="bar-kanan">
+      <button id="btnMuatSemula" class="btn btn-hantu" title="Muat semula data">⟳ Muat semula</button>
+      <button id="btnMuatNaik" class="btn btn-utama">⬆ Muat naik fail</button>
+      <button id="btnLog" class="btn btn-hantu">Log masuk</button>
+    </div>
+  </header>
+
+  <div class="susun">
+    <aside id="slicer" class="slicer" aria-label="Penapis">
+      <div class="slicer-kepala">
+        <strong>Penapis</strong>
+        <button id="btnKosong" class="pautan">Kosongkan semua</button>
+      </div>
+      <div id="slicerSenarai"></div>
+    </aside>
+
+    <main class="utama">
+      <div id="cip" class="cip-baris"></div>
+
+      <section id="kpi" class="kpi-grid"></section>
+
+      <section class="grid">
+        <div class="kad lebar">
+          <div class="kad-kepala">
+            <h2>Kemajuan respon ikut <select id="pilihDimensi" aria-label="Pecahan ikut"></select></h2>
+            <div class="alat-kecil">
+              <label><input id="modPeratus" type="checkbox"> Peratus</label>
+              <label>Sasaran <input id="sasaran" type="number" min="0" max="100" step="1" value="45">%</label>
+              <span class="nota">Klik bar untuk tapis</span>
+            </div>
+          </div>
+          <div id="cDimensi" class="carta carta-tinggi"></div>
+        </div>
+
+        <div class="kad">
+          <div class="kad-kepala"><h2>Status Respon Lawatan Semasa</h2></div>
+          <div id="cStatus" class="carta"></div>
+        </div>
+
+        <div class="kad">
+          <div class="kad-kepala"><h2>Kumulatif borang diterima</h2><span class="nota">ikut Tarikh Terima</span></div>
+          <div id="cTarikh" class="carta"></div>
+        </div>
+
+        <div class="kad">
+          <div class="kad-kepala"><h2>Cara Terima</h2></div>
+          <div id="cCara" class="carta"></div>
+        </div>
+
+        <div class="kad">
+          <div class="kad-kepala"><h2>Status Rekod</h2></div>
+          <div id="cRekod" class="carta"></div>
+        </div>
+
+        <div class="kad">
+          <div class="kad-kepala"><h2>10 Kod Industri (3 digit) teratas</h2></div>
+          <div id="cMsic" class="carta"></div>
+        </div>
+
+        <div class="kad">
+          <div class="kad-kepala"><h2>Status respon: sebelum → semasa</h2><span class="nota">kategori</span></div>
+          <div id="matriks" class="matriks-bungkus"></div>
+        </div>
+
+        <div class="kad lebar">
+          <div class="kad-kepala">
+            <h2>Perbandingan nilai penyiasatan</h2>
+            <span class="nota">Jumlah bagi rekod yang ada nilai sebelum <em>dan</em> semasa</span>
+          </div>
+          <div class="jadual-bungkus"><table id="tKewangan" class="jadual"></table></div>
+        </div>
+
+        <div class="kad lebar">
+          <div class="kad-kepala">
+            <h2>Senarai rekod <span id="bilRekod" class="nota"></span></h2>
+            <div class="alat">
+              <input id="cari" type="search" placeholder="Cari No. Siri / nama / FE…" aria-label="Cari rekod">
+              <button id="btnEksport" class="btn btn-hantu">⬇ CSV</button>
+            </div>
+          </div>
+          <div class="jadual-bungkus"><table id="tRekod" class="jadual jadual-rekod"></table></div>
+          <div class="halaman">
+            <button id="pgSebelum" class="btn btn-hantu">‹</button>
+            <span id="pgInfo"></span>
+            <button id="pgSelepas" class="btn btn-hantu">›</button>
+          </div>
+        </div>
+      </section>
+
+      <div id="kosong" class="kosong" hidden>
+        <h2>Belum ada data</h2>
+        <p>Log masuk sebagai pentadbir, kemudian klik <strong>Muat naik fail</strong> (Excel .xlsx atau CSV export MKO).</p>
+      </div>
+    </main>
+  </div>
+
+  <!-- Log masuk -->
+  <dialog id="dLog" class="dialog">
+    <form id="fLog" method="dialog">
+      <h2>Log masuk pentadbir</h2>
+      <p class="nota">Hanya diperlukan untuk muat naik data.</p>
+      <label>E-mel <input id="logEmel" type="email" required autocomplete="username"></label>
+      <label>Kata laluan <input id="logKata" type="password" required autocomplete="current-password"></label>
+      <p id="logRalat" class="ralat"></p>
+      <div class="dialog-butang">
+        <button type="button" class="btn btn-hantu" data-tutup>Batal</button>
+        <button type="submit" class="btn btn-utama">Log masuk</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Muat naik -->
+  <dialog id="dMuatNaik" class="dialog dialog-lebar">
+    <div>
+      <h2>Muat naik data terbaru</h2>
+      <p class="nota">Fail baharu akan <strong>menggantikan</strong> semua data semasa. Format: .xlsx, .xls atau .csv (baris pertama = header).</p>
+      <input id="fail" type="file" accept=".xlsx,.xls,.csv">
+      <div id="semakan" class="semakan"></div>
+      <div id="kemajuan" class="kemajuan" hidden><div id="kemajuanBar"></div></div>
+      <p id="mnRalat" class="ralat"></p>
+      <div class="dialog-butang">
+        <button type="button" class="btn btn-hantu" data-tutup>Tutup</button>
+        <button id="btnSahMuatNaik" type="button" class="btn btn-utama" disabled>Ganti data</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Butiran rekod -->
+  <dialog id="dButiran" class="dialog dialog-lebar">
+    <div>
+      <h2 id="butiranTajuk"></h2>
+      <dl id="butiranIsi" class="butiran"></dl>
+      <div class="dialog-butang"><button type="button" class="btn btn-utama" data-tutup>Tutup</button></div>
+    </div>
+  </dialog>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <script src="config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.5.0/echarts.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
