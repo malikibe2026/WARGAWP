@@ -43,6 +43,7 @@
     <button role="tab" data-hal="ringkasan" aria-selected="true">Ringkasan</button>
     <button role="tab" data-hal="peta">Peta Daerah</button>
     <button role="tab" data-hal="prestasi">Prestasi Pegawai</button>
+    <button role="tab" data-hal="io">Input-Output & VA</button>
     <button role="tab" data-hal="nilai">Analisis Nilai</button>
     <button role="tab" data-hal="rekod">Senarai Rekod</button>
   </nav>
@@ -74,7 +75,7 @@
           <ul id="penemuan" class="penemuan"></ul>
         </article>
         <article class="kad s-6">
-          <header class="kad-kepala"><div><h2>Pencapaian ikut pejabat</h2><p class="kad-sub">% setiap tahap · garis merah = sasaran · klik untuk tapis</p></div></header>
+          <header class="kad-kepala"><div><h2>Pencapaian ikut pejabat</h2><p class="kad-sub">% setiap tahap · klik untuk tapis</p></div></header>
           <div id="cIkut" class="carta"></div>
         </article>
         <article class="kad s-6">
@@ -83,8 +84,10 @@
         </article>
         <article class="kad s-8">
           <header class="kad-kepala"><div><h2>Status respon lawatan semasa</h2><p class="kad-sub">Kategori kod respon · klik untuk tapis</p></div></header>
-          <div id="cKomposisi" class="carta carta-komposisi"></div>
-          <div id="cStatus" class="carta"></div>
+          <div class="donut-susun">
+            <div id="cDonut" class="carta carta-donut"></div>
+            <div id="cStatus" class="carta"></div>
+          </div>
         </article>
         <article class="kad s-4">
           <header class="kad-kepala"><div><h2>Respon × tahap pencapaian</h2><p class="kad-sub">Bilangan pertubuhan</p></div></header>
@@ -119,7 +122,7 @@
                 <option value="belumSelesai">Belum selesai (bilangan)</option>
                 <option value="jumlah">Jumlah pertubuhan</option>
                 <option value="kadar">Kadar respons (%)</option>
-                <option value="a1">A1 (%)</option>
+                <option value="a1">Kod 11+14 (%)</option>
               </select>
             </div>
           </header>
@@ -139,7 +142,7 @@
         <article class="kad s-12">
           <header class="kad-kepala">
             <div><h2>Pencapaian ikut <select id="pilihDimensi" class="pilih-tajuk" aria-label="Pecahan ikut"></select></h2>
-              <p class="kad-sub">Bar disusun ikut % · garis merah = sasaran · klik bar untuk tapis</p></div>
+              <p class="kad-sub">Bar disusun ikut % · klik bar untuk tapis</p></div>
             <div class="kawalan">
               <div class="segmen" id="segUkurPrestasi" role="group" aria-label="Ukuran">
                 <button data-v="tahap" aria-pressed="true">Tahap pencapaian</button>
@@ -149,7 +152,6 @@
                 <button data-v="1" aria-pressed="true">Peratus</button>
                 <button data-v="0">Bilangan</button>
               </div>
-              <label class="sasaran">Sasaran <input id="sasaran" type="number" min="0" max="100" step="1" value="45"> %</label>
             </div>
           </header>
           <div id="cDimensi" class="carta"></div>
@@ -158,6 +160,45 @@
           <header class="kad-kepala"><div><h2>Kad skor</h2><p class="kad-sub" id="skorSub"></p></div>
             <button id="btnEksportSkor" class="btn btn-garis">Eksport CSV</button></header>
           <div class="jadual-bungkus"><table id="tSkor" class="jadual"></table></div>
+        </article>
+      </section>
+    </div>
+
+    <!-- INPUT-OUTPUT -->
+    <div class="halaman" data-hal="io" hidden>
+      <p id="ioNota" class="nota io-nota"></p>
+      <section id="ioKpi" class="io-kpi"></section>
+      <section class="grid g-12">
+        <article class="kad s-6">
+          <header class="kad-kepala"><div><h2>Nisbah IO (input ÷ output)</h2><p class="kad-sub">Agregat = Σ perbelanjaan ÷ Σ pendapatan · garis = 1.0</p></div></header>
+          <div id="cIoTahun" class="carta"></div>
+        </article>
+        <article class="kad s-6">
+          <header class="kad-kepala"><div><h2>Nilai ditambah (VA)</h2><p class="kad-sub">Jumlah VA ikut tahun</p></div></header>
+          <div id="cVaTahun" class="carta"></div>
+        </article>
+        <article class="kad s-12">
+          <header class="kad-kepala">
+            <div><h2>Perbandingan ikut <select id="pilihDimIo" class="pilih-tajuk" aria-label="Kumpulan"></select></h2>
+              <p class="kad-sub">IO agregat & VA bagi 2015 · 2023 · 2026 · <span class="turun">merah = IO bawah 1</span></p></div>
+          </header>
+          <div class="jadual-bungkus jadual-tinggi"><table id="tIoKumpulan" class="jadual"></table></div>
+        </article>
+        <article class="kad s-12">
+          <header class="kad-kepala">
+            <div><h2>Senarai pertubuhan <span id="ioBil" class="kad-sub"></span></h2><p class="kad-sub">Klik baris untuk butiran · <span class="turun">merah = IO bawah 1</span></p></div>
+            <div class="kawalan">
+              <label class="sasaran"><input id="ioBawah1" type="checkbox"> Hanya IO &lt; 1</label>
+              <input id="ioCari" type="search" class="cari" placeholder="Cari No. Siri / nama…" aria-label="Cari pertubuhan">
+              <button id="btnEksportIo" class="btn btn-garis">Eksport CSV</button>
+            </div>
+          </header>
+          <div class="jadual-bungkus"><table id="tIo" class="jadual jadual-klik"></table></div>
+          <div class="muka">
+            <button id="ioSebelum" class="btn btn-garis" aria-label="Sebelum">‹</button>
+            <span id="ioHal"></span>
+            <button id="ioSelepas" class="btn btn-garis" aria-label="Selepas">›</button>
+          </div>
         </article>
       </section>
     </div>
@@ -216,7 +257,7 @@
   </main>
 
   <footer class="kaki">
-    <span>Tahap pencapaian ikut Status Rekod (Selesai · Semakan SMD · Semakan DOSM Negeri · Pinda Semula · Dalam Proses). Kategori respon: A1 = 11 · LK (Lain-lain Keputusan) = 12, 13, 14, 21, 22, 23, 31, 40 · 50 · Kod B = 71–77</span>
+    <span>Tahap pencapaian ikut Status Rekod (Selesai · Semakan SMD · Semakan DOSM Negeri · Pinda Semula · Dalam Proses). Kategori respon: Kod 11 + 14 · LK (Lain-lain Keputusan) = 12–60 kecuali 14 · Kod B = 71–77</span>
     <span id="kakiMasa"></span>
   </footer>
 

@@ -33,7 +33,7 @@ Jika fail tiada Status Rekod, dashboard kembali menggunakan kadar respons (ada k
 Penapis utama: **Sektor, Subsektor, Pegawai Kerja Luar** (pilihan berbilang). Penapis lain dalam butang *Penapis lain*.
 Klik pada mana-mana carta/peta untuk tapis silang. Tema terang/gelap. Sasaran % dan ambang disimpan dalam pelayar.
 
-Kategori kod respon: **A1** = 11 · **LK (Lain-lain Keputusan)** = 12,13,14,21,22,23,31,40 · **50** · **Kod B** = 71–77 · lain-lain · belum.
+Kategori kod respon: **Kod 11 + 14** · **LK (Lain-lain Keputusan)** = 12–60 kecuali 14 · **Kod B** = 71–77 · lain-lain · belum.
 
 ## Gabung beberapa fail (kunci: No. Siri)
 - Dalam dialog muat naik, pilih **beberapa fail sekali gus** — header boleh berlainan (cth. fail status + fail nilai kewangan).
@@ -45,6 +45,16 @@ Kategori kod respon: **A1** = 11 · **LK (Lain-lain Keputusan)** = 12,13,14,21,2
 - Sel kosong **tidak** memadam nilai sedia ada. Jika dua fail ada nilai berbeza untuk lajur sama, nilai daripada fail **terkemudian dalam senarai** digunakan; bilangan dan contoh percanggahan dipaparkan sebelum simpan.
 - Tandakan **Gabung dengan data sedia ada** untuk kemas kini data semasa (cth. fail kecil `No. Siri` + `Status Respon Lawatan Semasa`) tanpa ganti semua.
 - Rekod yang hanya ada dalam satu fail tetap dimasukkan (kesatuan). Semak lajur *Baharu* — rekod baharu daripada fail sekunder akan menambah jumlah kes.
+
+## Input-Output & VA (tab baharu)
+- **IO = perbelanjaan (input) ÷ pendapatan (output)** bagi 2015, 2023, 2026. **IO bawah 1 dimerahkan.**
+- Lajur dikenal: `Pendapatan 2015` / `Output 2023`, `Perbelanjaan 2015` / `Input 2023`, `VA 2026` / `Nilai Ditambah 2015`.
+- Jika lajur tahun tiada: 2026 = Survei Semasa, 2023 = Survei Sebelum (**andaian**, dinyatakan pada halaman).
+- VA = lajur VA jika ada; jika tiada dianggarkan sebagai output − input.
+
+## Fail utama semasa gabung
+Hanya No. Siri yang ada dalam **fail utama** dimasukkan. Lalai: fail bernama PROFILING / FRAME / RANGKA / SENARAI, jika tiada fail paling banyak rekod; boleh ditukar dalam dialog muat naik.
+Lajur yang tidak dikenal disimpan dalam `tambahan` (dipapar dalam butiran rekod).
 
 ## Peta
 Sempadan rasmi OpenDOSM (`peta/`): daerah, negeri dan **parlimen**. Daerah diambil daripada lajur *Semasa*; jika kosong, lajur *Label* digunakan.

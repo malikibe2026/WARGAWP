@@ -313,6 +313,8 @@ h1 { font-size: 18px; font-weight: 700; white-space: nowrap; overflow: hidden; t
 .pilihan-gabung { display: flex !important; align-items: flex-start; gap: 10px; font-weight: 500 !important; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface-2); }
 .pilihan-gabung[hidden] { display: none !important; }
 .dialog label.pilihan-gabung input[type=checkbox] { width: auto; display: inline-block; flex: none; margin: 3px 0 0; padding: 0; accent-color: var(--accent); }
+.pilih-utama { display: flex !important; align-items: center; gap: 8px; flex-wrap: wrap; margin: 8px 0 !important; font-size: 13px; }
+.pilih-utama select { border: 1px solid var(--border-strong); border-radius: 8px; padding: 5px 8px; background: var(--surface-2); max-width: 100%; }
 .semak-fail { margin: 12px 0 4px; border: 1px solid var(--border); border-radius: 10px; }
 .semakan li.amaran { color: var(--bad); }
 .ralat { color: var(--bad); font-size: 13px; min-height: 1em; margin: 10px 0 0; }
@@ -360,3 +362,18 @@ h1 { font-size: 18px; font-weight: 700; white-space: nowrap; overflow: hidden; t
   .kawalan { width: 100%; }
   .popover { left: 16px !important; right: 16px; width: auto; }
 }
+
+/* Donut respon + Input-Output */
+.donut-susun { display: grid; grid-template-columns: minmax(260px, 320px) minmax(0, 1fr); gap: 12px; align-items: center; }
+.carta-donut { height: 300px; }
+.io-nota { margin: 0 0 12px; }
+.io-kpi { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-bottom: 16px; }
+.io-kad { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; box-shadow: var(--shadow); }
+.io-kad h3 { font-size: 13px; color: var(--muted); font-weight: 700; letter-spacing: .04em; text-transform: uppercase; margin-bottom: 6px; }
+.io-kad .io-utama { font-size: 30px; font-weight: 800; letter-spacing: -0.02em; }
+.io-kad .io-baris { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; padding: 5px 0; border-top: 1px solid var(--grid); }
+.io-kad .io-baris span:first-child { color: var(--ink-2); }
+.io-kad .io-baris b { font-variant-numeric: tabular-nums; }
+.io-merah { color: var(--bad) !important; font-weight: 700; }
+td.io-merah { background: rgba(201, 54, 54, .08); }
+@media (max-width: 1024px) { .io-kpi { grid-template-columns: minmax(0, 1fr); } .donut-susun { grid-template-columns: minmax(0, 1fr); } }
