@@ -64,6 +64,9 @@ Lajur yang tiada dibiarkan kosong. Tarikh dibaca sebagai `dd/mm/yyyy` atau tarik
 2. Tambah pentadbir lain (SQL Editor): `insert into public.pentadbir (emel) values ('nama@contoh.com');`
 3. Disyorkan: Authentication → Sign In / Providers → matikan **Allow new users to sign up**.
 
+## Laman
+**https://statistik-pertubuhan.netlify.app** — projek Netlify `statistik-pertubuhan` (akaun malikirazik@gmail.com).
+
 ## Deploy ke Netlify (akaun lain)
 Cara paling mudah: Netlify → **Add new site → Deploy manually** → seret folder `dashboard-mko` ini.
 Atau sambung repo GitHub dengan **Base directory** = `dashboard-mko`, build command kosong, publish `.`.
