@@ -1,0 +1,22 @@
+{
+  "name": "Direktori Warga DOSM WP Kuala Lumpur",
+  "short_name": "DOSM WP",
+  "description": "Direktori warga, carta organisasi dan kehadiran program Jabatan Perangkaan Malaysia, Wilayah Persekutuan Kuala Lumpur.",
+  "lang": "ms",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#06162c",
+  "theme_color": "#071a33",
+  "icons": [
+    { "src": "ikon/ikon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "ikon/ikon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "ikon/ikon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Carta Organisasi", "url": "carta.html", "icons": [{ "src": "ikon/ikon-192.png", "sizes": "192x192" }] },
+    { "name": "Program & Kehadiran", "url": "program.html", "icons": [{ "src": "ikon/ikon-192.png", "sizes": "192x192" }] },
+    { "name": "Dashboard", "url": "dashboard.html", "icons": [{ "src": "ikon/ikon-192.png", "sizes": "192x192" }] }
+  ]
+}

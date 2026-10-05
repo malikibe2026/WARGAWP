@@ -112,14 +112,14 @@
 
   // ---------- Kad muncul berperingkat semasa skrol ----------
   let pemerhati = null;
-  function pantauKad(bekas) {
+  function pantauKad(bekas, pemilih = ".kad, .kumpulan") {
     if (kurangGerak || !("IntersectionObserver" in global)) return;
     pemerhati?.disconnect();
     pemerhati = new IntersectionObserver(entri => {
       for (const e of entri) if (e.isIntersecting) { e.target.classList.add("muncul"); pemerhati.unobserve(e.target); }
     }, { rootMargin: "0px 0px -6% 0px" });
     let i = 0;
-    for (const k of bekas.querySelectorAll(".kad, .kumpulan")) {
+    for (const k of bekas.querySelectorAll(pemilih)) {
       k.classList.add("sedia-muncul");
       k.style.setProperty("--tunda", `${(i++ % 6) * 55}ms`);
       pemerhati.observe(k);

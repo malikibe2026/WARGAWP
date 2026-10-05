@@ -45,6 +45,13 @@ Settings → Pages → Source: **GitHub Actions**. Kod tidak mengandungi data st
 - **Skrin paparan** (`paparan.html?id=…`): kehadiran langsung + kod QR untuk projektor. Tekan F untuk skrin penuh.
 - **Laporan** (`laporan.html?id=…`): laporan rasmi A4 — ringkasan, ikut seksyen, senarai hadir/tidak hadir, ruang tandatangan. Cetak atau simpan PDF.
 
+## Carta organisasi, dashboard & aplikasi
+- **Carta Organisasi** (`carta.html`, terbuka seperti direktori): Pengarah → Timbalan → seksyen/pejabat (ikut susunan direktori), ketua setiap seksyen, bilangan staf tetap & PMS, carian nama, Mod Pembentangan (skrin penuh) dan cetak A3 melintang.
+  PMS dipadankan ke seksyen tanpa mengira huruf besar/kecil; seksyen PMS yang tiada padanan dipaparkan berasingan supaya ejaan boleh dibetulkan.
+- **Sasaran peserta** setiap program (`program.sasaran`: semua / tetap / pms / unit:<seksyen>) — digunakan untuk kadar kehadiran, senarai belum hadir, skrin paparan, laporan dan dashboard.
+- **Dashboard** (`dashboard.html`, pentadbir): KPI, kadar ikut program & seksyen, trend bulanan, peta haba seksyen × program, kaedah rekod; tapis tahun & kategori; setiap graf ada paparan jadual. Program akan datang tidak dikira.
+- **Pasang aplikasi (PWA)**: `manifest.webmanifest`, `sw.js` (tidak menyimpan versi lama — hanya halaman luar talian), ikon dalam `ikon/`.
+
 ## Halaman peserta
 - Telefon mengingati peserta → kali seterusnya cukup tekan **Ya, ini saya**.
 - **Muat Turun Sijil** terus selepas hadir (hanya dari telefon yang merekod kehadiran itu).

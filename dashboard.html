@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="ms">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#071a33">
+  <title>Dashboard Kehadiran — DOSM WP</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" href="ikon/favicon-32.png">
+  <link rel="apple-touch-icon" href="ikon/ikon-180.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="DOSM WP">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="hero hero-mini">
+    <nav class="nav wrap">
+      <a class="brand" href="./" style="color:inherit;text-decoration:none">
+        <div class="logo" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 20V11M9.5 20V5M15 20v-7M20.5 20V8"/></svg></div>
+        <div class="brand-text"><span class="brand-t">DOSM</span><span class="brand-s">Kembali ke Direktori</span></div>
+      </a>
+      <div class="nav-actions">
+        <a href="program.html" class="btn btn-glass"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg><span>Program</span></a>
+      </div>
+    </nav>
+    <div class="wrap hero-body">
+      <p class="eyebrow">Analitik</p>
+      <h1>Dashboard Kehadiran</h1>
+      <p class="lead">Prestasi kehadiran program mengikut tahun, seksyen dan bulan.</p>
+    </div>
+  </header>
+
+  <main class="wrap main viz-root">
+    <section id="dLogin" class="panel panel-sempit" hidden>
+      <div class="login-head">
+        <div class="logo logo-lg" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 20V11M9.5 20V5M15 20v-7M20.5 20V8"/></svg></div>
+        <h2>Log Masuk Pentadbir</h2>
+        <p class="muted">Dashboard memaparkan rekod kehadiran dan hanya untuk pentadbir.</p>
+      </div>
+      <form id="borangLogin" class="borang">
+        <label>E-mel<input name="email" type="email" autocomplete="username" required></label>
+        <label>Kata Laluan<input name="password" type="password" autocomplete="current-password" required></label>
+        <p id="loginRalat" class="error" hidden></p>
+        <button class="btn btn-primary" style="width:100%">Masuk</button>
+      </form>
+    </section>
+
+    <div id="dUtama" hidden>
+      <div class="d-penapis">
+        <label>Tahun <select id="fTahun"></select></label>
+        <label>Kategori <select id="fKategori">
+          <option value="semua">Semua warga</option><option value="tetap">Staf Tetap</option><option value="pms">PMS</option>
+        </select></label>
+        <span id="dNota" class="muted"></span>
+      </div>
+
+      <section class="d-kpi" id="dKpi"></section>
+
+      <div class="d-grid">
+        <article class="d-kad lebar">
+          <header><div><h2>Kadar kehadiran setiap program</h2><p>Hadir ÷ sasaran peserta program</p></div><button class="btn btn-ghost btn-sm" data-jadual="cProgram">Jadual</button></header>
+          <div id="cProgram" class="d-carta"></div>
+        </article>
+        <article class="d-kad">
+          <header><div><h2>Kadar kehadiran ikut seksyen</h2><p>Gabungan semua program yang menyasarkan seksyen itu</p></div><button class="btn btn-ghost btn-sm" data-jadual="cSeksyen">Jadual</button></header>
+          <div id="cSeksyen" class="d-carta"></div>
+        </article>
+        <article class="d-kad">
+          <header><div><h2>Kehadiran ikut bulan</h2><p>Bilangan rekod kehadiran</p></div><button class="btn btn-ghost btn-sm" data-jadual="cBulan">Jadual</button></header>
+          <div id="cBulan" class="d-carta"></div>
+        </article>
+        <article class="d-kad lebar">
+          <header><div><h2>Peta haba: seksyen × program</h2><p>Peratus kehadiran; "—" jika seksyen bukan sasaran program</p></div><button class="btn btn-ghost btn-sm" data-jadual="cHaba">Jadual</button></header>
+          <div id="cHaba" class="d-carta"></div>
+        </article>
+        <article class="d-kad lebar">
+          <header><div><h2>Cara kehadiran direkod</h2><p>Bahagian setiap kaedah daripada semua rekod</p></div><button class="btn btn-ghost btn-sm" data-jadual="cKaedah">Jadual</button></header>
+          <div id="cKaedah" class="d-carta"></div>
+        </article>
+      </div>
+    </div>
+  </main>
+
+  <div id="tip" class="d-tip" role="tooltip" hidden></div>
+  <div id="toast" class="toast" hidden></div>
+
+  <script src="config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="storage.js"></script>
+  <script src="sasaran.js"></script>
+  <script src="dashboard.js"></script>
+  <script src="pwa.js"></script>
+</body>
+</html>

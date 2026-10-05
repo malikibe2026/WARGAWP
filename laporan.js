@@ -20,10 +20,7 @@
 
   function sasaranDipilih() {
     const v = $("#lpSasaran").value;
-    if (v === "tetap") return { label: "Staf Tetap", senarai: warga.filter(w => w.kategori !== "pms") };
-    if (v === "pms") return { label: "Personel MySTEPS (PMS)", senarai: warga.filter(w => w.kategori === "pms") };
-    if (v.startsWith("u:")) { const u = v.slice(2); return { label: u, senarai: warga.filter(w => w.unit === u) }; }
-    return { label: "Semua warga", senarai: warga };
+    return { label: Sasaran.label(v), senarai: Sasaran.ahli(warga, v) };
   }
 
   function jana() {
@@ -121,10 +118,7 @@
       sb.from("warga").select("id,nama,unit,kategori,susunan").then(semak),
       sb.from("kehadiran").select("warga_id,masa,kaedah,jarak_muka").eq("program_id", id).then(semak),
     ]);
-    const units = [...new Set(warga.map(w => w.unit).filter(Boolean))].sort((a, b) => a.localeCompare(b, "ms"));
-    $("#lpSasaran").innerHTML = `<option value="semua">Semua warga (${warga.length})</option>
-      <option value="tetap">Staf Tetap</option><option value="pms">PMS</option>` +
-      units.map(u => `<option value="u:${esc(u)}">${esc(u)}</option>`).join("");
+    $("#lpSasaran").innerHTML = Sasaran.pilihan(warga, program.sasaran);
     $("#lpUtama").hidden = false;
     jana();
   }

@@ -100,7 +100,7 @@
       return;
     }
     el.innerHTML = st.program.map(p => {
-      const bil = st.kiraan.get(p.id) || 0;
+      const bil = st.kiraan.get(p.id) || 0, sasaran = Sasaran.ahli(st.warga, p.sasaran).length;
       const masa = p.masa_mula ? `${jam(p.masa_mula)}${p.masa_tamat ? "–" + jam(p.masa_tamat) : ""}` : "Sepanjang hari";
       return `<article class="kad-program">
         <div class="kp-atas">${lencana(p)}<span class="kp-kod">${esc(p.kod)}</span></div>
@@ -110,10 +110,11 @@
           <li>🕘 ${esc(masa)}</li>
           ${p.daftar_mula || p.daftar_tamat ? `<li>📝 Daftar: ${esc(teksTempoh(p))}</li>` : ""}
           <li>${p.kaedah_sah === "nama" ? "🔎 Carian nama" : p.kaedah_sah === "nama_muka" ? "🙂 Nama + imbas muka" : "🙂 Imbas muka"}${p.emel_aktif ? " · ✉ E-mel" : ""}${p.sijil_aktif ? " · 📜 Sijil" : ""}</li>
+          ${p.sasaran && p.sasaran !== "semua" ? `<li>🎯 Sasaran: ${esc(Sasaran.label(p.sasaran))}</li>` : ""}
           <li>📍 ${esc(p.lokasi_nama || "—")}${p.lat != null ? ` <span class="muted">(${p.radius_m} m)</span>` : ' <span class="muted">(tiada semakan lokasi)</span>'}</li>
         </ul>
         <div class="kp-bawah">
-          <div class="kp-bil"><b>${bil}</b><span>/ ${st.warga.length} hadir</span></div>
+          <div class="kp-bil"><b>${bil}</b><span>/ ${sasaran} hadir</span></div>
           <div class="kp-aksi">
             <button class="icon-btn" data-salin="${p.id}" title="Salin program (untuk program berulang)" aria-label="Salin program">${IKON_P.salin}</button>
             <a class="icon-btn" href="${esc(pautanAlat("paparan.html", p))}" target="_blank" rel="noopener" title="Skrin paparan langsung (projektor)" aria-label="Skrin paparan">${IKON_P.skrin}</a>
@@ -313,6 +314,7 @@ Jabatan Perangkaan Malaysia, Wilayah Persekutuan`;
     kemasTempoh();
     f.elements.masa_mula.value = jam(p?.masa_mula);
     f.elements.masa_tamat.value = jam(p?.masa_tamat);
+    f.elements.sasaran.innerHTML = Sasaran.pilihan(st.warga, p?.sasaran);
     f.elements.lokasi_nama.value = p?.lokasi_nama || "";
     f.elements.koordinat.value = p?.lat != null ? `${p.lat}, ${p.lng}` : "";
     f.elements.radius_m.value = String(p?.radius_m || 200);
@@ -406,7 +408,7 @@ Jabatan Perangkaan Malaysia, Wilayah Persekutuan`;
         emel_aktif: f.emel_aktif.checked, emel_subjek: f.emel_subjek.value.trim() || null,
         emel_isi: f.emel_isi.value.trim() || null, sijil_aktif: f.sijil_aktif.checked,
         sijil_teks: st.teksSijil.filter(t => String(t.teks || "").trim()),
-        daftar_mula, daftar_tamat,
+        daftar_mula, daftar_tamat, sasaran: f.sasaran.value || "semua",
       };
       if (!st.sedangEdit && st.templatAsal && !st.templatBaru) rekod.sijil_templat = st.templatAsal;   // salinan program
       if (rekod.sijil_aktif && !rekod.sijil_teks.length) throw new Error("Sijil perlu sekurang-kurangnya satu baris teks, cth. {nama}.");
@@ -488,7 +490,10 @@ Jabatan Perangkaan Malaysia, Wilayah Persekutuan`;
     catch (err) { return toast(err.message, true); }
     try { st.log = semak(await sb.from("warga_log").select("*").eq("program_id", p.id).order("masa")); } catch { st.log = []; }
     const masa = p.masa_mula ? `${jam(p.masa_mula)}${p.masa_tamat ? "–" + jam(p.masa_tamat) : ""}` : "Sepanjang hari";
-    const peratus = st.warga.length ? Math.round(st.hadir.length / st.warga.length * 100) : 0;
+    st.sasaran = Sasaran.ahli(st.warga, p.sasaran);
+    const dalam = new Set(st.sasaran.map(w => w.id));
+    const hadirDalam = st.hadir.filter(h => dalam.has(h.warga_id)).length, luar = st.hadir.length - hadirDalam;
+    const peratus = st.sasaran.length ? Math.round(hadirDalam / st.sasaran.length * 100) : 0;
     $("#kepalaHadir").innerHTML = `
       <div>
         <div class="kp-atas">${lencana(p)}</div>
@@ -498,7 +503,8 @@ Jabatan Perangkaan Malaysia, Wilayah Persekutuan`;
       </div>
       <div class="kh-stat">
         <div class="cincin" style="--p:${peratus}"><b>${peratus}%</b></div>
-        <div><b class="besar">${st.hadir.length}</b><span> / ${st.warga.length} hadir</span>
+        <div><b class="besar">${hadirDalam}</b><span> / ${st.sasaran.length} hadir</span>
+          <div class="muted" style="font-size:12px">Sasaran: ${esc(Sasaran.label(p.sasaran))}${luar ? ` · +${luar} luar sasaran` : ""}</div>
           <div class="muted" style="font-size:12px">Dikemas kini ${new Date().toLocaleTimeString("ms-MY", { hour: "2-digit", minute: "2-digit", second: "2-digit", timeZone: "Asia/Kuala_Lumpur" })}</div></div>
         <div class="kh-alat">
           <button class="btn btn-soft btn-sm" id="btnQRDariHadir">Kod QR</button>
@@ -565,7 +571,7 @@ Jabatan Perangkaan Malaysia, Wilayah Persekutuan`;
         </div>`).join("") : '<div class="empty">Belum ada kehadiran direkodkan.</div>';
     } else {
       const sudah = new Set(st.hadir.map(h => h.warga_id));
-      const belum = st.warga.filter(w => !sudah.has(w.id) && padan(w));
+      const belum = (st.sasaran || st.warga).filter(w => !sudah.has(w.id) && padan(w));
       el.innerHTML = belum.length ? belum.map(w => `
         <div class="baris-hadir">
           <img src="${esc(w.gambar_url || TANPA_GAMBAR)}" alt="">
@@ -623,7 +629,8 @@ Jabatan Perangkaan Malaysia, Wilayah Persekutuan`;
     const q = v => `"${String(v ?? "").replace(/"/g, '""')}"`;
     const ikutHadir = new Map(st.hadir.map(h => [h.warga_id, h]));
     const baris = [["Bil", "Nama", "Kategori", "Jawatan", "Gred", "Unit", "Status", "Masa", "Kaedah", "Jarak (m)"].map(q).join(",")];
-    st.warga.forEach((w, i) => {
+    const dalamS = new Set((st.sasaran || st.warga).map(w => w.id));
+    st.warga.filter(w => dalamS.has(w.id) || ikutHadir.has(w.id)).forEach((w, i) => {
       const h = ikutHadir.get(w.id);
       baris.push([i + 1, w.nama, w.kategori === "pms" ? "PMS" : "Tetap", w.jawatan, w.gred, w.unit, h ? "Hadir" : "Tidak hadir",
         h ? new Date(h.masa).toLocaleString("ms-MY", { timeZone: "Asia/Kuala_Lumpur" }) : "", h ? h.kaedah : "", h?.jarak_m != null ? Math.round(h.jarak_m) : ""].map(q).join(","));

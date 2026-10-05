@@ -62,8 +62,10 @@
     let rekod;
     try { rekod = semak(await sb.from("kehadiran").select("id,warga_id,masa").eq("program_id", program.id).order("masa", { ascending: false })); }
     catch (err) { return toast("Gagal mengemas kini: " + err.message, true); }
-    const sasaran = warga.size, bil = rekod.length, peratus = sasaran ? Math.round(bil / sasaran * 100) : 0;
+    const dalam = new Set(Sasaran.ahli([...warga.values()], program.sasaran).map(w => w.id));
+    const sasaran = dalam.size, bil = rekod.filter(r => dalam.has(r.warga_id)).length, peratus = sasaran ? Math.round(bil / sasaran * 100) : 0;
     $("#ppSasaran").textContent = sasaran;
+    $("#ppSasaranLabel").textContent = program.sasaran && program.sasaran !== "semua" ? Sasaran.label(program.sasaran) : "warga";
     if (bil !== bilPapar) kiraNaik($("#ppBil"), bil);
     $("#ppPeratus").textContent = peratus + "%";
     $("#ppCincin").style.setProperty("--p", peratus);
@@ -94,7 +96,7 @@
     $("#pLogin").hidden = true;
     program = semak(await sb.from("program").select("*").eq("id", id).maybeSingle());
     if (!program) { document.body.innerHTML = '<p class="empty">Program tidak dijumpai.</p>'; return; }
-    for (const w of semak(await sb.from("warga").select("id,nama,unit,gambar_url,kategori"))) warga.set(w.id, w);
+    for (const w of semak(await sb.from("warga").select("id,nama,unit,gambar_url,kategori,susunan"))) warga.set(w.id, w);
     $("#pUtama").hidden = false;
     paparProgram(); jam(); await muatHadir();
     setInterval(jam, 10000);

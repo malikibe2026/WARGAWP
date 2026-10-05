@@ -26,8 +26,8 @@ jobs:
       - name: Sediakan fail laman (tanpa kod pelayan)
         run: |
           mkdir _site
-          cp *.html *.js style.css _site/
-          cp -r vendor contoh _site/
+          cp *.html *.js style.css manifest.webmanifest _site/
+          cp -r vendor contoh ikon _site/
           touch _site/.nojekyll
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

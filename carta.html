@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="ms">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#071a33">
+  <title>Carta Organisasi — DOSM WP Kuala Lumpur</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" href="ikon/favicon-32.png">
+  <link rel="apple-touch-icon" href="ikon/ikon-180.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="DOSM WP">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="carta-body">
+  <header class="hero hero-mini">
+    <nav class="nav wrap">
+      <a class="brand" href="./" style="color:inherit;text-decoration:none">
+        <div class="logo" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 20V11M9.5 20V5M15 20v-7M20.5 20V8"/></svg></div>
+        <div class="brand-text"><span class="brand-t">DOSM</span><span class="brand-s">Kembali ke Direktori</span></div>
+      </a>
+      <div class="nav-actions">
+        <button id="btnPembentangan" class="btn btn-glass" title="Skrin penuh untuk pembentangan">
+          <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg><span>Mod Pembentangan</span>
+        </button>
+        <button id="btnCetakCarta" class="btn btn-glass" title="Cetak / simpan PDF">
+          <svg viewBox="0 0 24 24"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg><span>Cetak</span>
+        </button>
+      </div>
+    </nav>
+    <div class="wrap hero-body">
+      <p class="eyebrow">Struktur Organisasi</p>
+      <h1>Carta Organisasi</h1>
+      <p class="lead" id="cartaLead">Jabatan Perangkaan Malaysia, Wilayah Persekutuan Kuala Lumpur</p>
+    </div>
+  </header>
+
+  <div class="carta-alat wrap">
+    <label class="cari-kecil">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="cariCarta" type="search" placeholder="Cari nama dalam carta" autocomplete="off">
+    </label>
+    <label class="suis-kecil"><input type="checkbox" id="tunjukPms" checked> Kira Personel MySTEPS (PMS)</label>
+    <span id="ringkasCarta" class="muted"></span>
+  </div>
+
+  <main class="wrap carta-utama">
+    <div id="carta" class="carta" aria-live="polite"><p class="empty">Memuatkan carta…</p></div>
+  </main>
+
+  <!-- Ahli unit -->
+  <dialog id="dlgUnit" class="dialog wide dialog-unit">
+    <div class="dialog-isi">
+      <div class="dialog-head">
+        <div><p class="eyebrow eyebrow-gelap" id="unitEyebrow">Seksyen</p><h2 id="unitTajuk"></h2></div>
+        <button type="button" class="icon-btn" data-close aria-label="Tutup"><svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+      </div>
+      <div id="unitIsi"></div>
+    </div>
+  </dialog>
+
+  <footer class="footer">
+    <div class="wrap footer-inner">
+      <span>© Jabatan Perangkaan Malaysia, Wilayah Persekutuan Kuala Lumpur</span>
+      <span class="muted">Carta dijana daripada susunan direktori — bukan garisan pelaporan rasmi</span>
+    </div>
+  </footer>
+
+  <script src="config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="storage.js"></script>
+  <script src="sasaran.js"></script>
+  <script src="sinema.js"></script>
+  <script src="carta.js"></script>
+  <script src="pwa.js"></script>
+</body>
+</html>
