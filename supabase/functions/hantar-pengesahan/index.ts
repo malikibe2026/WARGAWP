@@ -1,6 +1,7 @@
 // Hantar e-mel pengesahan kehadiran (dengan sijil PDF pilihan).
 // Panggilan awam : { kod, warga_id }            → hanya jika rekod hadir wujud & e-mel belum pernah dihantar.
 // Panggilan admin: { program_id, warga_ids[] }   → token pentadbir diperlukan; boleh hantar semula.
+// Muat turun sijil: { kod, warga_id, peranti, muat_turun: true } → hanya dari telefon yang merekod kehadiran itu.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import * as PDFLib from "npm:pdf-lib@1.17.1";
 import { encodeBase64 } from "jsr:@std/encoding@1/base64";
@@ -79,6 +80,45 @@ async function hantarEmel(ke: string, nama: string, subjek: string, teks: string
 }
 
 // deno-lint-ignore no-explicit-any
+function dataRuang(program: any, w: any, masaHadir: string) {
+  const jam = (t: string | null) => (t ? t.slice(0, 5) : "");
+  return {
+    nama: w.nama, jawatan: w.jawatan || "", gred: w.gred || "", unit: w.unit || "",
+    program: program.nama, lokasi: program.lokasi_nama || "",
+    tarikh: new Date(program.tarikh + "T00:00:00+08:00").toLocaleDateString("ms-MY", { ...tz, day: "numeric", month: "long", year: "numeric" }),
+    masa: program.masa_mula ? `${jam(program.masa_mula)}${program.masa_tamat ? " - " + jam(program.masa_tamat) : ""}` : "",
+    masa_hadir: new Date(masaHadir).toLocaleString("ms-MY", { ...tz, hour: "2-digit", minute: "2-digit", day: "numeric", month: "short", year: "numeric" }),
+  };
+}
+
+const namaFailSijil = (nama: string) => `Sijil - ${Sijil.bersih(nama).replace(/[^\w ]+/g, "").trim()}.pdf`;
+
+// deno-lint-ignore no-explicit-any
+async function janaSijil(program: any, templat: Uint8Array | null, data: Record<string, string>) {
+  // Nyahkod PNG besar melebihi had CPU fungsi (~2 s) — minta pentadbir tukar ke JPEG.
+  if (templat && templat[0] === 0x89 && templat[1] === 0x50 && templat.length > 400_000)
+    throw new Error("Templat sijil PNG terlalu besar untuk diproses. Buka tetapan program dan klik Simpan (templat akan ditukar ke JPEG).");
+  return await Sijil.jana(PDFLib, { templat, teks: program.sijil_teks, data });
+}
+
+// deno-lint-ignore no-explicit-any
+async function muatTurunSijil(program: any, templat: Uint8Array | null, wargaId: string, peranti: string) {
+  if (!program.sijil_aktif) return json({ ok: false, sebab: "Sijil tidak disediakan untuk program ini." });
+  const { data: rekod } = await svc.from("kehadiran").select("masa, peranti_id, warga:warga_id(nama, jawatan, gred, unit)")
+    .eq("program_id", program.id).eq("warga_id", wargaId).maybeSingle();
+  if (!rekod) return json({ ok: false, sebab: "Rekod kehadiran tidak dijumpai." });
+  if (!peranti || rekod.peranti_id !== peranti)
+    return json({ ok: false, sebab: "Sijil hanya boleh dimuat turun dari telefon yang digunakan semasa daftar hadir." });
+  try {
+    const bait = await janaSijil(program, templat, dataRuang(program, rekod.warga, rekod.masa));
+    // deno-lint-ignore no-explicit-any
+    return json({ ok: true, nama_fail: namaFailSijil((rekod.warga as any).nama), pdf: encodeBase64(bait) });
+  } catch (e) {
+    return json({ ok: false, sebab: String((e as Error).message || e).slice(0, 300) });
+  }
+}
+
+// deno-lint-ignore no-explicit-any
 async function prosesSatu(program: any, templat: Uint8Array | null, hadirId: string, paksa: boolean) {
   // Tuntut rekod secara atomik supaya e-mel tidak dihantar dua kali.
   let q = svc.from("kehadiran").update({ emel_status: "menghantar", emel_ralat: null }).eq("id", hadirId);
@@ -92,14 +132,7 @@ async function prosesSatu(program: any, templat: Uint8Array | null, hadirId: str
     await svc.from("kehadiran").update({ emel_status: "tiada_emel" }).eq("id", hadirId);
     return { ok: false, sebab: "tiada_emel" };
   }
-  const jam = (t: string | null) => (t ? t.slice(0, 5) : "");
-  const data = {
-    nama: w.nama, jawatan: w.jawatan || "", gred: w.gred || "", unit: w.unit || "",
-    program: program.nama, lokasi: program.lokasi_nama || "",
-    tarikh: new Date(program.tarikh + "T00:00:00+08:00").toLocaleDateString("ms-MY", { ...tz, day: "numeric", month: "long", year: "numeric" }),
-    masa: program.masa_mula ? `${jam(program.masa_mula)}${program.masa_tamat ? " - " + jam(program.masa_tamat) : ""}` : "",
-    masa_hadir: new Date(rekod.masa).toLocaleString("ms-MY", { ...tz, hour: "2-digit", minute: "2-digit", day: "numeric", month: "short", year: "numeric" }),
-  };
+  const data = dataRuang(program, w, rekod.masa);
   try {
     const subjek = Sijil.isiRuang(program.emel_subjek || SUBJEK_LALAI, data);
     const teks = Sijil.isiRuang(program.emel_isi || ISI_LALAI, data);
@@ -107,11 +140,7 @@ async function prosesSatu(program: any, templat: Uint8Array | null, hadirId: str
       <div style="border-top:4px solid #c9a227;padding-top:14px">${esc(teks).replace(/\n/g, "<br>")}</div></div>`;
     let lampiran;
     if (program.sijil_aktif) {
-      // Nyahkod PNG besar melebihi had CPU fungsi (~2 s) — minta pentadbir tukar ke JPEG.
-      if (templat && templat[0] === 0x89 && templat[1] === 0x50 && templat.length > 400_000)
-        throw new Error("Templat sijil PNG terlalu besar untuk diproses. Buka tetapan program dan klik Simpan (templat akan ditukar ke JPEG).");
-      const bait = await Sijil.jana(PDFLib, { templat, teks: program.sijil_teks, data });
-      lampiran = { nama: `Sijil - ${Sijil.bersih(w.nama).replace(/[^\w ]+/g, "").trim()}.pdf`, bait };
+      lampiran = { nama: namaFailSijil(w.nama), bait: await janaSijil(program, templat, data) };
     }
     await hantarEmel(w.emel, w.nama, subjek, teks, html, lampiran);
     await svc.from("kehadiran").update({ emel_status: "dihantar", emel_masa: new Date().toISOString() }).eq("id", hadirId);
@@ -136,7 +165,7 @@ Deno.serve(async (req) => {
     ? await svc.from("program").select("*").eq("id", body.program_id).maybeSingle()
     : await svc.from("program").select("*").eq("kod", String(body.kod || "")).maybeSingle();
   if (!program) return json({ ok: false, sebab: "Program tidak dijumpai" }, 404);
-  if (!admin && !program.emel_aktif) return json({ ok: false, sebab: "E-mel pengesahan tidak diaktifkan" });
+  if (!admin && !body.muat_turun && !program.emel_aktif) return json({ ok: false, sebab: "E-mel pengesahan tidak diaktifkan" });
 
   let templat: Uint8Array | null = null;
   if (program.sijil_aktif && program.sijil_templat) {
@@ -144,6 +173,8 @@ Deno.serve(async (req) => {
     if (error) return json({ ok: false, sebab: "Templat sijil tidak dapat dibaca: " + error.message }, 500);
     templat = new Uint8Array(await fail.arrayBuffer());
   }
+
+  if (body.muat_turun && !admin) return await muatTurunSijil(program, templat, String(body.warga_id || ""), String(body.peranti || ""));
 
   const ids: string[] = admin ? (body.warga_ids || []).slice(0, 20) : [String(body.warga_id || "")];
   const { data: hadir } = await svc.from("kehadiran").select("id, warga_id")

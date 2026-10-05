@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="ms">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#040d1a">
+  <title>Skrin Paparan Kehadiran — DOSM WP</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="paparan-body">
+  <div class="paparan-latar" aria-hidden="true"><i></i><i></i><i></i></div>
+
+  <section id="pLogin" class="panel panel-sempit paparan-login" hidden>
+    <div class="login-head">
+      <div class="logo logo-lg" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 20V11M9.5 20V5M15 20v-7M20.5 20V8"/></svg></div>
+      <h2>Skrin Paparan Kehadiran</h2>
+      <p class="muted">Log masuk pentadbir untuk memaparkan kehadiran secara langsung.</p>
+    </div>
+    <form id="borangLogin" class="borang">
+      <label>E-mel<input name="email" type="email" autocomplete="username" required></label>
+      <label>Kata Laluan<input name="password" type="password" autocomplete="current-password" required></label>
+      <p id="loginRalat" class="error" hidden></p>
+      <button class="btn btn-primary" style="width:100%">Masuk</button>
+    </form>
+  </section>
+
+  <main id="pUtama" class="paparan" hidden>
+    <header class="pp-atas">
+      <div class="brand">
+        <div class="logo" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 20V11M9.5 20V5M15 20v-7M20.5 20V8"/></svg></div>
+        <div class="brand-text"><span class="brand-t">DOSM</span><span class="brand-s">Wilayah Persekutuan</span></div>
+      </div>
+      <div class="pp-jam"><b id="ppJam">--:--</b><span id="ppTarikh"></span></div>
+      <button id="btnSkrinPenuh" class="btn btn-glass btn-sm" title="Skrin penuh (F)">
+        <svg viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/></svg><span>Skrin penuh</span>
+      </button>
+    </header>
+
+    <section class="pp-kiri">
+      <p class="eyebrow"><i class="dot"></i> Kehadiran Langsung</p>
+      <h1 id="ppNama">—</h1>
+      <p id="ppMeta" class="pp-meta"></p>
+
+      <div class="pp-statistik">
+        <div class="pp-cincin" id="ppCincin" style="--p:0">
+          <svg viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="52"/><circle cx="60" cy="60" r="52" class="isi"/></svg>
+          <div><b id="ppPeratus">0%</b><span>kehadiran</span></div>
+        </div>
+        <div class="pp-angka">
+          <b id="ppBil">0</b>
+          <span>daripada <em id="ppSasaran">0</em> warga telah hadir</span>
+          <div class="pp-pecah" id="ppPecah"></div>
+        </div>
+      </div>
+
+      <h2 class="pp-subtajuk">Baru tiba</h2>
+      <ol id="ppTerkini" class="pp-terkini"></ol>
+    </section>
+
+    <aside class="pp-kanan">
+      <div class="pp-qr-kad">
+        <p class="pp-qr-tajuk">Imbas untuk daftar hadir</p>
+        <div id="ppQR" class="pp-qr"></div>
+        <ol class="pp-langkah">
+          <li>Buka kamera telefon &amp; imbas kod</li>
+          <li>Cari nama anda</li>
+          <li>Tekan <b>Sahkan Lokasi &amp; Hadir</b></li>
+        </ol>
+        <p id="ppTempoh" class="pp-tempoh"></p>
+      </div>
+    </aside>
+  </main>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <script src="config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="vendor/qrcode.js"></script>
+  <script src="storage.js"></script>
+  <script src="paparan.js"></script>
+</body>
+</html>

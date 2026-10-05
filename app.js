@@ -72,11 +72,12 @@
 
   function kemasStatistik() {
     const d = keadaan.data;
-    $("#statWarga").textContent = d.length || "–";
-    const pms = d.filter(adalahPms).length;
-    $("#statTetap").textContent = d.length ? d.length - pms : "–";
-    $("#statPms").textContent = d.length ? pms : "–";
-    $("#statUnit").textContent = new Set(d.map(r => r.unit).filter(Boolean)).size || "–";
+    const pms = d.filter(adalahPms).length, unit = new Set(d.map(r => r.unit).filter(Boolean)).size;
+    const angka = (id, n) => d.length ? Sinema.kiraNaik($(id), n) : ($(id).textContent = "–");
+    angka("#statWarga", d.length);
+    angka("#statTetap", d.length - pms);
+    angka("#statPms", pms);
+    angka("#statUnit", unit);
     const akhir = d.map(r => r.updated_at).filter(Boolean).sort().pop();
     $("#statKemas").textContent = akhir
       ? new Date(akhir).toLocaleDateString("ms-MY", { day: "numeric", month: "short", year: "numeric" }) : "–";
@@ -93,6 +94,7 @@
     isiPilihan();
     kemasStatistik();
     papar();
+    Sinema.isiDinding($("#dindingFoto"), keadaan.data.map(r => r.gambar_url).filter(u => /^https?:/.test(u || "")));
   }
 
   // Kedudukan unit dalam carta = nombor susunan terkecil ahlinya.
@@ -230,6 +232,8 @@
           </div>
         </article>`;
     }).join("");
+    // Animasi kemunculan hanya pada paparan pertama (bukan setiap kali menaip carian).
+    if (!keadaan.animasiSiap && keadaan.data.length) { keadaan.animasiSiap = true; Sinema.pantauKad(bekas); }
   }
 
   function cari(id) { return keadaan.data.find(r => r.id === id); }
@@ -494,10 +498,14 @@
     toast(`Templat ${staf.length} staf tetap dimuat turun. Isi No. KP dengan sengkang (cth. 850315-14-5678).`);
   }
 
-  function eksportCSV() {
+  function csvWarga(senarai) {
     const q = v => `"${String(v ?? "").replace(/"/g, '""')}"`;
-    const kandungan = [LAJUR_CSV.map(([, l]) => q(l)).join(",")]
-      .concat(ditapis().map(r => LAJUR_CSV.map(([k]) => q(k === "kategori" ? (adalahPms(r) ? "PMS" : "Tetap") : r[k])).join(","))).join("\r\n");
+    return [LAJUR_CSV.map(([, l]) => q(l)).join(",")]
+      .concat(senarai.map(r => LAJUR_CSV.map(([k]) => q(k === "kategori" ? (adalahPms(r) ? "PMS" : "Tetap") : r[k])).join(","))).join("\r\n");
+  }
+
+  function eksportCSV() {
+    const kandungan = csvWarga(ditapis());
     const url = URL.createObjectURL(new Blob(["﻿" + kandungan], { type: "text/csv;charset=utf-8" }));
     const a = Object.assign(document.createElement("a"), {
       href: url, download: `direktori-warga-dosm-kl-${Umur.keISO(new Date())}.csv` });
@@ -540,6 +548,103 @@
     if (gagal.length || tiada.length) console.warn("Import gambar:", { gagal, tiada });
   }
 
+  // ---------- Sandaran penuh (ZIP) ----------
+  async function sandaranPenuh() {
+    const sb = Store.sb;
+    if (!sb) return toast("Sandaran penuh memerlukan mod dalam talian.", true);
+    if (!confirm("Muat turun sandaran penuh?\n\nFail ZIP mengandungi data warga, program, kehadiran dan semua gambar. Simpan di tempat selamat — ia mengandungi data peribadi staf.")) return;
+    const btn = $("#btnSandaran"), label = btn.querySelector("span"), asal = label.textContent;
+    btn.disabled = true;
+    try {
+      const ambil = async (jadual, susun) => { const { data, error } = await sb.from(jadual).select("*").order(susun); if (error) throw new Error(`${jadual}: ${error.message}`); return data; };
+      label.textContent = "Data…";
+      const [warga, program, kehadiran, log] = await Promise.all([
+        ambil("warga", "nama"), ambil("program", "tarikh"), ambil("kehadiran", "masa"), ambil("warga_log", "masa").catch(() => []),
+      ]);
+      const tarikh = Umur.keISO(new Date()), json = o => JSON.stringify(o, null, 2);
+      const ikutWarga = new Map(warga.map(w => [w.id, w])), ikutProg = new Map(program.map(p => [p.id, p]));
+      const q = v => `"${String(v ?? "").replace(/"/g, '""')}"`;
+      const csvHadir = [["Program", "Kod", "Tarikh Program", "Nama", "Seksyen", "Masa Hadir", "Kaedah", "Jarak (m)", "Status E-mel"].map(q).join(",")]
+        .concat(kehadiran.map(h => { const p = ikutProg.get(h.program_id) || {}, w = ikutWarga.get(h.warga_id) || {};
+          return [p.nama, p.kod, p.tarikh, w.nama, w.unit, new Date(h.masa).toLocaleString("ms-MY", { timeZone: "Asia/Kuala_Lumpur" }), h.kaedah, h.jarak_m != null ? Math.round(h.jarak_m) : "", h.emel_status].map(q).join(","); }))
+        .join("\r\n");
+      const fail = [
+        { nama: "BACA-SAYA.txt", data: `Sandaran Direktori Warga DOSM WP — ${new Date().toLocaleString("ms-MY", { timeZone: "Asia/Kuala_Lumpur" })}
+
+warga.csv        : senarai warga (boleh diimport semula melalui Import CSV)
+kehadiran.csv    : semua rekod kehadiran (mudah dibuka dalam Excel)
+data/*.json      : salinan penuh setiap jadual (untuk pemulihan teknikal)
+gambar/          : gambar warga; nama fail mengikut nama warga (boleh dimuat naik semula melalui Import Gambar)
+templat-sijil/   : templat sijil program
+
+Cap muka (biometrik) TIDAK disertakan; jana semula di halaman Program & Kehadiran jika perlu.
+Fail ini mengandungi data peribadi. Simpan di lokasi selamat dan jangan kongsi.
+` },
+        { nama: "warga.csv", data: "\ufeff" + csvWarga(warga) },
+        { nama: "kehadiran.csv", data: "\ufeff" + csvHadir },
+        { nama: "data/warga.json", data: json(warga) },
+        { nama: "data/program.json", data: json(program) },
+        { nama: "data/kehadiran.json", data: json(kehadiran) },
+        { nama: "data/warga_log.json", data: json(log) },
+      ];
+      const gambar = warga.filter(w => /^https?:/.test(w.gambar_url || ""));
+      const guna = new Set();
+      let siap = 0, gagal = 0;
+      for (let i = 0; i < gambar.length; i += 6) {
+        await Promise.all(gambar.slice(i, i + 6).map(async w => {
+          try {
+            const r = await fetch(w.gambar_url); if (!r.ok) throw 0;
+            let nama = slug(w.nama) || w.id; if (guna.has(nama)) nama += "-" + w.id.slice(0, 6); guna.add(nama);
+            fail.push({ nama: `gambar/${nama}.jpg`, data: new Uint8Array(await r.arrayBuffer()) }); siap++;
+          } catch { gagal++; }
+        }));
+        label.textContent = `Gambar ${Math.min(i + 6, gambar.length)}/${gambar.length}…`;
+      }
+      for (const p of program.filter(p => p.sijil_templat)) {
+        const { data } = await sb.storage.from("templat-sijil").download(p.sijil_templat);
+        if (data) fail.push({ nama: `templat-sijil/${p.kod}-${p.sijil_templat}`, data: new Uint8Array(await data.arrayBuffer()) });
+      }
+      label.textContent = "Membina ZIP…";
+      const url = URL.createObjectURL(Zip.buatZip(fail));
+      Object.assign(document.createElement("a"), { href: url, download: `sandaran-direktori-dosm-wp-${tarikh}.zip` }).click();
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+      toast(`Sandaran siap: ${warga.length} warga, ${kehadiran.length} rekod kehadiran, ${siap} gambar.` + (gagal ? ` ${gagal} gambar gagal dimuat.` : ""), gagal > 0);
+    } catch (err) { toast("Sandaran gagal: " + err.message, true); }
+    finally { btn.disabled = false; label.textContent = asal; }
+  }
+
+  // ---------- Urus pentadbir ----------
+  async function panggilPentadbir(body) {
+    const { data, error } = await Store.sb.functions.invoke("urus-pentadbir", { body });
+    if (error) {
+      let sebab = error.message;
+      try { sebab = (await error.context.json()).sebab || sebab; } catch {}
+      throw new Error(sebab);
+    }
+    if (!data?.ok) throw new Error(data?.sebab || "Gagal");
+    return data;
+  }
+
+  async function muatPentadbir() {
+    const ul = $("#senaraiPentadbir");
+    try {
+      const d = await panggilPentadbir({ tindakan: "senarai" });
+      ul.innerHTML = d.senarai.map(e => `<li>
+        <span class="avatar-huruf">${esc(e[0].toUpperCase())}</span>
+        <span class="ep">${esc(e)}${e === d.saya ? ' <em class="lencana ok">Anda</em>' : ""}</span>
+        ${e === d.saya ? "" : `<button class="btn btn-ghost btn-sm" data-buang-admin="${esc(e)}">Buang</button>`}
+      </li>`).join("");
+    } catch (err) { ul.innerHTML = `<li class="error">${esc(err.message)}</li>`; }
+  }
+
+  function bukaPentadbir() {
+    if (!Store.sb) return toast("Urus pentadbir memerlukan mod dalam talian.", true);
+    $("#hasilPentadbir").hidden = true;
+    $("#borangTambahPentadbir").reset(); $("#borangKataLaluan").reset();
+    $("#dlgPentadbir").showModal();
+    muatPentadbir();
+  }
+
   // ---------- Sesi pentadbir ----------
   async function kemasSesi() {
     keadaan.admin = await Store.sesi();
@@ -559,6 +664,8 @@
     $("#modLabel").title = online ? "Data dikongsi melalui pangkalan data"
       : "Data disimpan dalam pelayar ini sahaja. Tetapkan Supabase dalam config.js untuk berkongsi.";
 
+    Sinema.buruj($("#kanvasHero"));
+    Sinema.sorotan($(".hero"));
     ["#carian", "#tapisUnit", "#susun"].forEach(s => $(s).addEventListener("input", papar));
     $("#viewGrid").onclick = () => { keadaan.paparan = "grid"; $("#viewGrid").classList.add("active"); $("#viewTable").classList.remove("active"); papar(); };
     $("#viewTable").onclick = () => { keadaan.paparan = "table"; $("#viewTable").classList.add("active"); $("#viewGrid").classList.remove("active"); papar(); };
@@ -639,6 +746,45 @@
     $("#btnImportGambar").onclick = () => $("#fileGambar").click();
     $("#fileGambar").addEventListener("change", e => { const f = [...e.target.files]; e.target.value = ""; if (f.length) importGambar(f); });
     $("#btnCetak").onclick = () => window.print();
+    $("#btnSandaran").onclick = sandaranPenuh;
+    $("#btnPentadbir").onclick = bukaPentadbir;
+    $("#senaraiPentadbir").addEventListener("click", async e => {
+      const b = e.target.closest("[data-buang-admin]"); if (!b) return;
+      if (!confirm(`Buang ${b.dataset.buangAdmin} daripada senarai pentadbir?`)) return;
+      try { await panggilPentadbir({ tindakan: "buang", emel: b.dataset.buangAdmin }); toast("Pentadbir dibuang."); muatPentadbir(); }
+      catch (err) { toast(err.message, true); }
+    });
+    $("#borangTambahPentadbir").addEventListener("submit", async e => {
+      e.preventDefault();
+      const emel = e.target.elements.emel.value.trim().toLowerCase(), btn = e.target.querySelector("button");
+      btn.disabled = true;
+      try {
+        const d = await panggilPentadbir({ tindakan: "tambah", emel });
+        const pautan = new URL("./", location.href).href;
+        const mesej = d.kata_laluan
+          ? `Assalamualaikum/salam sejahtera. Tuan/puan telah didaftarkan sebagai pentadbir Direktori Warga DOSM WP.\n\nPautan: ${pautan}\nE-mel: ${d.emel}\nKata laluan sementara: ${d.kata_laluan}\n\nSila log masuk dan tukar kata laluan melalui butang Pentadbir → Tukar kata laluan saya. Terima kasih.`
+          : `Assalamualaikum/salam sejahtera. Tuan/puan telah diberi akses pentadbir Direktori Warga DOSM WP. Sila log masuk di ${pautan} menggunakan kata laluan sedia ada. Terima kasih.`;
+        $("#hasilPentadbir").innerHTML = `
+          <p><b>${esc(d.emel)}</b> kini pentadbir.${d.kata_laluan ? " Kata laluan sementara hanya dipaparkan <b>sekali</b>:" : " Akaun ini sudah wujud — gunakan kata laluan sedia ada."}</p>
+          ${d.kata_laluan ? `<code class="kl-sementara">${esc(d.kata_laluan)}</code>` : ""}
+          <p class="hint">Mesej sedia untuk dihantar (WhatsApp/e-mel peribadi, bukan kumpulan):</p>
+          <textarea readonly rows="6">${esc(mesej)}</textarea>
+          <button type="button" class="btn btn-soft btn-sm" id="btnSalinMesejAdmin">Salin mesej</button>`;
+        $("#hasilPentadbir").hidden = false;
+        $("#btnSalinMesejAdmin").onclick = async () => { try { await navigator.clipboard.writeText(mesej); toast("Mesej disalin."); } catch { toast("Tidak dapat menyalin.", true); } };
+        e.target.reset(); muatPentadbir();
+      } catch (err) { toast(err.message, true); }
+      finally { btn.disabled = false; }
+    });
+    $("#borangKataLaluan").addEventListener("submit", async e => {
+      e.preventDefault();
+      const f = e.target.elements;
+      if (f.baru.value.length < 8) return toast("Kata laluan mesti sekurang-kurangnya 8 aksara.", true);
+      if (f.baru.value !== f.sah.value) return toast("Pengesahan kata laluan tidak sepadan.", true);
+      const { error } = await Store.sb.auth.updateUser({ password: f.baru.value });
+      if (error) return toast("Gagal: " + error.message, true);
+      e.target.reset(); toast("Kata laluan ditukar.");
+    });
 
     $("#btnLogin").onclick = () => {
       $("#loginOnline").hidden = !online;

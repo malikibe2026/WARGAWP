@@ -27,6 +27,19 @@
 
   <main class="wrap hadir-main">
     <!-- Langkah 1: cari nama -->
+    <!-- Peserta yang pernah hadir dari telefon ini -->
+    <section id="langkahKenal" class="panel kenal" hidden>
+      <p class="eyebrow eyebrow-gelap">Selamat kembali</p>
+      <div id="kenalProfil" class="kenal-profil"></div>
+      <div class="aksi-sahkan">
+        <button id="btnKenalBukan" class="btn btn-ghost">Bukan saya</button>
+        <button id="btnKenalYa" class="btn btn-primary btn-besar"><span>Ya, ini saya</span></button>
+      </div>
+    </section>
+
+    <!-- Pendaftaran belum dibuka / telah ditutup -->
+    <section id="langkahTempoh" class="panel hasil" hidden></section>
+
     <section id="langkahCari" class="panel" hidden>
       <h2 class="panel-tajuk"><span class="nombor">1</span>Cari nama anda</h2>
       <label class="search search-panel">
@@ -74,13 +87,25 @@
       </div>
       <ul id="calonMuka" class="cadangan"></ul>
       <button id="btnCariManual" class="btn btn-ghost btn-sm pautan-manual" hidden>Nama saya tiada — cari secara manual</button>
-      <p class="hint privasi">🔒 Gambar anda tidak disimpan. Hanya "cap muka" digunakan untuk pengesahan dan dibuang serta-merta.</p>
+      <p class="hint privasi">🔒 Dengan menekan <b>Imbas Muka</b>, anda bersetuju muka anda dipadankan dengan gambar direktori bagi tujuan pengesahan kehadiran. Gambar tidak disimpan; hanya "cap muka" berangka digunakan dan dibuang serta-merta.</p>
     </section>
 
     <!-- Langkah 3: keputusan -->
     <section id="langkahHasil" class="panel hasil" hidden></section>
 
     <section id="ralatProgram" class="panel hasil" hidden></section>
+
+    <details class="notis-privasi">
+      <summary>🔒 Notis privasi — bagaimana maklumat anda digunakan</summary>
+      <ul>
+        <li><b>Nama</b> yang anda pilih direkodkan sebagai hadir bagi program ini.</li>
+        <li><b>Lokasi telefon</b> diambil sekali sahaja semasa anda menekan butang hadir, untuk memastikan anda berada di lokasi program. Jarak dari lokasi program disimpan bersama rekod kehadiran.</li>
+        <li><b>Imbasan muka</b> (jika diwajibkan oleh program): gambar anda <u>tidak disimpan</u>. Hanya "cap muka" berangka digunakan untuk dipadankan dengan gambar direktori, kemudian dibuang.</li>
+        <li>Satu <b>kod rawak peranti</b> disimpan pada telefon ini untuk menghalang satu telefon merekod kehadiran orang lain, dan untuk mengingati nama anda pada program akan datang.</li>
+        <li><b>E-mel / telefon</b> yang anda betulkan akan dikemas kini dalam direktori jabatan.</li>
+        <li>Rekod hanya boleh dilihat oleh urus setia (pentadbir sistem) bagi tujuan pentadbiran program Jabatan Perangkaan Malaysia, Wilayah Persekutuan.</li>
+      </ul>
+    </details>
   </main>
 
   <footer class="footer">

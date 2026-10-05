@@ -23,6 +23,28 @@
   const tarikhPanjang = iso => new Date(iso + "T00:00:00").toLocaleDateString("ms-MY", { weekday: "short", day: "numeric", month: "short", year: "numeric" });
   const pautanHadir = p => new URL(`hadir.html?p=${encodeURIComponent(p.kod)}`, location.href).href;
   const hariIni = () => new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 10);
+  // timestamptz ⇄ nilai <input type="datetime-local"> (waktu Malaysia, UTC+8)
+  const keInputMasa = iso => iso ? new Date(Date.parse(iso) + 8 * 3600e3).toISOString().slice(0, 16) : "";
+  const dariInputMasa = v => v ? new Date(v + ":00+08:00").toISOString() : null;
+  const masaPendek = iso => new Date(iso).toLocaleString("ms-MY", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kuala_Lumpur" });
+  const pautanAlat = (fail, p) => new URL(`${fail}?id=${encodeURIComponent(p.id)}`, location.href).href;
+
+  // Status pendaftaran: ikut tempoh khas jika ditetapkan, jika tidak ikut tarikh program.
+  function statusDaftar(p) {
+    if (!p.aktif) return "ditutup";
+    if (p.daftar_mula || p.daftar_tamat) {
+      const kini = Date.now();
+      if (p.daftar_mula && kini < Date.parse(p.daftar_mula)) return "belum";
+      if (p.daftar_tamat && kini > Date.parse(p.daftar_tamat)) return "tamat";
+      return "buka";
+    }
+    const hari = hariIni();
+    return p.tarikh === hari ? "buka" : p.tarikh > hari ? "belum" : "tamat";
+  }
+  function teksTempoh(p) {
+    if (!p.daftar_mula && !p.daftar_tamat) return "Ikut masa program";
+    return `${p.daftar_mula ? masaPendek(p.daftar_mula) : "Sekarang"} → ${p.daftar_tamat ? masaPendek(p.daftar_tamat) : "tiada had"}`;
+  }
 
   function papar(id) {
     for (const s of ["#paparLogin", "#paparSenarai", "#paparHadir"]) $(s).hidden = s !== id;
@@ -58,12 +80,18 @@
   }
 
   function lencana(p) {
-    const hari = hariIni();
-    if (!p.aktif) return '<span class="lencana ditutup">Ditutup</span>';
-    if (p.tarikh === hari) return '<span class="lencana langsung"><i class="dot"></i>Hari ini</span>';
-    if (p.tarikh > hari) return '<span class="lencana akan">Akan datang</span>';
+    const s = statusDaftar(p);
+    if (s === "ditutup") return '<span class="lencana ditutup">Ditutup</span>';
+    if (s === "buka") return '<span class="lencana langsung"><i class="dot"></i>Pendaftaran dibuka</span>';
+    if (s === "belum") return `<span class="lencana akan">${p.daftar_mula ? "Dibuka " + esc(masaPendek(p.daftar_mula)) : "Akan datang"}</span>`;
     return '<span class="lencana lepas">Selesai</span>';
   }
+
+  const IKON_P = {
+    salin: '<svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>',
+    skrin: '<svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>',
+    laporan: '<svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></svg>',
+  };
 
   function paparProgram() {
     const el = $("#senaraiProgram");
@@ -80,12 +108,16 @@
         <ul class="kp-meta">
           <li>📅 ${esc(tarikhPanjang(p.tarikh))}</li>
           <li>🕘 ${esc(masa)}</li>
+          ${p.daftar_mula || p.daftar_tamat ? `<li>📝 Daftar: ${esc(teksTempoh(p))}</li>` : ""}
           <li>${p.kaedah_sah === "nama" ? "🔎 Carian nama" : p.kaedah_sah === "nama_muka" ? "🙂 Nama + imbas muka" : "🙂 Imbas muka"}${p.emel_aktif ? " · ✉ E-mel" : ""}${p.sijil_aktif ? " · 📜 Sijil" : ""}</li>
           <li>📍 ${esc(p.lokasi_nama || "—")}${p.lat != null ? ` <span class="muted">(${p.radius_m} m)</span>` : ' <span class="muted">(tiada semakan lokasi)</span>'}</li>
         </ul>
         <div class="kp-bawah">
           <div class="kp-bil"><b>${bil}</b><span>/ ${st.warga.length} hadir</span></div>
           <div class="kp-aksi">
+            <button class="icon-btn" data-salin="${p.id}" title="Salin program (untuk program berulang)" aria-label="Salin program">${IKON_P.salin}</button>
+            <a class="icon-btn" href="${esc(pautanAlat("paparan.html", p))}" target="_blank" rel="noopener" title="Skrin paparan langsung (projektor)" aria-label="Skrin paparan">${IKON_P.skrin}</a>
+            <a class="icon-btn" href="${esc(pautanAlat("laporan.html", p))}" target="_blank" rel="noopener" title="Laporan kehadiran rasmi (cetak / PDF)" aria-label="Laporan">${IKON_P.laporan}</a>
             <button class="btn btn-soft btn-sm" data-qr="${p.id}">Kod QR</button>
             <button class="btn btn-soft btn-sm" data-edit="${p.id}">Ubah</button>
             <button class="btn btn-primary btn-sm" data-lihat="${p.id}">Kehadiran</button>
@@ -97,8 +129,9 @@
 
   $("#senaraiProgram").addEventListener("click", e => {
     const b = e.target.closest("button"); if (!b) return;
-    const p = st.program.find(x => x.id === (b.dataset.qr || b.dataset.edit || b.dataset.lihat));
-    if (b.dataset.qr) bukaQR(p);
+    const p = st.program.find(x => x.id === (b.dataset.qr || b.dataset.edit || b.dataset.lihat || b.dataset.salin));
+    if (b.dataset.salin) bukaBorang(p, true);
+    else if (b.dataset.qr) bukaQR(p);
     else if (b.dataset.edit) bukaBorang(p);
     else if (b.dataset.lihat) bukaHadir(p);
   });
@@ -196,7 +229,7 @@ Jabatan Perangkaan Malaysia, Wilayah Persekutuan`;
 
   async function baitTemplat() {
     if (st.templatBaru) return { bait: new Uint8Array(await st.templatBaru.arrayBuffer()), jenis: st.templatBaru.type };
-    const laluan = st.sedangEdit?.sijil_templat;
+    const laluan = st.templatAsal;
     if (!laluan) return { bait: null };
     const { data, error } = await sb.storage.from("templat-sijil").download(laluan);
     if (error) throw new Error("Templat tidak dapat dimuat: " + error.message);
@@ -265,13 +298,19 @@ Jabatan Perangkaan Malaysia, Wilayah Persekutuan`;
   };
 
   // ---------- Borang program ----------
-  function bukaBorang(p) {
-    st.sedangEdit = p || null;
+  function bukaBorang(p, salin) {
+    st.sedangEdit = salin ? null : (p || null);
+    st.templatAsal = p?.sijil_templat || null;
     const f = $("#borangProgram");
     f.reset();
-    $("#tajukBorangProgram").textContent = p ? "Ubah Program" : "Program Baharu";
-    f.elements.nama.value = p?.nama || "";
-    f.elements.tarikh.value = p?.tarikh || hariIni();
+    $("#tajukBorangProgram").textContent = salin ? "Salin Program" : p ? "Ubah Program" : "Program Baharu";
+    f.elements.nama.value = p ? p.nama + (salin ? " (salinan)" : "") : "";
+    f.elements.tarikh.value = salin ? hariIni() : p?.tarikh || hariIni();
+    const khas = !salin && !!(p?.daftar_mula || p?.daftar_tamat);
+    f.elements.mod_daftar.value = khas ? "khas" : "program";
+    f.elements.daftar_mula.value = khas ? keInputMasa(p.daftar_mula) : "";
+    f.elements.daftar_tamat.value = khas ? keInputMasa(p.daftar_tamat) : "";
+    kemasTempoh();
     f.elements.masa_mula.value = jam(p?.masa_mula);
     f.elements.masa_tamat.value = jam(p?.masa_tamat);
     f.elements.lokasi_nama.value = p?.lokasi_nama || "";
@@ -286,14 +325,14 @@ Jabatan Perangkaan Malaysia, Wilayah Persekutuan`;
     f.elements.emel_isi.value = p?.emel_isi || ISI_LALAI;
     f.elements.sijil_aktif.checked = !!p?.sijil_aktif;
     st.templatBaru = null; $("#failTemplat").value = "";
-    $("#namaTemplat").textContent = p?.sijil_templat ? "Templat telah dimuat naik" : "Tiada templat (reka bentuk ringkas digunakan)";
+    $("#namaTemplat").textContent = p?.sijil_templat ? (salin ? "Templat disalin daripada program asal" : "Templat telah dimuat naik") : "Tiada templat (reka bentuk ringkas digunakan)";
     // Templat PNG lama: tukar automatik ke JPEG; pentadbir hanya perlu klik Simpan.
     if (p?.sijil_templat && /\.png$/i.test(p.sijil_templat)) {
       (async () => {
         try {
           const { data, error } = await sb.storage.from("templat-sijil").download(p.sijil_templat);
           if (error) throw error;
-          if (st.sedangEdit !== p) return;
+          if (st.templatAsal !== p.sijil_templat) return;
           st.templatBaru = await keJpeg(data);
           $("#namaTemplat").textContent = "Templat PNG ditukar ke JPEG supaya sijil boleh dihantar — klik Simpan";
         } catch { $("#namaTemplat").textContent = "Templat PNG terlalu berat untuk pelayan — sila muat naik semula"; }
@@ -303,10 +342,29 @@ Jabatan Perangkaan Malaysia, Wilayah Persekutuan`;
     paparBarisTeks();
     $("#pratontonSijil").hidden = true; $("#pautanPratonton").hidden = true;
     kemasLipat();
-    $("#btnPadamProgram").hidden = !p;
+    $("#btnPadamProgram").hidden = !st.sedangEdit;
     $("#programRalat").hidden = true;
+    kemasTempoh();
     $("#dlgProgram").showModal();
   }
+
+  // ---------- Tempoh pendaftaran ----------
+  function kemasTempoh() {
+    const f = $("#borangProgram").elements, khas = f.mod_daftar.value === "khas";
+    $("#kotakTempoh").hidden = !khas;
+    if (khas && !f.daftar_mula.value && !f.daftar_tamat.value && f.tarikh.value) {
+      // Cadangan awal: ikut masa program, pentadbir boleh ubah.
+      const mula = f.masa_mula.value || "00:00", tamat = f.masa_tamat.value || "23:59";
+      f.daftar_mula.value = keInputMasa(new Date(Date.parse(`${f.tarikh.value}T${mula}:00+08:00`) - (f.masa_mula.value ? 30 * 60e3 : 0)).toISOString());
+      f.daftar_tamat.value = `${f.tarikh.value}T${tamat}`;
+    }
+    const m = f.daftar_mula.value, t = f.daftar_tamat.value;
+    $("#ringkasTempoh").textContent = !khas
+      ? (f.tarikh.value ? `Peserta boleh daftar pada ${new Date(f.tarikh.value + "T00:00:00").toLocaleDateString("ms-MY", { day: "numeric", month: "long", year: "numeric" })}${f.masa_mula.value ? `, mulai ${new Date(Date.parse(`${f.tarikh.value}T${f.masa_mula.value}:00`) - 30 * 60e3).toTimeString().slice(0, 5)}` : ""}${f.masa_tamat.value ? ` hingga ${f.masa_tamat.value}` : ""}.` : "")
+      : m || t ? `Peserta boleh daftar dari ${m ? masaPendek(dariInputMasa(m)) : "sekarang"} hingga ${t ? masaPendek(dariInputMasa(t)) : "pendaftaran ditutup secara manual"}.` : "";
+  }
+  document.querySelectorAll('[name="mod_daftar"]').forEach(r => r.addEventListener("change", kemasTempoh));
+  ["daftar_mula", "daftar_tamat", "tarikh", "masa_mula", "masa_tamat"].forEach(n => $("#borangProgram").elements[n].addEventListener("input", kemasTempoh));
 
   function huraiKoordinat(s) {
     s = s.trim(); if (!s) return { lat: null, lng: null };
@@ -334,6 +392,11 @@ Jabatan Perangkaan Malaysia, Wilayah Persekutuan`;
       if (!f.tarikh.value) throw new Error("Tarikh wajib diisi.");
       if (f.masa_mula.value && f.masa_tamat.value && f.masa_tamat.value <= f.masa_mula.value) throw new Error("Masa tamat mesti selepas masa mula.");
       const { lat, lng } = huraiKoordinat(f.koordinat.value);
+      const khas = f.mod_daftar.value === "khas";
+      const daftar_mula = khas ? dariInputMasa(f.daftar_mula.value) : null;
+      const daftar_tamat = khas ? dariInputMasa(f.daftar_tamat.value) : null;
+      if (khas && !daftar_mula && !daftar_tamat) throw new Error("Tetapkan sekurang-kurangnya masa dibuka atau ditutup untuk tempoh pendaftaran.");
+      if (daftar_mula && daftar_tamat && daftar_tamat <= daftar_mula) throw new Error("Masa pendaftaran ditutup mesti selepas masa dibuka.");
       const rekod = {
         nama: f.nama.value.trim(), tarikh: f.tarikh.value,
         masa_mula: f.masa_mula.value || null, masa_tamat: f.masa_tamat.value || null,
@@ -343,7 +406,9 @@ Jabatan Perangkaan Malaysia, Wilayah Persekutuan`;
         emel_aktif: f.emel_aktif.checked, emel_subjek: f.emel_subjek.value.trim() || null,
         emel_isi: f.emel_isi.value.trim() || null, sijil_aktif: f.sijil_aktif.checked,
         sijil_teks: st.teksSijil.filter(t => String(t.teks || "").trim()),
+        daftar_mula, daftar_tamat,
       };
+      if (!st.sedangEdit && st.templatAsal && !st.templatBaru) rekod.sijil_templat = st.templatAsal;   // salinan program
       if (rekod.sijil_aktif && !rekod.sijil_teks.length) throw new Error("Sijil perlu sekurang-kurangnya satu baris teks, cth. {nama}.");
       if (st.templatBaru) {
         const ext = (st.templatBaru.name.split(".").pop() || "bin").toLowerCase();
@@ -429,12 +494,17 @@ Jabatan Perangkaan Malaysia, Wilayah Persekutuan`;
         <div class="kp-atas">${lencana(p)}</div>
         <h2>${esc(p.nama)}</h2>
         <p class="muted">${esc(tarikhPanjang(p.tarikh))} · ${esc(masa)}${p.lokasi_nama ? " · " + esc(p.lokasi_nama) : ""}</p>
+        ${p.daftar_mula || p.daftar_tamat ? `<p class="muted" style="margin-top:2px">📝 Tempoh daftar: ${esc(teksTempoh(p))}</p>` : ""}
       </div>
       <div class="kh-stat">
         <div class="cincin" style="--p:${peratus}"><b>${peratus}%</b></div>
         <div><b class="besar">${st.hadir.length}</b><span> / ${st.warga.length} hadir</span>
           <div class="muted" style="font-size:12px">Dikemas kini ${new Date().toLocaleTimeString("ms-MY", { hour: "2-digit", minute: "2-digit", second: "2-digit", timeZone: "Asia/Kuala_Lumpur" })}</div></div>
-        <button class="btn btn-soft btn-sm" id="btnQRDariHadir">Kod QR</button>
+        <div class="kh-alat">
+          <button class="btn btn-soft btn-sm" id="btnQRDariHadir">Kod QR</button>
+          <a class="btn btn-soft btn-sm" href="${esc(pautanAlat("paparan.html", p))}" target="_blank" rel="noopener">${IKON_P.skrin}<span>Skrin Paparan</span></a>
+          <a class="btn btn-soft btn-sm" href="${esc(pautanAlat("laporan.html", p))}" target="_blank" rel="noopener">${IKON_P.laporan}<span>Laporan</span></a>
+        </div>
       </div>`;
     $("#btnQRDariHadir").onclick = () => bukaQR(p);
     paparHadir();

@@ -125,6 +125,21 @@
       <label class="suis"><input type="checkbox" name="aktif" checked> Buka pendaftaran kehadiran</label>
 
       <fieldset class="bahagian">
+        <legend>Tempoh Pendaftaran Kehadiran</legend>
+        <div class="pilihan-kaedah dua">
+          <label class="kaedah"><input type="radio" name="mod_daftar" value="program" checked>
+            <span><b>Ikut masa program</b><small>Dibuka 30 minit sebelum masa mula hingga masa tamat, pada tarikh program sahaja.</small></span></label>
+          <label class="kaedah"><input type="radio" name="mod_daftar" value="khas">
+            <span><b>Tetapkan tempoh sendiri</b><small>Contoh: buka sehari lebih awal, atau lanjutkan selepas program tamat.</small></span></label>
+        </div>
+        <div id="kotakTempoh" class="row" hidden>
+          <label>Dibuka pada<input name="daftar_mula" type="datetime-local"></label>
+          <label>Ditutup pada<input name="daftar_tamat" type="datetime-local"></label>
+        </div>
+        <p id="ringkasTempoh" class="hint"></p>
+      </fieldset>
+
+      <fieldset class="bahagian">
         <legend>Kaedah Pengesahan Kehadiran</legend>
         <div class="pilihan-kaedah">
           <label class="kaedah"><input type="radio" name="kaedah_sah" value="nama" checked>

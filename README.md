@@ -29,6 +29,27 @@ Semua maklumat (termasuk gambar) boleh dikemas kini oleh pentadbir.
    Sistem memaparkan ringkasan (dikemas kini / baharu / No. KP tidak sah) sebelum meneruskan.
 No. KP tidak disimpan — hanya tarikh lahir.
 
+## Hosting (GitHub Pages)
+Laman diterbitkan automatik oleh `.github/workflows/pages.yml` setiap kali kod ditolak ke cabang utama — tiada lagi ZIP/seret-lepas.
+Sekali sahaja: repo mesti **awam** (GitHub percuma tidak menyokong Pages untuk repo peribadi), kemudian
+Settings → Pages → Source: **GitHub Actions**. Kod tidak mengandungi data staf; data kekal dalam Supabase.
+
+`.github/workflows/jaga-supabase.yml` membuat ping ringan dua kali seminggu supaya projek Supabase percuma tidak dijeda.
+(GitHub mungkin mematikan jadual ini selepas 60 hari tanpa aktiviti repo — klik *Enable workflow* jika diminta.)
+
+## Alat pentadbir
+- **Sandaran Penuh** (halaman utama): ZIP mengandungi warga.csv, kehadiran.csv, data JSON, semua gambar dan templat sijil.
+- **Pentadbir**: tambah/buang pentadbir (fungsi pelayan `urus-pentadbir` mencipta akaun dengan kata laluan sementara), tukar kata laluan sendiri.
+- **Tempoh pendaftaran** setiap program: ikut masa program (lalai) atau tetapkan masa dibuka/ditutup sendiri (`program.daftar_mula/daftar_tamat`).
+- **Salin program** untuk program berulang (tetapan e-mel, sijil, lokasi ikut sekali).
+- **Skrin paparan** (`paparan.html?id=…`): kehadiran langsung + kod QR untuk projektor. Tekan F untuk skrin penuh.
+- **Laporan** (`laporan.html?id=…`): laporan rasmi A4 — ringkasan, ikut seksyen, senarai hadir/tidak hadir, ruang tandatangan. Cetak atau simpan PDF.
+
+## Halaman peserta
+- Telefon mengingati peserta → kali seterusnya cukup tekan **Ya, ini saya**.
+- **Muat Turun Sijil** terus selepas hadir (hanya dari telefon yang merekod kehadiran itu).
+- Panduan membenarkan lokasi (iPhone/Android) apabila lokasi gagal; notis privasi; kiraan detik jika pendaftaran belum dibuka.
+
 ## Data awal
 183 warga diimport daripada `DIREKTORI DOSM WP 28092026.pdf` (28/09/2026) ke Supabase.
 Gambar **tidak** disimpan dalam repo ini. Semua gambar disimpan dalam Supabase Storage.

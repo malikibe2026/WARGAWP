@@ -11,7 +11,14 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <header class="hero">
+  <header class="hero hero-sinema">
+    <div class="sinema" aria-hidden="true">
+      <div class="aurora"><i></i><i></i><i></i></div>
+      <div id="dindingFoto" class="dinding-foto"></div>
+      <canvas id="kanvasHero" class="kanvas-hero"></canvas>
+      <div class="sorotan"></div>
+      <div class="vignet"></div>
+    </div>
     <nav class="nav wrap">
       <div class="brand">
         <div class="logo" aria-hidden="true">
@@ -37,7 +44,7 @@
 
     <div class="hero-body wrap">
       <p class="eyebrow">Direktori Rasmi Warga</p>
-      <h1 id="tajuk">Direktori Warga DOSM</h1>
+      <h1 id="tajuk" class="tajuk-sinema">Direktori Warga DOSM</h1>
       <p id="subtajuk" class="lead"></p>
 
       <label class="search">
@@ -108,6 +115,12 @@
         </button>
         <button id="btnTemplatIC" class="btn btn-soft" title="Senarai nama staf tetap dengan lajur No. KP kosong untuk diisi dan diimport semula">
           <svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><circle cx="8" cy="12" r="2.5"/><path d="M13 10h5M13 14h4"/></svg><span>Templat No. KP</span>
+        </button>
+        <button id="btnSandaran" class="btn btn-soft" title="Muat turun salinan semua data, kehadiran dan gambar (ZIP)">
+          <svg viewBox="0 0 24 24"><path d="M21 8v13H3V8M1 3h22v5H1zM10 12h4"/></svg><span>Sandaran Penuh</span>
+        </button>
+        <button id="btnPentadbir" class="btn btn-soft" title="Tambah / buang pentadbir, tukar kata laluan">
+          <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg><span>Pentadbir</span>
         </button>
         <button id="btnCetak" class="btn btn-soft">
           <svg viewBox="0 0 24 24"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg><span>Cetak</span>
@@ -230,6 +243,31 @@
     </form>
   </dialog>
 
+  <!-- Urus pentadbir -->
+  <dialog id="dlgPentadbir" class="dialog">
+    <div class="dialog-isi">
+      <div class="dialog-head">
+        <h2>Pentadbir Sistem</h2>
+        <button type="button" class="icon-btn" data-close aria-label="Tutup"><svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+      </div>
+      <p class="muted" style="margin-top:0">Pentadbir boleh mengemas kini direktori, mengurus program dan melihat rekod kehadiran. Disyorkan sekurang-kurangnya dua orang.</p>
+      <ul id="senaraiPentadbir" class="senarai-pentadbir"><li class="muted">Memuatkan…</li></ul>
+      <form id="borangTambahPentadbir" class="tambah-pentadbir">
+        <label>Tambah pentadbir (e-mel)<input name="emel" type="email" placeholder="nama@dosm.gov.my" required></label>
+        <button class="btn btn-primary">Tambah</button>
+      </form>
+      <div id="hasilPentadbir" class="hasil-pentadbir" hidden></div>
+      <form id="borangKataLaluan"><fieldset class="bahagian">
+        <legend>Tukar kata laluan saya</legend>
+        <div class="row">
+          <label>Kata laluan baharu<input name="baru" type="password" minlength="8" autocomplete="new-password" required></label>
+          <label>Sahkan kata laluan<input name="sah" type="password" minlength="8" autocomplete="new-password" required></label>
+        </div>
+        <button class="btn btn-soft btn-sm">Tukar kata laluan</button>
+      </fieldset></form>
+    </div>
+  </dialog>
+
   <datalist id="senaraiUnit"></datalist>
   <datalist id="senaraiJawatan"></datalist>
   <div id="toast" class="toast" hidden></div>
@@ -237,6 +275,8 @@
   <script src="config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="umur.js"></script>
+  <script src="sinema.js"></script>
+  <script src="zip.js"></script>
   <script src="storage.js"></script>
   <script src="app.js"></script>
 </body>
