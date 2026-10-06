@@ -103,7 +103,7 @@ async function janaSijil(program: any, templat: Uint8Array | null, data: Record<
 
 // deno-lint-ignore no-explicit-any
 async function muatTurunSijil(program: any, templat: Uint8Array | null, wargaId: string, peranti: string) {
-  if (!program.sijil_aktif) return json({ ok: false, sebab: "Sijil tidak disediakan untuk program ini." });
+  if (!program.sijil_aktif || !program.sijil_muat_turun) return json({ ok: false, sebab: "Muat turun sijil tidak dibenarkan untuk program ini." });
   const { data: rekod } = await svc.from("kehadiran").select("masa, peranti_id, warga:warga_id(nama, jawatan, gred, unit)")
     .eq("program_id", program.id).eq("warga_id", wargaId).maybeSingle();
   if (!rekod) return json({ ok: false, sebab: "Rekod kehadiran tidak dijumpai." });
@@ -139,7 +139,7 @@ async function prosesSatu(program: any, templat: Uint8Array | null, hadirId: str
     const html = `<div style="font-family:Arial,sans-serif;font-size:14px;line-height:1.6;color:#1b2533;max-width:600px">
       <div style="border-top:4px solid #c9a227;padding-top:14px">${esc(teks).replace(/\n/g, "<br>")}</div></div>`;
     let lampiran;
-    if (program.sijil_aktif) {
+    if (program.sijil_aktif && program.sijil_emel !== false) {
       lampiran = { nama: namaFailSijil(w.nama), bait: await janaSijil(program, templat, data) };
     }
     await hantarEmel(w.emel, w.nama, subjek, teks, html, lampiran);

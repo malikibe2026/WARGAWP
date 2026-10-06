@@ -1030,3 +1030,15 @@ line.d-dasar { stroke: var(--v-dasar); stroke-width: 1; }
   .nod-orang.pa p { font-size: 10.5px; }
 }
 @media print { .aras-0.ada-pa { grid-template-columns: 1fr auto 1fr; } }
+
+/* Pengurusan Tertinggi lain (cth. Ketua Penolong Pengarah) — kad penuh sebaris dengan Timbalan */
+.ahli-atas { grid-column: 3; justify-self: start; position: relative; display: flex; flex-direction: column; gap: 16px; }
+.ahli-atas::before { content: ""; position: absolute; right: 100%; top: 50%; width: 24px; height: 2px; background: var(--gold); }
+.aras-1:not(:has(> .nod-orang)) .ahli-atas { grid-column: 2; justify-self: center; }
+.aras-1:not(:has(> .nod-orang)) .ahli-atas::before { display: none; }
+@media (max-width: 860px) {
+  .ahli-atas { grid-column: 1; justify-self: center; }
+  .ahli-atas::before { right: auto; left: 50%; top: auto; bottom: 100%; width: 2px; height: 24px; }
+}
+.cara-sijil { display: flex; flex-direction: column; gap: 4px; padding: 10px 12px; margin-bottom: 12px; border-radius: 12px; background: var(--surface-2); }
+.cara-sijil .suis { margin: 0 !important; }

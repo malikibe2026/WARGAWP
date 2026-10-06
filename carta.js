@@ -99,7 +99,7 @@
       </section>
       ${s.timbalan || s.pejabat.length ? `<section class="aras aras-1">
         ${s.timbalan ? kadOrang(s.timbalan, "kedua", s.timbalan.jawatan || "Timbalan Pengarah") : ""}
-        ${s.pejabat.length ? `<div class="pejabat-pengarah"><p class="pp-label">${esc(s.unitAtas)}</p>${s.pejabat.map(w => kadOrang(w, "kecil", "")).join("")}</div>` : ""}
+        ${s.pejabat.length ? `<div class="ahli-atas">${s.pejabat.map(w => kadOrang(w, "kedua", w.jawatan || "")).join("")}</div>` : ""}
       </section>` : ""}
       <ol class="batang">${s.units.map((u, i) => kadUnit(u, i, tunjukPms)).join("")}</ol>
       ${tunjukPms && s.lain.length ? `<section class="unit-lain">

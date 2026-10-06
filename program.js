@@ -109,7 +109,7 @@
           <li>📅 ${esc(tarikhPanjang(p.tarikh))}</li>
           <li>🕘 ${esc(masa)}</li>
           ${p.daftar_mula || p.daftar_tamat ? `<li>📝 Daftar: ${esc(teksTempoh(p))}</li>` : ""}
-          <li>${p.kaedah_sah === "nama" ? "🔎 Carian nama" : p.kaedah_sah === "nama_muka" ? "🙂 Nama + imbas muka" : "🙂 Imbas muka"}${p.emel_aktif ? " · ✉ E-mel" : ""}${p.sijil_aktif ? " · 📜 Sijil" : ""}</li>
+          <li>${p.kaedah_sah === "nama" ? "🔎 Carian nama" : p.kaedah_sah === "nama_muka" ? "🙂 Nama + imbas muka" : "🙂 Imbas muka"}${p.emel_aktif ? " · ✉ E-mel" : ""}${p.sijil_aktif ? ` · 📜 Sijil (${[p.sijil_emel !== false && "e-mel", p.sijil_muat_turun && "muat turun"].filter(Boolean).join(" + ") || "tiada cara"})` : ""}</li>
           ${p.sasaran && p.sasaran !== "semua" ? `<li>🎯 Sasaran: ${esc(Sasaran.label(p.sasaran))}</li>` : ""}
           <li>📍 ${esc(p.lokasi_nama || "—")}${p.lat != null ? ` <span class="muted">(${p.radius_m} m)</span>` : ' <span class="muted">(tiada semakan lokasi)</span>'}</li>
         </ul>
@@ -191,14 +191,16 @@ Jabatan Perangkaan Malaysia, Wilayah Persekutuan`;
     const f = $("#borangProgram").elements;
     $("#kotakEmel").hidden = !f.emel_aktif.checked;
     $("#kotakSijil").hidden = !f.sijil_aktif.checked;
-    if (f.sijil_aktif.checked && !f.emel_aktif.checked) { f.emel_aktif.checked = true; $("#kotakEmel").hidden = false; }
+    // Sijil melalui e-mel memerlukan e-mel pengesahan diaktifkan.
+    if (f.sijil_aktif.checked && f.sijil_emel.checked && !f.emel_aktif.checked) { f.emel_aktif.checked = true; $("#kotakEmel").hidden = false; }
   }
   $("#borangProgram").elements.emel_aktif.addEventListener("change", () => {
     const f = $("#borangProgram").elements;
-    if (!f.emel_aktif.checked) f.sijil_aktif.checked = false;
+    if (!f.emel_aktif.checked) f.sijil_emel.checked = false;
     kemasLipat();
   });
   $("#borangProgram").elements.sijil_aktif.addEventListener("change", kemasLipat);
+  $("#borangProgram").elements.sijil_emel.addEventListener("change", kemasLipat);
   // Gambar templat ditukar ke JPEG ≤2339px: pelayan (had CPU ~2 s) tidak mampu nyahkod PNG besar.
   function keJpeg(blob) {
     return new Promise((ok, gagal) => {
@@ -326,6 +328,8 @@ Jabatan Perangkaan Malaysia, Wilayah Persekutuan`;
     f.elements.emel_subjek.value = p?.emel_subjek || "Pengesahan Kehadiran: {program}";
     f.elements.emel_isi.value = p?.emel_isi || ISI_LALAI;
     f.elements.sijil_aktif.checked = !!p?.sijil_aktif;
+    f.elements.sijil_emel.checked = p ? p.sijil_emel !== false && !!p.emel_aktif : true;
+    f.elements.sijil_muat_turun.checked = !!p?.sijil_muat_turun;
     st.templatBaru = null; $("#failTemplat").value = "";
     $("#namaTemplat").textContent = p?.sijil_templat ? (salin ? "Templat disalin daripada program asal" : "Templat telah dimuat naik") : "Tiada templat (reka bentuk ringkas digunakan)";
     // Templat PNG lama: tukar automatik ke JPEG; pentadbir hanya perlu klik Simpan.
@@ -407,11 +411,13 @@ Jabatan Perangkaan Malaysia, Wilayah Persekutuan`;
         kaedah_sah: f.kaedah_sah.value, ambang_muka: +f.ambang_muka.value,
         emel_aktif: f.emel_aktif.checked, emel_subjek: f.emel_subjek.value.trim() || null,
         emel_isi: f.emel_isi.value.trim() || null, sijil_aktif: f.sijil_aktif.checked,
+        sijil_emel: f.sijil_emel.checked, sijil_muat_turun: f.sijil_muat_turun.checked,
         sijil_teks: st.teksSijil.filter(t => String(t.teks || "").trim()),
         daftar_mula, daftar_tamat, sasaran: f.sasaran.value || "semua",
       };
       if (!st.sedangEdit && st.templatAsal && !st.templatBaru) rekod.sijil_templat = st.templatAsal;   // salinan program
       if (rekod.sijil_aktif && !rekod.sijil_teks.length) throw new Error("Sijil perlu sekurang-kurangnya satu baris teks, cth. {nama}.");
+      if (rekod.sijil_aktif && !rekod.sijil_emel && !rekod.sijil_muat_turun) throw new Error("Pilih sekurang-kurangnya satu cara sijil diberikan: melalui e-mel atau muat turun di telefon.");
       if (st.templatBaru) {
         const ext = (st.templatBaru.name.split(".").pop() || "bin").toLowerCase();
         const laluan = `${crypto.randomUUID()}.${ext}`;
@@ -546,7 +552,7 @@ Jabatan Perangkaan Malaysia, Wilayah Persekutuan`;
   $("#btnHantarSemua").onclick = () => {
     const belum = st.hadir.filter(h => h.emel_status !== "dihantar").map(h => h.warga_id);
     if (!belum.length) return toast("Semua warga hadir telah menerima e-mel.");
-    const sijil = st.semasa.sijil_aktif ? " berserta sijil" : "";
+    const sijil = st.semasa.sijil_aktif && st.semasa.sijil_emel !== false ? " berserta sijil" : "";
     if (confirm(`Hantar e-mel pengesahan${sijil} kepada ${belum.length} warga hadir yang belum menerimanya?`)) hantarEmel(belum);
   };
 
@@ -607,7 +613,7 @@ Jabatan Perangkaan Malaysia, Wilayah Persekutuan`;
     }
     if (emel) {
       const w = st.warga.find(x => x.id === emel.dataset.emel);
-      if (confirm(`Hantar e-mel pengesahan${st.semasa.sijil_aktif ? " dan sijil" : ""} kepada ${w?.nama}?`)) hantarEmel([emel.dataset.emel]);
+      if (confirm(`Hantar e-mel pengesahan${st.semasa.sijil_aktif && st.semasa.sijil_emel !== false ? " dan sijil" : ""} kepada ${w?.nama}?`)) hantarEmel([emel.dataset.emel]);
     } else if (buang) {
       if (!confirm("Buang rekod kehadiran ini?")) return;
       try { semak(await sb.from("kehadiran").delete().eq("id", buang.dataset.buang)); toast("Rekod dibuang."); muatHadir(); }

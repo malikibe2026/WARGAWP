@@ -79,6 +79,10 @@
     kemas(); pemasaTempoh = setInterval(kemas, 1000);
   }
 
+  // Cara sijil diberikan untuk program ini (ditetapkan pentadbir).
+  const sijilEmel = () => program.sijil_aktif && program.sijil_emel !== false && program.emel_aktif;
+  const sijilMuatTurun = () => program.sijil_aktif && program.sijil_muat_turun;
+
   function formatTarikh(iso) {
     return new Date(iso + "T00:00:00").toLocaleDateString("ms-MY", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
   }
@@ -129,7 +133,7 @@
     $("#inEmel").value = dipilih.emel || "";
     $("#inTel").value = dipilih.telefon_bimbit || "";
     $("#notaEmel").textContent = program.emel_aktif
-      ? "E-mel pengesahan kehadiran" + (program.sijil_aktif ? " dan sijil" : "") + " akan dihantar ke alamat ini."
+      ? "E-mel pengesahan kehadiran" + (sijilEmel() ? " dan sijil" : "") + " akan dihantar ke alamat ini."
       : "Pembetulan akan dikemas kini dalam direktori jabatan.";
     $("#notaLokasi").textContent = program.lat != null
       ? `Lokasi telefon akan disemak. Anda perlu berada dalam lingkungan ${program.radius_m} m dari lokasi program.`
@@ -374,7 +378,7 @@
         const masa = new Date(data.masa).toLocaleTimeString("ms-MY", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Kuala_Lumpur" });
         ingatSaya(dipilih.id);
         hasil(true, "Kehadiran direkodkan", `Terima kasih, ${dipilih.nama}.`, `
-          ${program.sijil_aktif ? '<button class="btn btn-primary btn-sijil" id="btnSijil"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg><span>Muat Turun Sijil (PDF)</span></button>' : ""}
+          ${sijilMuatTurun() ? '<button class="btn btn-primary btn-sijil" id="btnSijil"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg><span>Muat Turun Sijil (PDF)</span></button>' : ""}
           <dl class="meta meta-hasil">
             <dt>Program</dt><dd>${esc(program.nama)}</dd>
             <dt>Masa</dt><dd>${esc(masa)}</dd>
@@ -386,7 +390,7 @@
         if (program.emel_aktif) hantarPengesahan();
       } else if (data.sudah) {
         ingatSaya(dipilih.id);
-        hasil(true, "Sudah direkodkan", data.sebab, program.sijil_aktif
+        hasil(true, "Sudah direkodkan", data.sebab, sijilMuatTurun()
           ? '<button class="btn btn-primary btn-sijil" id="btnSijil"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg><span>Muat Turun Sijil (PDF)</span></button>' : "");
         $("#btnSijil")?.addEventListener("click", e => muatTurunSijil(e.currentTarget));
       } else if (data.perlu_muka && !paksaMuka) {
@@ -406,12 +410,12 @@
   async function hantarPengesahan() {
     const nota = document.createElement("p");
     nota.className = "nota-emel";
-    nota.textContent = program.sijil_aktif ? "Menghantar e-mel pengesahan dan sijil…" : "Menghantar e-mel pengesahan…";
+    nota.textContent = sijilEmel() ? "Menghantar e-mel pengesahan dan sijil…" : "Menghantar e-mel pengesahan…";
     $("#langkahHasil").appendChild(nota);
     try {
       const { data, error } = await Store.sb.functions.invoke("hantar-pengesahan", { body: { kod, warga_id: dipilih.id } });
       if (error) throw error;
-      if (data?.ok) { nota.textContent = `✉ ${program.sijil_aktif ? "E-mel pengesahan dan sijil" : "E-mel pengesahan"} telah dihantar ke ${data.emel}.`; nota.classList.add("ok"); }
+      if (data?.ok) { nota.textContent = `✉ ${sijilEmel() ? "E-mel pengesahan dan sijil" : "E-mel pengesahan"} telah dihantar ke ${data.emel}.`; nota.classList.add("ok"); }
       else if (data?.sebab === "tiada_emel") nota.textContent = "E-mel tidak dihantar kerana alamat e-mel anda tiada dalam direktori. Sila maklumkan urus setia.";
       else nota.textContent = "E-mel pengesahan tidak dapat dihantar sekarang. Urus setia akan menghantarnya kemudian.";
     } catch { nota.textContent = "E-mel pengesahan tidak dapat dihantar sekarang. Urus setia akan menghantarnya kemudian."; }
