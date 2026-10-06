@@ -56,8 +56,8 @@
 
     $("#kertas").innerHTML = `
       <header class="lp-kepala">
-        <div class="lp-logo"><svg viewBox="0 0 24 24"><path d="M4 20V11M9.5 20V5M15 20v-7M20.5 20V8"/></svg></div>
-        <div class="lp-jabatan"><b>JABATAN PERANGKAAN MALAYSIA</b><span>Wilayah Persekutuan Kuala Lumpur</span></div>
+        <img class="lp-jata" src="ikon/jata-dosm.png" alt="Jata Negara">
+        <div class="lp-jabatan"><b>JABATAN PERANGKAAN MALAYSIA</b><span>Wilayah Persekutuan</span></div>
         <div class="lp-ruj">Kod program: <b>${esc(p.kod)}</b><br>Dijana: ${esc(masaPenuh(new Date().toISOString()))}</div>
       </header>
       <h2 class="lp-tajuk">LAPORAN KEHADIRAN PROGRAM</h2>

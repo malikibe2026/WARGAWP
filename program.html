@@ -19,8 +19,8 @@
   <header class="hero hero-mini">
     <nav class="nav wrap">
       <a class="brand" href="./" style="color:inherit;text-decoration:none">
-        <div class="logo" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 20V11M9.5 20V5M15 20v-7M20.5 20V8"/></svg></div>
-        <div class="brand-text"><span class="brand-t">DOSM</span><span class="brand-s">Kembali ke Direktori</span></div>
+        <span class="jata" aria-hidden="true"><img src="ikon/jata-dosm.png" alt=""><i class="kilau"></i></span>
+        <div class="brand-text"><span class="brand-t">Jabatan Perangkaan Malaysia</span><span class="brand-s">Wilayah Persekutuan</span></div>
       </a>
       <div class="nav-actions">
         <a href="dashboard.html" class="btn btn-glass"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg><span>Dashboard</span></a>
@@ -40,7 +40,7 @@
     <!-- Log masuk -->
     <section id="paparLogin" class="panel panel-sempit" hidden>
       <div class="login-head">
-        <div class="logo logo-lg" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 20V11M9.5 20V5M15 20v-7M20.5 20V8"/></svg></div>
+        <div class="jata jata-lg" aria-hidden="true"><img src="ikon/jata-dosm.png" alt=""><i class="kilau"></i></div>
         <h2>Log Masuk Pentadbir</h2>
         <p class="muted">Halaman ini untuk pentadbir sahaja.</p>
       </div>
@@ -111,10 +111,20 @@
         <label>Masa Mula<input name="masa_mula" type="time"></label>
         <label>Masa Tamat<input name="masa_tamat" type="time"></label>
       </div>
-      <label>Sasaran peserta
-        <select name="sasaran"></select>
-        <small class="hint">Digunakan untuk kadar kehadiran, senarai "Belum hadir", skrin paparan, laporan dan dashboard.</small>
-      </label>
+      <fieldset class="bahagian sasaran-kotak">
+        <legend>Sasaran Peserta</legend>
+        <div class="sasaran-kategori" role="radiogroup" aria-label="Kategori">
+          <label class="cip-pilih"><input type="radio" name="sasaran_k" value="semua" checked><span>Semua warga</span></label>
+          <label class="cip-pilih"><input type="radio" name="sasaran_k" value="tetap"><span>Staf Tetap sahaja</span></label>
+          <label class="cip-pilih"><input type="radio" name="sasaran_k" value="pms"><span>PMS sahaja</span></label>
+        </div>
+        <div class="sasaran-kepala">
+          <label class="suis"><input type="checkbox" id="sasaranSemuaUnit" checked> Semua seksyen / bahagian</label>
+          <span id="ringkasSasaran" class="ringkas-sasaran"></span>
+        </div>
+        <div id="senaraiSasaranUnit" class="grid-unit"></div>
+        <p class="hint">Tanda satu atau lebih seksyen. Sasaran digunakan untuk kadar kehadiran, senarai "Belum hadir", skrin paparan, laporan dan dashboard.</p>
+      </fieldset>
       <label>Nama Lokasi<input name="lokasi_nama" placeholder="cth. Bilik Mesyuarat Tingkat 15, Wisma FGV"></label>
       <div class="row">
         <label>Koordinat (lat, lng)

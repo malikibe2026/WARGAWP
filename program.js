@@ -316,7 +316,7 @@ Jabatan Perangkaan Malaysia, Wilayah Persekutuan`;
     kemasTempoh();
     f.elements.masa_mula.value = jam(p?.masa_mula);
     f.elements.masa_tamat.value = jam(p?.masa_tamat);
-    f.elements.sasaran.innerHTML = Sasaran.pilihan(st.warga, p?.sasaran);
+    tetapkanSasaran(p?.sasaran);
     f.elements.lokasi_nama.value = p?.lokasi_nama || "";
     f.elements.koordinat.value = p?.lat != null ? `${p.lat}, ${p.lng}` : "";
     f.elements.radius_m.value = String(p?.radius_m || 200);
@@ -353,6 +353,43 @@ Jabatan Perangkaan Malaysia, Wilayah Persekutuan`;
     kemasTempoh();
     $("#dlgProgram").showModal();
   }
+
+  // ---------- Sasaran peserta (kategori + kotak tanda seksyen) ----------
+  function bacaSasaran() {
+    const f = $("#borangProgram");
+    const k = f.querySelector('[name="sasaran_k"]:checked')?.value || "semua";
+    const u = [...f.querySelectorAll('[name="sasaran_u"]:checked')].map(x => x.value);
+    return Sasaran.bina({ k, u });
+  }
+  function kemasSasaran() {
+    const f = $("#borangProgram"), k = f.querySelector('[name="sasaran_k"]:checked')?.value || "semua";
+    // Bilangan setiap seksyen ikut kategori yang dipilih.
+    for (const kotak of f.querySelectorAll(".kotak-unit")) {
+      const n = Sasaran.ahli(st.warga, Sasaran.bina({ k, u: [kotak.dataset.unit] })).length;
+      kotak.querySelector("small").textContent = n;
+      kotak.classList.toggle("kosong", n === 0);
+    }
+    const dipilih = f.querySelectorAll('[name="sasaran_u"]:checked').length;
+    $("#sasaranSemuaUnit").checked = dipilih === 0;
+    const s = bacaSasaran();
+    $("#ringkasSasaran").innerHTML = `<b>${Sasaran.ahli(st.warga, s).length}</b> orang · ${esc(Sasaran.label(s))}`;
+  }
+  function tetapkanSasaran(sasaran) {
+    const { k, u } = Sasaran.hurai(sasaran);
+    const pilih = new Set(u.map(Sasaran.kunci));
+    $("#senaraiSasaranUnit").innerHTML = Sasaran.senaraiUnit(st.warga).map(unit => `
+      <label class="kotak-unit" data-unit="${esc(unit)}"><input type="checkbox" name="sasaran_u" value="${esc(unit)}"${pilih.has(Sasaran.kunci(unit)) ? " checked" : ""}>
+        <span>${esc(unit)}</span><small></small></label>`).join("");
+    const r = $("#borangProgram").querySelector(`[name="sasaran_k"][value="${k}"]`);
+    if (r) r.checked = true;
+    kemasSasaran();
+  }
+  $("#senaraiSasaranUnit").addEventListener("change", kemasSasaran);
+  document.querySelectorAll('[name="sasaran_k"]').forEach(r => r.addEventListener("change", kemasSasaran));
+  $("#sasaranSemuaUnit").addEventListener("change", e => {
+    if (e.target.checked) document.querySelectorAll('[name="sasaran_u"]').forEach(x => (x.checked = false));
+    kemasSasaran();
+  });
 
   // ---------- Tempoh pendaftaran ----------
   function kemasTempoh() {
@@ -401,6 +438,7 @@ Jabatan Perangkaan Malaysia, Wilayah Persekutuan`;
       const khas = f.mod_daftar.value === "khas";
       const daftar_mula = khas ? dariInputMasa(f.daftar_mula.value) : null;
       const daftar_tamat = khas ? dariInputMasa(f.daftar_tamat.value) : null;
+      if (!Sasaran.ahli(st.warga, bacaSasaran()).length) throw new Error("Sasaran peserta kosong — tiada warga dalam kategori dan seksyen yang dipilih.");
       if (khas && !daftar_mula && !daftar_tamat) throw new Error("Tetapkan sekurang-kurangnya masa dibuka atau ditutup untuk tempoh pendaftaran.");
       if (daftar_mula && daftar_tamat && daftar_tamat <= daftar_mula) throw new Error("Masa pendaftaran ditutup mesti selepas masa dibuka.");
       const rekod = {
@@ -413,7 +451,7 @@ Jabatan Perangkaan Malaysia, Wilayah Persekutuan`;
         emel_isi: f.emel_isi.value.trim() || null, sijil_aktif: f.sijil_aktif.checked,
         sijil_emel: f.sijil_emel.checked, sijil_muat_turun: f.sijil_muat_turun.checked,
         sijil_teks: st.teksSijil.filter(t => String(t.teks || "").trim()),
-        daftar_mula, daftar_tamat, sasaran: f.sasaran.value || "semua",
+        daftar_mula, daftar_tamat, sasaran: bacaSasaran(),
       };
       if (!st.sedangEdit && st.templatAsal && !st.templatBaru) rekod.sijil_templat = st.templatAsal;   // salinan program
       if (rekod.sijil_aktif && !rekod.sijil_teks.length) throw new Error("Sijil perlu sekurang-kurangnya satu baris teks, cth. {nama}.");

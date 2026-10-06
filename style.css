@@ -1042,3 +1042,58 @@ line.d-dasar { stroke: var(--v-dasar); stroke-width: 1; }
 }
 .cara-sijil { display: flex; flex-direction: column; gap: 4px; padding: 10px 12px; margin-bottom: 12px; border-radius: 12px; background: var(--surface-2); }
 .cara-sijil .suis { margin: 0 !important; }
+
+/* ===================================================================
+   JATA / LOGO DOSM — bingkai premium & animasi (jata itu sendiri tidak diubah)
+   =================================================================== */
+.brand .brand-t { letter-spacing: .04em; text-transform: uppercase; font-size: 13.5px; }
+.jata { position: relative; display: inline-grid; place-items: center; width: 72px; aspect-ratio: 317 / 241; flex: none; isolation: isolate;
+  animation: jataMasuk 1.1s cubic-bezier(.2, .8, .2, 1) both, jataApung 7s ease-in-out 1.2s infinite; }
+.jata::before { /* halo emas lembut di belakang jata */
+  content: ""; position: absolute; inset: -22% -16%; z-index: -1; border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(242, 201, 76, .42), rgba(242, 201, 76, .12) 55%, transparent 75%);
+  animation: jataHalo 4.5s ease-in-out infinite; }
+.jata img { width: 100%; height: auto; display: block;
+  filter: drop-shadow(0 0 1px rgba(255, 255, 255, .55)) drop-shadow(0 6px 12px rgba(0, 0, 0, .45)); }
+.jata .kilau { /* kilauan cahaya menyapu hanya pada piksel jata */
+  position: absolute; inset: 0; pointer-events: none; mix-blend-mode: screen;
+  background: linear-gradient(105deg, transparent 35%, rgba(255, 248, 220, .0) 42%, rgba(255, 248, 220, .85) 50%, rgba(255, 248, 220, 0) 58%, transparent 65%);
+  background-size: 300% 100%; background-position: 150% 0;
+  -webkit-mask: url(ikon/jata-dosm.png) center / contain no-repeat; mask: url(ikon/jata-dosm.png) center / contain no-repeat;
+  animation: jataKilau 6s ease-in-out 1.4s infinite; }
+.brand:hover .jata img { transform: scale(1.05); transition: transform .35s cubic-bezier(.2, .8, .2, 1); }
+@keyframes jataMasuk { from { opacity: 0; transform: scale(.6) rotate(-6deg); filter: blur(6px); } to { opacity: 1; transform: none; filter: none; } }
+@keyframes jataApung { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-2px); } }
+@keyframes jataHalo { 0%, 100% { opacity: .55; transform: scale(.94); } 50% { opacity: 1; transform: scale(1.06); } }
+@keyframes jataKilau { 0% { background-position: 150% 0; } 35%, 100% { background-position: -50% 0; } }
+.jata-lg { width: 112px; margin: 0 auto 12px; display: grid; }
+.jata-lg::before { background: radial-gradient(closest-side, rgba(242, 201, 76, .3), transparent 75%); }
+.jata-lg img { filter: drop-shadow(0 8px 16px rgba(6, 22, 44, .25)); }
+.hero-sinema .jata { width: 90px; }
+.pp-atas .jata { width: clamp(64px, 5vw, 96px); }
+.pp-atas .brand-t { font-size: clamp(13px, 1vw, 17px); }
+@media (max-width: 640px) {
+  .jata, .hero-sinema .jata { width: 58px; }
+  .brand .brand-t { font-size: 11px; letter-spacing: .02em; max-width: 128px; line-height: 1.25; }
+}
+@media (prefers-reduced-motion: reduce) { .jata, .jata::before, .jata .kilau { animation: none !important; } }
+@media print { .jata::before, .jata .kilau { display: none; } .jata { animation: none; } }
+
+/* Sasaran peserta: kategori + kotak tanda seksyen */
+.sasaran-kategori { display: flex; flex-wrap: wrap; gap: 8px; margin: 2px 0 12px; }
+.cip-pilih { position: relative; margin: 0 !important; cursor: pointer; }
+.cip-pilih input { position: absolute; opacity: 0; pointer-events: none; }
+.cip-pilih span { display: inline-block; padding: 8px 14px; border-radius: 99px; border: 1px solid var(--line); background: var(--surface); font-size: 13px; font-weight: 600; color: var(--ink-2); transition: background .15s, border-color .15s, color .15s; }
+.cip-pilih input:checked + span { background: var(--brand-2); border-color: var(--brand-2); color: #fff; box-shadow: 0 6px 16px -8px rgba(21, 96, 176, .7); }
+.cip-pilih input:focus-visible + span { outline: 3px solid color-mix(in srgb, var(--brand-2) 35%, transparent); outline-offset: 2px; }
+.sasaran-kepala { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 14px; margin-bottom: 8px; }
+.sasaran-kepala .suis { margin: 0 !important; }
+.ringkas-sasaran { font-size: 12.5px; color: var(--muted); }
+.ringkas-sasaran b { color: var(--brand-2); font-size: 14px; }
+.grid-unit { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 6px; }
+.kotak-unit { display: flex !important; align-items: center; gap: 10px; margin: 0 !important; padding: 9px 12px; border: 1px solid var(--line); border-radius: 12px; cursor: pointer; font-weight: 600 !important; color: var(--ink) !important; font-size: 13px !important; transition: border-color .15s, background .15s; }
+.kotak-unit input { width: 17px !important; height: 17px; margin: 0 !important; flex: none; accent-color: var(--brand-2); }
+.kotak-unit span { flex: 1; min-width: 0; line-height: 1.3; }
+.kotak-unit small { flex: none; font-size: 11.5px; font-weight: 700; color: var(--muted); background: var(--surface-2); padding: 2px 8px; border-radius: 99px; }
+.kotak-unit:has(input:checked) { border-color: var(--brand-2); background: color-mix(in srgb, var(--brand-2) 7%, var(--surface)); }
+.kotak-unit.kosong { opacity: .5; }

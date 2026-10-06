@@ -4,7 +4,7 @@
 // Isi kedua-duanya untuk MOD DALAM TALIAN (data dikongsi semua pengguna).
 window.WARGA_CONFIG = {
   TAJUK: "Direktori Warga DOSM",
-  SUBTAJUK: "Jabatan Perangkaan Malaysia — Wilayah Persekutuan Kuala Lumpur",
+  SUBTAJUK: "Jabatan Perangkaan Malaysia — Wilayah Persekutuan",
 
   SUPABASE_URL: "https://ggcqdvebnydheeakceyy.supabase.co",
   SUPABASE_ANON_KEY: "sb_publishable_tLxxgoLoTzJyQ3OYqMY7ZQ_lSFmMPOk", // kunci awam — selamat didedahkan

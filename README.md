@@ -1,6 +1,6 @@
-# Direktori Warga DOSM WP Kuala Lumpur
+# Direktori Warga DOSM WP
 
-Laman web direktori warga Jabatan Perangkaan Malaysia, Wilayah Persekutuan Kuala Lumpur.
+Laman web direktori warga Jabatan Perangkaan Malaysia, Wilayah Persekutuan.
 Semua maklumat (termasuk gambar) boleh dikemas kini oleh pentadbir.
 
 ## Ciri

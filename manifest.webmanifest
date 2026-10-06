@@ -1,7 +1,7 @@
 {
-  "name": "Direktori Warga DOSM WP Kuala Lumpur",
+  "name": "Direktori Warga DOSM WP",
   "short_name": "DOSM WP",
-  "description": "Direktori warga, carta organisasi dan kehadiran program Jabatan Perangkaan Malaysia, Wilayah Persekutuan Kuala Lumpur.",
+  "description": "Direktori warga, carta organisasi dan kehadiran program Jabatan Perangkaan Malaysia, Wilayah Persekutuan.",
   "lang": "ms",
   "start_url": "./",
   "scope": "./",
