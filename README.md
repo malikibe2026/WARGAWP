@@ -23,7 +23,7 @@ Semua maklumat (termasuk gambar) boleh dikemas kini oleh pentadbir.
 - Setiap perubahan dilog dalam jadual `warga_log` (nilai lama → baharu). Di `program.html`, lencana **✎ Dikemas** pada senarai hadir menunjukkan perubahan; klik untuk **pulihkan** nilai asal.
 
 ## Hosting (GitHub Pages)
-Laman diterbitkan automatik oleh `.github/workflows/pages.yml` setiap kali kod ditolak ke cabang utama — tiada lagi ZIP/seret-lepas.
+Laman diterbitkan automatik oleh `.github/workflows/static.yml` setiap kali kod ditolak ke cabang utama — tiada lagi ZIP/seret-lepas.
 Sekali sahaja: repo mesti **awam** (GitHub percuma tidak menyokong Pages untuk repo peribadi), kemudian
 Settings → Pages → Source: **GitHub Actions**. Kod tidak mengandungi data staf; data kekal dalam Supabase.
 
