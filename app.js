@@ -485,19 +485,6 @@
     } catch (err) { toast("Import gagal: " + err.message, true); await muat(); }
   }
 
-  // Templat untuk isi No. KP staf tetap; diimport semula melalui Import CSV (padanan ikut nama).
-  function templatIC() {
-    const q = v => `"${String(v ?? "").replace(/"/g, '""')}"`;
-    const ikutCarta = (a, b) => urutanUnit(a.unit) - urutanUnit(b.unit) || (a.susunan ?? Infinity) - (b.susunan ?? Infinity);
-    const staf = keadaan.data.filter(r => !adalahPms(r)).sort(ikutCarta);
-    const kandungan = [["Nama", "Seksyen", "No KP"].map(q).join(",")]
-      .concat(staf.map(r => [r.nama, r.unit, ""].map(q).join(","))).join("\r\n");
-    const url = URL.createObjectURL(new Blob(["\ufeff" + kandungan], { type: "text/csv;charset=utf-8" }));
-    Object.assign(document.createElement("a"), { href: url, download: "templat-no-kp-staf-tetap.csv" }).click();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-    toast(`Templat ${staf.length} staf tetap dimuat turun. Isi No. KP dengan sengkang (cth. 850315-14-5678).`);
-  }
-
   function csvWarga(senarai) {
     const q = v => `"${String(v ?? "").replace(/"/g, '""')}"`;
     return [LAJUR_CSV.map(([, l]) => q(l)).join(",")]
@@ -742,7 +729,6 @@ Fail ini mengandungi data peribadi. Simpan di lokasi selamat dan jangan kongsi.
     $("#btnImport").onclick = () => $("#fileImport").click();
     $("#fileImport").addEventListener("change", e => { const f = e.target.files[0]; e.target.value = ""; if (f) importCSV(f); });
     $("#btnExport").onclick = eksportCSV;
-    $("#btnTemplatIC").onclick = templatIC;
     $("#btnImportGambar").onclick = () => $("#fileGambar").click();
     $("#fileGambar").addEventListener("change", e => { const f = [...e.target.files]; e.target.value = ""; if (f.length) importGambar(f); });
     $("#btnCetak").onclick = () => window.print();

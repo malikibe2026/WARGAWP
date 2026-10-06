@@ -30,7 +30,9 @@
     const atas = tetap.filter(w => w.unit === unitAtas);
     const pengarah = atas[0];
     const timbalan = atas.find(w => /timbalan/i.test(w.jawatan || "")) || null;
-    const pejabat = atas.filter(w => w !== pengarah && w !== timbalan);
+    // Setiausaha Pejabat = PA kepada Pengarah: dipaparkan sebaris dengan Pengarah.
+    const pa = atas.find(w => w !== pengarah && w !== timbalan && /setiausaha/i.test(w.jawatan || "")) || null;
+    const pejabat = atas.filter(w => w !== pengarah && w !== timbalan && w !== pa);
     // Seksyen: ikut susunan ahli tetap pertama; PMS dipadankan ikut nama seksyen (abaikan huruf besar/kecil).
     const units = new Map();
     for (const w of tetap) {
@@ -49,7 +51,7 @@
       }
     }
     for (const u of [...units.values(), ...lain.values()]) u.pms.sort((a, b) => a.nama.localeCompare(b.nama, "ms"));
-    return { pengarah, timbalan, pejabat, unitAtas, units: [...units.values()], lain: [...lain.values()].sort((a, b) => b.pms.length - a.pms.length) };
+    return { pengarah, timbalan, pa, pejabat, unitAtas, units: [...units.values()], lain: [...lain.values()].sort((a, b) => b.pms.length - a.pms.length) };
   }
 
   const kadOrang = (w, kelas, tag) => `
@@ -91,7 +93,10 @@
     const jumTetap = data.filter(w => w.kategori !== "pms").length, jumPms = data.length - jumTetap;
     $("#ringkasCarta").textContent = `${s.units.length + 1} seksyen & pejabat · ${jumTetap} staf tetap${tunjukPms && jumPms ? ` · ${jumPms} PMS` : ""}`;
     el.innerHTML = `
-      <section class="aras aras-0">${kadOrang(s.pengarah, "utama", s.pengarah.jawatan || "Pengarah")}</section>
+      <section class="aras aras-0${s.pa ? " ada-pa" : ""}">
+        ${kadOrang(s.pengarah, "utama", s.pengarah.jawatan || "Pengarah")}
+        ${s.pa ? `<div class="pa-sisi">${kadOrang(s.pa, "pa", "PA kepada Pengarah")}</div>` : ""}
+      </section>
       ${s.timbalan || s.pejabat.length ? `<section class="aras aras-1">
         ${s.timbalan ? kadOrang(s.timbalan, "kedua", s.timbalan.jawatan || "Timbalan Pengarah") : ""}
         ${s.pejabat.length ? `<div class="pejabat-pengarah"><p class="pp-label">${esc(s.unitAtas)}</p>${s.pejabat.map(w => kadOrang(w, "kecil", "")).join("")}</div>` : ""}

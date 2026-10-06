@@ -22,13 +22,6 @@ Semua maklumat (termasuk gambar) boleh dikemas kini oleh pentadbir.
 - Perubahan disimpan ke direktori **hanya selepas kehadiran sah** (lokasi/muka lulus), dan e-mel pengesahan dihantar ke alamat baharu.
 - Setiap perubahan dilog dalam jadual `warga_log` (nilai lama → baharu). Di `program.html`, lencana **✎ Dikemas** pada senarai hadir menunjukkan perubahan; klik untuk **pulihkan** nilai asal.
 
-## Kemas kini No. KP (umur) staf tetap secara pukal
-1. Mod Pentadbir → **Templat No. KP** → fail CSV senarai staf tetap dengan lajur `No KP` kosong.
-2. Isi No. KP **dengan sengkang** (cth. `850315-14-5678`) supaya Excel tidak menukarnya kepada nombor.
-3. Simpan sebagai *CSV UTF-8* → **Import CSV**. Baris dipadankan ikut **nama**; hanya medan yang diisi dikemas kini.
-   Sistem memaparkan ringkasan (dikemas kini / baharu / No. KP tidak sah) sebelum meneruskan.
-No. KP tidak disimpan — hanya tarikh lahir.
-
 ## Hosting (GitHub Pages)
 Laman diterbitkan automatik oleh `.github/workflows/pages.yml` setiap kali kod ditolak ke cabang utama — tiada lagi ZIP/seret-lepas.
 Sekali sahaja: repo mesti **awam** (GitHub percuma tidak menyokong Pages untuk repo peribadi), kemudian
