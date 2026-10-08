@@ -1,6 +1,7 @@
-// Service worker minimum: tidak menyimpan versi lama laman (sentiasa ambil dari rangkaian),
-// hanya memaparkan halaman luar talian jika tiada sambungan internet.
-const CACHE = "dosm-wp-luar-talian-v1";
+// Service worker: sentiasa ambil versi terkini dari pelayan (tiada salinan lama),
+// fail laman disahkan semula setiap kali (cache: "no-cache" → 304 jika tidak berubah, jadi tetap pantas).
+// Hanya halaman luar talian disimpan, untuk dipaparkan apabila tiada internet.
+const CACHE = "dosm-wp-luar-talian-v2";
 const LUAR_TALIAN = "luar-talian.html";
 
 self.addEventListener("install", e => {
@@ -14,6 +15,12 @@ self.addEventListener("activate", e => {
 });
 
 self.addEventListener("fetch", e => {
-  if (e.request.mode !== "navigate") return;   // data, gambar & skrip: biar pelayar urus seperti biasa
-  e.respondWith(fetch(e.request).catch(() => caches.match(LUAR_TALIAN)));
+  const req = e.request;
+  if (req.method !== "GET" || new URL(req.url).origin !== self.location.origin) return;   // data Supabase & gambar: biar pelayar urus
+  if (req.mode === "navigate") {
+    e.respondWith(fetch(req, { cache: "no-cache" }).catch(() => caches.match(LUAR_TALIAN)));
+    return;
+  }
+  // Skrip, gaya & fail laman: sahkan semula dengan pelayan supaya perubahan terbaru terus digunakan.
+  e.respondWith(fetch(req, { cache: "no-cache" }).catch(() => caches.match(req)));
 });

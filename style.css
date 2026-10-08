@@ -1097,3 +1097,94 @@ line.d-dasar { stroke: var(--v-dasar); stroke-width: 1; }
 .kotak-unit small { flex: none; font-size: 11.5px; font-weight: 700; color: var(--muted); background: var(--surface-2); padding: 2px 8px; border-radius: 99px; }
 .kotak-unit:has(input:checked) { border-color: var(--brand-2); background: color-mix(in srgb, var(--brand-2) 7%, var(--surface)); }
 .kotak-unit.kosong { opacity: .5; }
+
+/* ===================================================================
+   MESRA TELEFON — gaya aplikasi
+   =================================================================== */
+/* Ruang selamat iPhone (notch / bar rumah) */
+.nav { padding-top: max(18px, env(safe-area-inset-top)); }
+.nav.wrap, .wrap { padding-left: max(24px, env(safe-area-inset-left)); padding-right: max(24px, env(safe-area-inset-right)); }
+html { -webkit-tap-highlight-color: transparent; }
+button, a, label { touch-action: manipulation; }
+
+/* Navigasi bawah (telefon sahaja) */
+.nav-bawah { display: none; }
+@media (max-width: 760px) {
+  .wrap { padding-left: max(16px, env(safe-area-inset-left)); padding-right: max(16px, env(safe-area-inset-right)); }
+  .nav-bawah {
+    display: flex; position: fixed; z-index: 40; left: 0; right: 0; bottom: 0;
+    padding: 6px max(8px, env(safe-area-inset-left)) calc(6px + env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-right));
+    background: color-mix(in srgb, var(--surface) 88%, transparent); backdrop-filter: saturate(180%) blur(18px);
+    border-top: 1px solid var(--line); box-shadow: 0 -8px 24px -16px rgba(6, 22, 44, .35);
+  }
+  .nav-bawah a {
+    flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 2px 4px; border-radius: 14px;
+    color: var(--muted); font-size: 10.5px; font-weight: 700; text-decoration: none; position: relative; min-height: 48px; justify-content: center;
+  }
+  .nav-bawah a svg { width: 22px; height: 22px; transition: transform .2s; }
+  .nav-bawah a.aktif { color: var(--brand-2); }
+  .nav-bawah a.aktif::before { content: ""; position: absolute; top: -6px; width: 28px; height: 3px; border-radius: 0 0 3px 3px; background: var(--gold); }
+  .nav-bawah a.aktif svg { transform: translateY(-1px) scale(1.06); }
+  .nav-bawah a:active { background: var(--surface-2); }
+  body.ada-nav-bawah { padding-bottom: calc(66px + env(safe-area-inset-bottom)); }
+  body.ada-nav-bawah .toast { bottom: calc(80px + env(safe-area-inset-bottom)); }
+  body.ada-nav-bawah .footer { padding-bottom: 6px; }
+
+  /* Hero lebih padat di telefon supaya kandungan cepat kelihatan */
+  .hero-sinema .hero-body { padding-top: 10px; padding-bottom: 26px; }
+  .hero-sinema .eyebrow { margin-bottom: 6px; }
+  .hero-sinema .lead { margin: 6px 0 16px; }
+  .hero-sinema .stats { margin-top: 16px; }
+  .hero-mini .hero-body { padding-top: 6px; padding-bottom: 22px; }
+
+  /* Dialog → "bottom sheet" yang naik dari bawah */
+  .dialog, .dialog.wide, .dialog-sm, #dlgPentadbir {
+    width: 100%; max-width: 100%; margin: auto 0 0; border-radius: 24px 24px 0 0;
+    max-height: calc(100dvh - env(safe-area-inset-top) - 12px); padding-bottom: env(safe-area-inset-bottom);
+  }
+  .dialog[open] { animation: naikSheet .28s cubic-bezier(.2, .8, .2, 1); }
+  .dialog::before { content: ""; display: block; width: 42px; height: 5px; border-radius: 99px; background: var(--line); margin: 8px auto -4px; }
+  .dialog form, .dialog-isi { padding: 18px 18px 22px; }
+  .dialog form > .dialog-actions { bottom: calc(-22px - env(safe-area-inset-bottom)); padding-bottom: calc(18px + env(safe-area-inset-bottom)); margin-bottom: -22px; }
+  .dialog input, .dialog textarea, .dialog select, .search input, .cari-kecil input { font-size: 16px; }   /* elak iPhone zum automatik */
+  .btn { min-height: 42px; }
+  .btn-sm { min-height: 36px; }
+  .icon-btn { width: 40px; height: 40px; }
+}
+@keyframes naikSheet { from { transform: translateY(100%); } to { transform: none; } }
+
+/* Butang pantas profil */
+.aksi-pantas { display: grid; grid-template-columns: repeat(auto-fit, minmax(68px, 1fr)); gap: 8px; margin: 14px 0 12px; }
+.aksi-pantas .ap {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; min-height: 64px; padding: 8px 4px;
+  border-radius: 16px; border: 1px solid var(--line); background: var(--surface-2); color: var(--brand-2);
+  font: 700 12px var(--font); text-decoration: none; cursor: pointer; transition: transform .12s, background .15s, border-color .15s;
+}
+.aksi-pantas .ap svg { width: 22px; height: 22px; }
+.aksi-pantas .ap:hover { border-color: var(--brand-2); text-decoration: none; }
+.aksi-pantas .ap:active { transform: scale(.96); }
+.aksi-pantas .ap.wa { color: #128c4b; }
+@media (prefers-color-scheme: dark) { .aksi-pantas .ap.wa { color: #3ddc84; } }
+
+/* Sepanduk aplikasi: versi baharu & ajakan pasang */
+.banner-apl {
+  position: fixed; z-index: 60; left: 50%; transform: translateX(-50%); bottom: calc(20px + env(safe-area-inset-bottom));
+  width: min(520px, calc(100vw - 24px)); display: flex; align-items: center; gap: 12px; padding: 12px 12px 12px 16px;
+  border-radius: 18px; background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow-lg); animation: muncul .3s ease-out;
+}
+.banner-apl span { flex: 1; min-width: 0; font-size: 13.5px; line-height: 1.4; }
+.banner-apl small { display: block; color: var(--muted); font-size: 12px; }
+.banner-apl img { width: 42px; height: 42px; border-radius: 11px; flex: none; }
+.banner-apl.kemas-kini { border-color: color-mix(in srgb, var(--brand-2) 45%, var(--line)); }
+body.ada-nav-bawah .banner-apl { bottom: calc(80px + env(safe-area-inset-bottom)); }
+
+/* Mod aplikasi terpasang: tiada butang "Pasang" */
+.mod-apl #btnPasang { display: none !important; }
+@media print { .nav-bawah, .banner-apl { display: none !important; } }
+@media (max-width: 760px) {
+  /* Statistik: satu baris boleh leret, jimat ruang skrin */
+  .hero-sinema .stats { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-left: -16px; margin-right: -16px; padding: 0 16px 2px; scroll-padding-inline: 16px; }
+  .hero-sinema .stats::-webkit-scrollbar { display: none; }
+  .hero-sinema .stat { flex: 0 0 auto; min-width: 112px; padding: 10px 14px; }
+  .dialog-profil::before { position: absolute; left: 50%; top: 8px; margin: 0; transform: translateX(-50%); z-index: 3; background: rgba(255, 255, 255, .55); }
+}

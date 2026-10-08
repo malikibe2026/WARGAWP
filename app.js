@@ -238,6 +238,27 @@
 
   function cari(id) { return keadaan.data.find(r => r.id === id); }
 
+  // Nombor telefon Malaysia → format antarabangsa untuk WhatsApp (012-345 6789 → 60123456789).
+  function noWhatsApp(no) {
+    let d = String(no || "").split("/")[0].replace(/\D/g, "");
+    if (!d) return "";
+    if (d.startsWith("0")) d = "6" + d;
+    return /^601\d{8,9}$/.test(d) ? d : "";   // hanya nombor bimbit Malaysia yang sah
+  }
+
+  // Kad kenalan (vCard) untuk disimpan terus ke telefon.
+  function simpanKenalan(r) {
+    const v = s => String(s || "").replace(/([,;\\])/g, "\\$1").replace(/\n/g, " ");
+    const baris = ["BEGIN:VCARD", "VERSION:3.0", `FN:${v(r.nama)}`, `N:${v(r.nama)};;;;`,
+      `ORG:Jabatan Perangkaan Malaysia;${v(r.unit)}`, r.jawatan ? `TITLE:${v(r.jawatan)}` : "",
+      r.telefon_bimbit ? `TEL;TYPE=CELL:${v(String(r.telefon_bimbit).split("/")[0])}` : "",
+      r.telefon_pejabat ? `TEL;TYPE=WORK:${v(String(r.telefon_pejabat).split("/")[0])}` : "",
+      r.emel ? `EMAIL;TYPE=WORK:${v(r.emel)}` : "", "END:VCARD"].filter(Boolean).join("\r\n");
+    const url = URL.createObjectURL(new Blob([baris], { type: "text/vcard;charset=utf-8" }));
+    Object.assign(document.createElement("a"), { href: url, download: `${slug(r.nama) || "kenalan"}.vcf` }).click();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  }
+
   function bukaButiran(id) {
     const r = cari(id);
     if (!r) return;
@@ -256,6 +277,12 @@
           <h2>${esc(r.nama)}</h2>
           ${adalahPms(r) ? '<span class="pms-tag">Personel MySTEPS (PMS)</span>' : ""}
           <p class="jawatan">${esc(r.jawatan || "")}${r.gred ? ` <span class="gred">${esc(r.gred)}</span>` : ""}</p>
+          <div class="aksi-pantas">
+            ${(r.telefon_bimbit || r.telefon_pejabat) ? `<a class="ap" href="tel:${esc(String(r.telefon_bimbit || r.telefon_pejabat).split("/")[0].replace(/[^\d+]/g, ""))}">${IKON.telefon}<span>Telefon</span></a>` : ""}
+            ${noWhatsApp(r.telefon_bimbit) ? `<a class="ap wa" href="https://wa.me/${noWhatsApp(r.telefon_bimbit)}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24"><path d="M3.5 20.5l1.3-4A8.5 8.5 0 1 1 8 19.6z"/><path d="M9 8.5c0 3.5 2.6 6.4 6 6.6l1.2-1.4-2-1-1 .8a4.6 4.6 0 0 1-2.6-2.6l.8-1-1-2z"/></svg><span>WhatsApp</span></a>` : ""}
+            ${r.emel ? `<a class="ap" href="mailto:${esc(r.emel)}">${IKON.emel}<span>E-mel</span></a>` : ""}
+            <button class="ap" type="button" data-vcard="${esc(r.id)}"><svg viewBox="0 0 24 24"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/><path d="M20 8v6M23 11h-6"/></svg><span>Simpan</span></button>
+          </div>
           <div class="kontak">
             ${kontak(IKON.telefon, "Tel. Pejabat", r.telefon_pejabat, `tel:${esc(String(r.telefon_pejabat || "").split("/")[0].replace(/[^\d+]/g, ""))}`)}
             ${kontak(IKON.bimbit, "Tel. Bimbit", r.telefon_bimbit, `tel:${esc(String(r.telefon_bimbit || "").replace(/[^\d+]/g, ""))}`)}
@@ -273,6 +300,7 @@
     btn.hidden = !keadaan.admin;
     btn.parentElement.hidden = !keadaan.admin;
     btn.onclick = () => { $("#dlgButiran").close(); bukaBorang(id); };
+    $("#butiranIsi").querySelector("[data-vcard]")?.addEventListener("click", () => simpanKenalan(r));
     $("#dlgButiran").showModal();
   }
 
@@ -797,5 +825,11 @@ Fail ini mengandungi data peribadi. Simpan di lokasi selamat dan jangan kongsi.
   }
 
   pasang();
-  kemasSesi().then(muat);
+  kemasSesi().then(muat).then(() => (keadaan.dimuat = Date.now()));
+  // Data sentiasa terkini: muat semula secara senyap apabila aplikasi dibuka semula (selepas 1 minit).
+  document.addEventListener("visibilitychange", () => {
+    if (document.hidden || document.querySelector("dialog[open]") || Date.now() - (keadaan.dimuat || 0) < 60e3) return;
+    keadaan.dimuat = Date.now();
+    muat();
+  });
 })();

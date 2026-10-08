@@ -45,6 +45,14 @@ Settings → Pages → Source: **GitHub Actions**. Kod tidak mengandungi data st
 - **Dashboard** (`dashboard.html`, pentadbir): KPI, kadar ikut program & seksyen, trend bulanan, peta haba seksyen × program, kaedah rekod; tapis tahun & kategori; setiap graf ada paparan jadual. Program akan datang tidak dikira.
 - **Pasang aplikasi (PWA)**: `manifest.webmanifest`, `sw.js` (tidak menyimpan versi lama — hanya halaman luar talian), ikon dalam `ikon/`.
 
+## Aplikasi HP & desktop (sentiasa terkini)
+- Navigasi bawah gaya aplikasi di telefon (`navbawah.js`), dialog menjadi *bottom sheet*, sokongan notch iPhone.
+- Profil: butang pantas Telefon / WhatsApp / E-mel / Simpan Kenalan (vCard).
+- `sw.js` mengesahkan semula setiap fail dengan pelayan (tiada versi lama tersangkut).
+- `static.yml` menulis `versi.json` setiap penerbitan; `pwa.js` menyemaknya setiap 5 minit & apabila aplikasi dibuka semula
+  → aplikasi terpasang dimuat semula automatik, pelayar biasa dapat sepanduk "Versi baharu tersedia".
+- Data direktori dimuat semula secara senyap apabila aplikasi kembali ke hadapan.
+
 ## Halaman peserta
 - Telefon mengingati peserta → kali seterusnya cukup tekan **Ya, ini saya**.
 - **Muat Turun Sijil** terus selepas hadir (hanya dari telefon yang merekod kehadiran itu).
