@@ -591,7 +591,11 @@
       const pSek = R.length ? m / R.length : 0;
       const aktif = S.tapis._sektor4 && S.tapis._sektor4.has(s.k);
       return `<button type="button" class="sektor-kad${aktif ? " aktif" : ""}" data-sektor="${esc(s.k)}" aria-pressed="${!!aktif}" style="--c1:${s.c1};--c2:${s.c2}">` +
-        `<div class="sektor-atas"><span class="sektor-ikon">${s.ikon}</span><span class="sektor-no">${i + 1}</span></div>` +
+        `<div class="sektor-atas"><span class="sektor-ikon">${s.ikon}</span>` +
+        `<div class="sektor-rings">${[["Negeri", (c.T.Negeri || 0) / (m || 1)], ["SMD", (c.T.SMD || 0) / (m || 1)]].map(([lab, v]) =>
+          `<span class="sektor-ring" title="Semakan ${lab}: ${fmtP(v)}"><svg viewBox="0 0 36 36" aria-hidden="true"><circle class="rt" cx="18" cy="18" r="15.5"/>` +
+          `<circle class="rv" cx="18" cy="18" r="15.5" pathLength="100" stroke-dasharray="${(v * 100).toFixed(1)} 100"/></svg>` +
+          `<b>${m ? Math.round(v * 100) : 0}%</b><small>${lab}</small></span>`).join("")}</div></div>` +
         `<div class="sektor-nama">${esc(s.k)}</div><div class="sektor-kp">KP ${s.kod.join(", ")}</div>` +
         `<div class="sektor-nilai">${fmtN.format(m)}</div>` +
         `<div class="sektor-sub">${fmtP(pSek)} daripada tapisan · ${fmtP(cap)} ${ukurUtama() === "selesai" ? "selesai" : "ada respon"}</div>` +
