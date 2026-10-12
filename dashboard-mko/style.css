@@ -436,3 +436,74 @@ td.io-merah { background: rgba(201, 54, 54, .08); }
 .laras-baris input[type=range]:disabled { opacity: .4; }
 .laras-info { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--ink-2); flex-wrap: wrap; }
 .laras-info b { color: var(--ink); font-variant-numeric: tabular-nums; }
+
+/* ===== Paparan FE cinematik ===== */
+.fe-hero { position: relative; overflow: hidden; border-radius: 14px; padding: 22px 26px; color: #fff; display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;
+  background: linear-gradient(120deg, var(--head-1) 0%, var(--head-2) 100%); animation: fe-up .6s ease both; }
+.fe-hero::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 3px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent); background-size: 200% 100%; animation: fe-sheen 2.8s linear infinite; }
+.fe-kicker { margin: 0; font-size: 11.5px; letter-spacing: .12em; text-transform: uppercase; opacity: .7; }
+.fe-hero h3 { margin: 4px 0 6px; font-size: 24px; font-weight: 800; letter-spacing: -0.01em; }
+.fe-meta { margin: 0; font-size: 13px; opacity: .8; }
+.fe-hero-angka { text-align: right; }
+.fe-besar { display: block; font-size: 44px; font-weight: 800; color: var(--gold); letter-spacing: -0.02em; font-variant-numeric: tabular-nums; line-height: 1; }
+.fe-kecil { font-size: 12px; opacity: .8; }
+
+.fe-kpi-baris { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px; margin: 14px 0; }
+.fe-kpi { position: relative; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 14px 12px; overflow: hidden;
+  box-shadow: var(--shadow); animation: fe-up .6s cubic-bezier(.2,.7,.2,1) both; animation-delay: var(--d); }
+.fe-kpi::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--c); }
+.fe-kpi-label { font-size: 11.5px; color: var(--ink-2); font-weight: 600; }
+.fe-kpi-nilai { font-size: 24px; font-weight: 800; letter-spacing: -0.02em; margin-top: 2px; font-variant-numeric: tabular-nums; }
+.fe-kpi-sub { font-size: 11.5px; color: var(--muted); }
+.fe-kpi-track { height: 4px; border-radius: 3px; background: var(--grid); margin-top: 8px; overflow: hidden; }
+.fe-kpi-track i { display: block; height: 100%; width: 0; background: var(--c); border-radius: 3px; animation: fe-grow 1s cubic-bezier(.2,.7,.2,1) .25s both; }
+
+.fe-komposisi { margin: 6px 0 16px; }
+.fe-komp-tajuk { font-size: 13px; font-weight: 700; margin-bottom: 8px; color: var(--ink-2); }
+.fe-komp-bar { display: flex; height: 36px; border-radius: 10px; overflow: hidden; background: var(--grid); }
+.fe-seg { display: flex; align-items: center; justify-content: center; width: 0; min-width: 0; font-style: normal; color: #fff; font-size: 12px; font-weight: 700; white-space: nowrap; overflow: hidden;
+  animation: fe-grow-w .9s cubic-bezier(.2,.7,.2,1) both; animation-delay: var(--d); }
+.fe-seg span { padding: 0 8px; text-shadow: 0 1px 2px rgba(0,0,0,.25); }
+@keyframes fe-grow-w { from { width: 0; } to { width: var(--w); } }
+
+.fe-jadual { border: 1px solid var(--border); border-radius: 12px; overflow: hidden; background: var(--surface); }
+.ffe-kepala, .ffe-row { display: grid; grid-template-columns: 44px minmax(120px, 1.4fr) 84px minmax(170px, 1.3fr) minmax(170px, 1.6fr) 80px; gap: 10px; align-items: center; padding: 10px 14px; }
+.ffe-kepala { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); background: var(--surface-2); border-bottom: 1px solid var(--border); }
+.ffe-senarai { max-height: 620px; overflow-y: auto; }
+.ffe-row { border-bottom: 1px solid var(--grid); cursor: pointer; transition: background .2s, transform .2s; animation: fe-up .55s cubic-bezier(.2,.7,.2,1) both; animation-delay: var(--d); }
+.ffe-row:hover { background: var(--accent-soft); transform: translateX(3px); }
+.ffe-row:last-child { border-bottom: 0; }
+.ffe-no { font-weight: 800; color: var(--muted); font-variant-numeric: tabular-nums; }
+.ffe-juara { color: var(--gold); }
+.ffe-nm { font-weight: 700; font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ffe-num { font-weight: 700; font-variant-numeric: tabular-nums; }
+.ffe-mini { display: flex; gap: 10px; flex-wrap: wrap; font-size: 11.5px; color: var(--ink-2); }
+.ffe-mini b { color: var(--ink); font-variant-numeric: tabular-nums; }
+.ffe-bar { display: flex; align-items: center; gap: 10px; }
+.ffe-track { flex: 1; height: 10px; border-radius: 6px; background: var(--grid); overflow: hidden; }
+.ffe-track i { display: block; height: 100%; width: 0; border-radius: 6px; background: linear-gradient(90deg, var(--s1), var(--s3)); animation: fe-grow 1s cubic-bezier(.2,.7,.2,1) both; animation-delay: var(--d); }
+.ffe-pct { min-width: 56px; text-align: right; font-weight: 800; font-variant-numeric: tabular-nums; }
+.ffe-baki { font-weight: 700; color: var(--ink-2); font-variant-numeric: tabular-nums; text-align: right; }
+
+@keyframes fe-up { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+@keyframes fe-grow { from { width: 0; } to { width: var(--w); } }
+@keyframes fe-sheen { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+@media (max-width: 1100px) { .fe-kpi-baris { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 720px) {
+  .fe-kpi-baris { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .fe-hero { padding: 18px; } .fe-hero h3 { font-size: 19px; } .fe-besar { font-size: 34px; }
+  .ffe-kepala { display: none; }
+  .ffe-row { grid-template-columns: 30px minmax(0, 1fr) 70px; grid-template-areas: "no nm pct" "no mini mini" "no bar bar"; row-gap: 6px; }
+  .ffe-no { grid-area: no; } .ffe-nm { grid-area: nm; } .ffe-num { display: none; }
+  .ffe-mini { grid-area: mini; } .ffe-bar { grid-area: bar; } .ffe-baki { display: none; }
+  .ffe-row .ffe-track { display: block; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fe-hero, .fe-hero::after, .fe-kpi, .fe-kpi-track i, .fe-seg, .ffe-row, .ffe-track i { animation: none !important; }
+  .ffe-row:hover { transform: none; }
+}
+
+.tr3 { font-variant-numeric: tabular-nums; white-space: nowrap; font-size: 12.5px; }
+.tr3 i { font-style: normal; color: var(--muted); }
+.fe-wrap { display: block; }

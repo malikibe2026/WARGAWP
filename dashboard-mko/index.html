@@ -149,7 +149,7 @@
               <button data-v="jadual">Jadual & bar</button>
             </div>
           </header>
-          <div id="kadFe" class="fe-grid"></div>
+          <div id="kadFe" class="fe-wrap"></div>
           <div id="artFeLegenda" class="fe-legenda-kuadran" hidden>
             <span><i class="kd-dot" style="background:var(--good)"></i>Bintang · banyak &amp; siap tinggi</span>
             <span><i class="kd-dot" style="background:var(--s4)"></i>Perlu bantuan · banyak, siap rendah</span>
@@ -233,6 +233,21 @@
         <article class="kad s-12">
           <header class="kad-kepala"><div><h2>Perbandingan setiap pemboleh ubah</h2><p class="kad-sub">Bar mengikut skala sebenar · chip = peratus perubahan</p></div></header>
           <div id="tigaKad" class="tiga-grid"></div>
+        </article>
+        <article class="kad s-12">
+          <header class="kad-kepala">
+            <div><h2>Perbandingan setiap pertubuhan</h2><p class="kad-sub" id="tigaRekodSub"></p></div>
+            <div class="kawalan">
+              <input id="tigaCari" type="search" class="cari" placeholder="Cari No. Siri / nama / FE…" aria-label="Cari pertubuhan">
+              <button id="btnEksportTiga" class="btn btn-garis">Eksport CSV</button>
+            </div>
+          </header>
+          <div class="jadual-bungkus jadual-tinggi"><table id="tTigaRekod" class="jadual jadual-klik jadual-padat"></table></div>
+          <div class="muka">
+            <button id="tigaSebelum" class="btn btn-garis" aria-label="Sebelum">‹</button>
+            <span id="tigaHal"></span>
+            <button id="tigaSelepas" class="btn btn-garis" aria-label="Selepas">›</button>
+          </div>
         </article>
         <article class="kad s-7">
           <header class="kad-kepala"><div><h2>Indeks pertumbuhan</h2><p class="kad-sub">2015 = 100</p></div></header>

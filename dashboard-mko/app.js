@@ -1313,6 +1313,38 @@
       series: siri,
     }, true);
     paparKawal();
+    paparTigaRekod(R);
+  }
+
+  // ---------- Perbandingan 3 tahun setiap pertubuhan ----------
+  let tigaHalRek = 0, tigaQ = "", tigaSenarai = [];
+  function paparTigaRekod(R) {
+    const D = tigaCache || {};
+    const q = tigaQ.trim().toLowerCase();
+    let x = R.filter((r) => VAR3.some(([k]) => TAHUN3.some((y) => D[k] && D[k].col[y] && nombor(r[D[k].col[y]]) != null)));
+    if (q) x = x.filter((r) => [r.no_siri, r.nama, r[FE_KEY]].some((v) => v && String(v).toLowerCase().includes(q)));
+    tigaSenarai = x;
+    const SAIZ = 50, maks = Math.max(0, Math.ceil(x.length / SAIZ) - 1);
+    tigaHalRek = Math.min(tigaHalRek, maks);
+    const hal = x.slice(tigaHalRek * SAIZ, (tigaHalRek + 1) * SAIZ);
+    const val = (r, k, y, rm) => { const c = D[k] && D[k].col[y]; const v = c ? nombor(r[c]) : null; return v == null ? "–" : rm ? ringkas(v, false) : fmtN.format(Math.round(v)); };
+    const dlt = (r, k) => { const d = D[k]; if (!d || !d.col["2015"] || !d.col["2026"]) return null; const a = nombor(r[d.col["2015"]]), b = nombor(r[d.col["2026"]]); return a && b != null ? b / a - 1 : null; };
+    const chip = (v) => (v == null ? "–" : `<span class="chip ${v >= 0 ? "chip-naik" : "chip-turun"}">${v >= 0 ? "▲" : "▼"} ${fmtP(Math.abs(v))}</span>`);
+    $("tTigaRekod").innerHTML = `<thead><tr><th>No. Siri</th><th>Nama</th><th>FE</th>` +
+      VAR3.map(([k, label]) => `<th class="num">${label}<br><span class="nota">2015 · 2023 · 2026</span></th><th>Δ 15→26</th>`).join("") +
+      `</tr></thead><tbody>` + hal.map((r) => `<tr data-id="${r.id}"><td>${esc(r.no_siri)}</td><td class="nama" title="${esc(r.nama)}">${esc(r.nama)}</td><td>${esc(r[FE_KEY] || "–")}</td>` +
+        VAR3.map(([k, , rm]) => `<td class="num"><span class="tr3">${TAHUN3.map((y) => val(r, k, y, rm)).join(" <i>·</i> ")}</span></td><td>${chip(dlt(r, k))}</td>`).join("") +
+        `</tr>`).join("") + (hal.length ? "" : `<tr><td colspan="${3 + VAR3.length * 2}" class="nota">Tiada pertubuhan dengan data 2015/2023/2026.</td></tr>`) + `</tbody>`;
+    $("tigaRekodSub").textContent = `${fmtN.format(x.length)} pertubuhan · klik baris untuk butiran · Δ = perubahan 2015 → 2026`;
+    $("tigaHal").textContent = x.length ? `${tigaHalRek * SAIZ + 1}–${Math.min(x.length, (tigaHalRek + 1) * SAIZ)} / ${fmtN.format(x.length)}` : "";
+    $("tigaSebelum").disabled = tigaHalRek <= 0;
+    $("tigaSelepas").disabled = tigaHalRek >= maks;
+  }
+  function eksportTiga() {
+    const D = tigaCache || {};
+    const kepala = ["No. Siri", "Nama", "FE"].concat(VAR3.flatMap(([, l]) => TAHUN3.map((y) => `${l} ${y}`)));
+    const baris = tigaSenarai.map((r) => [r.no_siri, r.nama, r[FE_KEY] || ""].concat(VAR3.flatMap(([k]) => TAHUN3.map((y) => { const c = D[k] && D[k].col[y]; return c ? (r[c] ?? "") : ""; }))));
+    unduh("perbandingan-3-tahun-" + new Date().toISOString().slice(0, 10) + ".csv", [kepala].concat(baris));
   }
 
   // Kawal anggaran: laras 2026 (−30% hingga +30%), kesan dikira serta-merta
@@ -1420,23 +1452,73 @@
     const el = $("kadFe");
     const senarai = dataFe(R);
     if (!senarai.length) { el.innerHTML = '<p class="nota">Tiada lajur Pegawai Kerja Luar dalam data.</p>'; return; }
-    const nm = ukurUtama() === "selesai" ? "Selesai" : "Siap";
-    el.innerHTML = senarai.map((f, i) => {
-      const c = f.c;
-      const bar = TAHAP.map((t) => (c.T[t.k] ? `<i style="flex:${c.T[t.k]};background:${css(t.warna)}" title="${esc(t.label)}: ${fmtN.format(c.T[t.k])}"></i>` : "")).join("");
-      const legenda = TAHAP.filter((t) => c.T[t.k]).map((t) => `<span><b>${fmtN.format(c.T[t.k])}</b> ${esc(t.pendek)}</span>`).join("");
-      return `<div class="fe-kad${i === 0 ? " fe-top" : ""}">` +
-        `<div class="fe-atas"><span class="fe-rank">#${i + 1}</span><div class="fe-nama" title="${esc(f.nama)}">${esc(f.nama)}</div></div>` +
-        `<div class="fe-tengah"><div class="fe-cincin">${cincin(f.p, nm)}</div>` +
-        `<div><div class="fe-pct">${fmtP(f.p)}</div><div class="nota">${fmtN.format(capai(c))} / ${fmtN.format(f.n)} ${nm.toLowerCase()}</div></div></div>` +
-        `<div class="fe-bar">${bar}</div><div class="fe-legenda">${legenda}</div></div>`;
+    const T = kiraKat(R), n = T._n || 1;
+    const tahapMod = ukurUtama() === "selesai";
+    const nm = tahapMod ? "Selesai" : "Siap";
+    const siap = capai(T), pSiap = siap / n, baki = n - siap;
+    const tarikh = new Date().toLocaleDateString("ms-MY", { dateStyle: "long" });
+    const kpi = [
+      ["Jumlah agihan", fmtN.format(n), "pertubuhan dalam tapisan", "--ink-2", null],
+      [nm, fmtN.format(siap), fmtP(pSiap) + " daripada agihan", "--s3", pSiap],
+      ["Kod 11 + 14", fmtN.format(T.A1), fmtP(T.A1 / n) + " daripada agihan", "--s1", T.A1 / n],
+      ["LK (12–60)", fmtN.format(T.LK), fmtP(T.LK / n) + " daripada agihan", "--s7", T.LK / n],
+      ["Kod B (71–77)", fmtN.format(T.KodB), fmtP(T.KodB / n) + " daripada agihan", "--s4", T.KodB / n],
+      ["Baki belum " + nm.toLowerCase(), fmtN.format(baki), "agihan − " + nm.toLowerCase(), "--bad", baki / n],
+    ];
+    const segmen = KATEGORI.filter((c) => T[c.k]).map((c, i, a) => {
+      const w = (T[c.k] / n) * 100;
+      return `<i class="fe-seg" style="--w:${w.toFixed(2)}%;--d:${i * 120}ms;background:${css(c.warna)}" title="${esc(c.label)}: ${fmtN.format(T[c.k])}">` +
+        (w >= 9 ? `<span>${esc(c.pendek || c.label.split(" ·")[0])} ${fmtP(T[c.k] / n)}</span>` : "") + `</i>`;
     }).join("");
+    const legenda = KATEGORI.filter((c) => T[c.k]).map((c) => `<span><i class="kd-dot" style="background:${css(c.warna)}"></i>${esc(c.label)}: <b>${fmtN.format(T[c.k])}</b></span>`).join("");
+    const baris = senarai.map((f, i) => {
+      const c = f.c;
+      const pct = f.p * 100;
+      return `<div class="ffe-row" data-nama="${esc(f.nama)}" style="--d:${320 + i * 60}ms">` +
+        `<div class="ffe-no${i === 0 ? " ffe-juara" : ""}">${i + 1}</div>` +
+        `<div class="ffe-nm" title="${esc(f.nama)}">${esc(f.nama)}</div>` +
+        `<div class="ffe-num" data-count="${f.n}">0</div>` +
+        `<div class="ffe-mini"><span>11+14 <b>${fmtN.format(c.A1)}</b></span><span>LK <b>${fmtN.format(c.LK)}</b></span><span>B <b>${fmtN.format(c.KodB)}</b></span></div>` +
+        `<div class="ffe-bar"><div class="ffe-track"><i style="--w:${pct.toFixed(2)}%;--d:${360 + i * 60}ms"></i></div><b class="ffe-pct" data-count="${pct.toFixed(1)}" data-suffix="%">0%</b></div>` +
+        `<div class="ffe-baki">${fmtN.format(c._n - capai(c))}</div></div>`;
+    }).join("");
+    el.innerHTML =
+      `<div class="fe-hero">` +
+        `<div class="fe-hero-teks"><p class="fe-kicker">${esc(cfg.TAJUK || "Dashboard")}</p>` +
+        `<h3>Prestasi Pegawai Kerja Luar</h3>` +
+        `<p class="fe-meta">${esc(tarikh)} · ${senarai.length} FE · ${fmtN.format(n)} pertubuhan</p></div>` +
+        `<div class="fe-hero-angka"><span class="fe-besar" data-count="${(pSiap * 100).toFixed(1)}" data-suffix="%">0%</span><span class="fe-kecil">${nm} keseluruhan</span></div>` +
+      `</div>` +
+      `<div class="fe-kpi-baris">` + kpi.map(([l, v, s, w, p], i) =>
+        `<div class="fe-kpi" style="--c:var(${w});--d:${i * 70}ms"><div class="fe-kpi-label">${esc(l)}</div>` +
+        `<div class="fe-kpi-nilai">${v}</div><div class="fe-kpi-sub">${esc(s)}</div>` +
+        (p == null ? "" : `<div class="fe-kpi-track"><i style="--w:${(Math.min(1, p) * 100).toFixed(1)}%"></i></div>`) + `</div>`).join("") +
+      `</div>` +
+      `<div class="fe-komposisi"><div class="fe-komp-tajuk">Komposisi status respon</div><div class="fe-komp-bar">${segmen}</div><div class="fe-legenda-kuadran">${legenda}</div></div>` +
+      `<div class="fe-jadual"><div class="ffe-kepala"><div>#</div><div>Nama FE</div><div>Agihan</div><div>Komposisi</div><div>% ${nm}</div><div>Baki</div></div>` +
+      `<div class="ffe-senarai">${baris}</div></div>`;
     el.onclick = (e) => {
-      const kad = e.target.closest(".fe-kad");
-      if (!kad) return;
-      const nama = kad.querySelector(".fe-nama").textContent;
-      klikTapis(FE_KEY, nama);
+      const row = e.target.closest(".ffe-row");
+      if (row) klikTapis(FE_KEY, row.dataset.nama);
     };
+    animasiFe(el);
+  }
+  // Kira naik nombor & peratus; respek pilihan 'kurangkan gerakan'
+  function animasiFe(el) {
+    const rm = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    el.querySelectorAll("[data-count]").forEach((node) => {
+      const to = parseFloat(node.dataset.count), suf = node.dataset.suffix || "";
+      const dec = node.dataset.suffix ? 1 : 0;
+      const fmt = (v) => (dec ? v.toFixed(1) : fmtN.format(Math.round(v))) + suf;
+      if (rm || !isFinite(to)) { node.textContent = fmt(to); return; }
+      const mula = performance.now() + 240, dur = 900;
+      const step = (t) => {
+        const k = Math.min(1, Math.max(0, (t - mula) / dur));
+        node.textContent = fmt(to * (1 - Math.pow(1 - k, 3)));
+        if (k < 1) requestAnimationFrame(step);
+      };
+      requestAnimationFrame(step);
+    });
   }
   function cartaKuadran(R) {
     const ch = carta("cKuadran");
@@ -2208,6 +2290,12 @@
       kemaskiniKawal(k);
     });
     $("btnResetLaras").addEventListener("click", () => { S.tigaLaras = {}; paparKawal(); });
+    let tundaTiga;
+    $("tigaCari").addEventListener("input", (e) => { clearTimeout(tundaTiga); tundaTiga = setTimeout(() => { tigaQ = e.target.value; tigaHalRek = 0; paparTigaRekod(ditapis()); }, 200); });
+    $("tigaSebelum").addEventListener("click", () => { tigaHalRek--; paparTigaRekod(ditapis()); });
+    $("tigaSelepas").addEventListener("click", () => { tigaHalRek++; paparTigaRekod(ditapis()); });
+    $("btnEksportTiga").addEventListener("click", eksportTiga);
+    $("tTigaRekod").addEventListener("click", (e) => { const tr = e.target.closest("tr[data-id]"); if (tr) butiran(tr.dataset.id); });
     $("ioBawah1").addEventListener("change", () => { ioHal = 0; paparSenaraiIo(ditapis()); });
     let tundaIo;
     $("ioCari").addEventListener("input", () => { clearTimeout(tundaIo); tundaIo = setTimeout(() => { ioHal = 0; paparSenaraiIo(ditapis()); }, 200); });
