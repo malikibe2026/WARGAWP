@@ -595,6 +595,10 @@
         `<div class="sektor-nama">${esc(s.k)}</div><div class="sektor-kp">KP ${s.kod.join(", ")}</div>` +
         `<div class="sektor-nilai">${fmtN.format(m)}</div>` +
         `<div class="sektor-sub">${fmtP(pSek)} daripada tapisan · ${fmtP(cap)} ${ukurUtama() === "selesai" ? "selesai" : "ada respon"}</div>` +
+        `<div class="sektor-statistik">` +
+        [["Kod 11", c.A1], ["LK", c.LK], ["Kod B", c.KodB], ["Pinda", c.T.Pinda]].map(([lab, v]) =>
+          `<div class="sektor-stat"><span>${lab}</span><b>${fmtN.format(v || 0)}</b><small>${m ? fmtP((v || 0) / m) : "–"}</small></div>`).join("") +
+        `</div>` +
         `<div class="sektor-bar" aria-hidden="true"><i style="--w:${(cap * 100).toFixed(1)}%"></i></div></button>`;
     }).join("");
   }
