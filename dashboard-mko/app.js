@@ -2167,7 +2167,7 @@
     K5: { label: "K5 · Nilai utama, tarikh & catatan", lajur: [
       ...["pendapatan", "perbelanjaan", "harta_tetap", "pekerja", "gaji", "stok_akhir", "nilai_jualan"].flatMap((k) => [k + "_sebelum", k + "_semasa"]),
       ...["2015", "2023", "2026"].flatMap((y) => ["pendapatan_" + y, "perbelanjaan_" + y, "va_" + y]),
-      "tarikh_terima", "cara_terima", "kes_anggaran", "catatan_kes_anggaran", "catatan_mko", "catatan_negeri", "catatan_pinda_smd", "tambahan"] },
+      "tarikh_terima", "cara_terima", "kod_survei", "msic_5", "pmks", "kod_kp", "kes_anggaran", "catatan_kes_anggaran", "catatan_mko", "catatan_negeri", "catatan_pinda_smd", "tambahan"] },
     Umum: { label: "Umum · semua lajur dalam fail (cth. nama FE)", lajur: "semua" },
   };
   const BUKAN_KEMASKINI = new Set(["no_siri", "bil", "id", "muat_naik_id"]);
