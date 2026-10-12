@@ -29,6 +29,7 @@
     ["fasa_be", "Fasa BE", "t"],
     ["tier", "Tier", "t"],
     ["kod_survei", "Kod Survei - Semasa", "t"],
+    ["kod_kp", "Kod KP", "t"],
     ["kod_survei2", "Kod Survei - Label / Survei2", "t"],
     ["kod_industri_label", "Kod Industri - Label", "t"],
     ["msic_5", "Kod Industri - Semasa", "t"],
@@ -97,7 +98,7 @@
     kodsurveisemasa: "kod_survei", kodsurveilabel: "kod_survei2",
     kodindustrisemasa: "msic_5", kodindustrilabel: "kod_industri_label",
     sektor: "sektor", subsektor: "subsektor", pmks: "pmks",
-    catatannegeri: "catatan_negeri", catatanpindasmd: "catatan_pinda_smd", ditambaholeh: "ditambah_oleh", dikemaskinioleh: "dikemaskini_oleh",
+    catatannegeri: "catatan_negeri", kodkp: "kod_kp", kp: "kod_kp", kodperangkaan: "kod_kp", catatanpindasmd: "catatan_pinda_smd", ditambaholeh: "ditambah_oleh", dikemaskinioleh: "dikemaskini_oleh",
     tarikhdikemaskini: "tarikh_dikemaskini",
     daerahpentadbiranposlabel: "daerah_pos_label", daerahpentadbiranpossemasa: "daerah_pos_semasa",
     daerahpentadbiranlokasilabel: "daerah_lokasi_label", daerahpentadbiranlokasisemasa: "daerah_lokasi_semasa",
@@ -215,11 +216,26 @@
     return "Proses";
   }
   // Medan terbitan: daerah berkesan (Semasa, jika kosong guna Label)
+  // Empat sektor utama ikut kod KP (cth. "KP 205" atau "205")
+  const SEKTOR_UTAMA = [
+    { k: "Pembuatan", kod: ["205"], c1: "#3987e5", c2: "#6366f1", ikon: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 20V10l6 4V10l6 4V6h3v14z"/></svg>' },
+    { k: "Pembinaan", kod: ["206"], c1: "#f59e0b", c2: "#ef4444", ikon: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 21V3h9v18zm9-12h5v12h-5zM7 6h2v2H7zm0 4h2v2H7zm0 4h2v2H7z"/></svg>' },
+    { k: "Pertanian", kod: ["101", "103", "104", "105"], c1: "#22c55e", c2: "#14b8a6", ikon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20C4 10 10 4 20 4c0 10-6 16-16 16zM4 20l9-9"/></svg>' },
+    { k: "Perlombongan & Pengkuarian", kod: ["200", "207"], c1: "#8b5cf6", c2: "#ec4899", ikon: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M2 20L9 7l4 6 2-3 7 10z"/></svg>' },
+  ];
+  function sektorUtama(v) {
+    const m = String(v == null ? "" : v).match(/\d{3}/);
+    if (!m) return KOSONG;
+    const s = SEKTOR_UTAMA.find((x) => x.kod.includes(m[0]));
+    return s ? s.k : "Sektor lain";
+  }
+
   function terbit(r) {
     r._kat = kategori(r.status_respon_semasa);
     r._tahap = tahap(r.status_rekod);
     r._dl = r.daerah_lokasi_semasa || r.daerah_lokasi_label || null;
     r._dp = r.daerah_pos_semasa || r.daerah_pos_label || null;
+    r._sektor4 = sektorUtama(r.kod_kp);
     return r;
   }
   const ADA_TAHAP = () => S.rekod.some((r) => r._tahap !== "Tiada");
@@ -246,6 +262,7 @@
   const PENAPIS_LAIN = [
     ["_tahap", "Tahap Pencapaian"],
     ["_kat", "Kategori Respon"],
+    ["_sektor4", "Sektor utama (KP)"],
     ["pejabat_operasi", "Pejabat Perangkaan / Operasi"],
     ["penyelia", "Penyelia"],
     ["pegawai", "Pegawai"],
@@ -451,7 +468,7 @@
   function paparHalaman() {
     const R = ditapis();
     if (S.hal === "ringkasan") {
-      paparKpi(R); cartaAliran(R); cartaDonut(R); cartaStatus(R); cartaTarikh(R); cartaPencapaianIkut(R);
+      paparKpi(R); paparSektor(R); cartaAliran(R); cartaDonut(R); cartaStatus(R); cartaTarikh(R); cartaPencapaianIkut(R);
       // Cara terima kosong = pertubuhan belum ada respon (dikira sebagai "Belum ada respon"), jadi tidak dipaparkan di sini
       const adaRespon = R.filter((r) => String(r.cara_terima == null ? "" : r.cara_terima).trim() !== "");
       cartaBar("cCara", adaRespon, "cara_terima", 8);
@@ -563,6 +580,25 @@
         stroke-dasharray="${C}" stroke-dashoffset="${C * (1 - Math.min(1, p || 0))}" transform="rotate(-90 50 50)"/>
       <text x="50" y="57" text-anchor="middle">${Math.round((p || 0) * 100)}%</text></svg>`;
   }
+  function paparSektor(R) {
+    const ada = R.some((r) => r._sektor4 && r._sektor4 !== KOSONG);
+    $("sektorNota").textContent = ada ? "Klik kad untuk tapis. Pertubuhan tanpa kod KP yang dikenali tidak dikira dalam kad ini." :
+      "Lajur Kod KP belum ada dalam data. Muat naik fail yang mengandungi kod KP (cth. KP 205) untuk melihat sektor.";
+    $("sektorKad").innerHTML = SEKTOR_UTAMA.map((s, i) => {
+      const rs = R.filter((r) => r._sektor4 === s.k);
+      const c = kiraKat(rs), m = c._n || 0;
+      const cap = m ? capai(c) / m : 0;
+      const pSek = R.length ? m / R.length : 0;
+      const aktif = S.tapis._sektor4 && S.tapis._sektor4.has(s.k);
+      return `<button type="button" class="sektor-kad${aktif ? " aktif" : ""}" data-sektor="${esc(s.k)}" aria-pressed="${!!aktif}" style="--c1:${s.c1};--c2:${s.c2}">` +
+        `<div class="sektor-atas"><span class="sektor-ikon">${s.ikon}</span><span class="sektor-no">${i + 1}</span></div>` +
+        `<div class="sektor-nama">${esc(s.k)}</div><div class="sektor-kp">KP ${s.kod.join(", ")}</div>` +
+        `<div class="sektor-nilai">${fmtN.format(m)}</div>` +
+        `<div class="sektor-sub">${fmtP(pSek)} daripada tapisan · ${fmtP(cap)} ${ukurUtama() === "selesai" ? "selesai" : "ada respon"}</div>` +
+        `<div class="sektor-bar" aria-hidden="true"><i style="--w:${(cap * 100).toFixed(1)}%"></i></div></button>`;
+    }).join("");
+  }
+
   function paparKpi(R) {
     const k = kiraKat(R), n = k._n || 1, T = k.T;
     const sas = S.sasaran;
@@ -2399,6 +2435,7 @@
       toast(S.pentadbir ? "Log masuk berjaya. Anda boleh muat naik data." : "Log masuk berjaya, tetapi e-mel ini tiada kebenaran muat naik.", 5000);
     });
     $("btnCetak").addEventListener("click", () => window.print());
+    $("sektorKad").addEventListener("click", (e) => { const b = e.target.closest("[data-sektor]"); if (b) klikTapis("_sektor4", b.dataset.sektor); });
     $("amaranPinda").addEventListener("click", () => { S.hanyaPinda = true; S.halaman = 0; tukarHalaman("rekod"); });
     $("btnPinda").addEventListener("click", () => { S.hanyaPinda = !S.hanyaPinda; S.halaman = 0; papar(); });
     $("btnPng").addEventListener("click", () => eksportPngRingkasan().catch((err) => alert("Gagal jana gambar: " + err.message)));
