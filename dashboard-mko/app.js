@@ -883,7 +883,86 @@
     }
     const semak = kesSemakan(R).length;
     if (semak) out.push(["amaran", "?", `<b>${fmtN.format(semak)}</b> nilai berubah lebih ±${S.ambang}% berbanding penyiasatan sebelum — lihat tab <b>Analisis Nilai</b>.`]);
-    $("penemuan").innerHTML = out.slice(0, 8).map(([j, t, h]) => `<li><span class="tanda ${j}">${t}</span><span>${h}</span></li>`).join("");
+    // Amaran tiada perubahan: belum selesai dan status respon semasa sama dengan sebelum
+    const teks = (v) => String(v == null ? "" : v).trim();
+    const sama = R.filter((r) => r._tahap !== "Selesai" && teks(r.status_respon_semasa) && teks(r.status_respon_semasa) === teks(r.status_respon_sebelum));
+    if (sama.length) {
+      const ikutFe = {};
+      sama.forEach((r) => { const f = teks(r.pegawai_kerja_luar) || KOSONG; ikutFe[f] = (ikutFe[f] || 0) + 1; });
+      const top = Object.entries(ikutFe).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([f, c]) => `${esc(f)} (${c})`).join(", ");
+      out.push(["amaran", "=", `<b>${fmtN.format(sama.length)}</b> pertubuhan belum selesai dan status respon tidak berubah berbanding sebelum. Paling banyak: ${top}.`]);
+    }
+    // Lajur Tier kosong (profiling)
+    const tierKosong = R.filter((r) => !teks(r.tier)).length;
+    if (tierKosong) out.push(["amaran", "T", `Tier kosong untuk <b>${fmtN.format(tierKosong)}</b> rekod — semak profiling (nilai dijangka Tier 1, Tier 2 atau Tier 3).`]);
+    $("penemuan").innerHTML = out.slice(0, 10).map(([j, t, h]) => `<li><span class="tanda ${j}">${t}</span><span>${h}</span></li>`).join("");
+  }
+
+  // ---------- Eksport gambar ringkasan (PNG satu fail) ----------
+  async function eksportPngRingkasan() {
+    if (typeof echarts === "undefined") throw new Error("ECharts tidak dimuat");
+    const hal = document.querySelector('.halaman[data-hal="ringkasan"]');
+    const skala = 2;
+    const asas = hal.getBoundingClientRect();
+    const cs = getComputedStyle(document.documentElement);
+    const warna = (n) => cs.getPropertyValue(n).trim() || "#888";
+    const kepala = 84;
+    const kotak = (el) => { const r = el.getBoundingClientRect(); return { x: (r.left - asas.left) * skala, y: (r.top - asas.top) * skala + kepala * skala, w: r.width * skala, h: r.height * skala }; };
+    const kpi = [...document.querySelectorAll("#kpi > .kpi")].filter((el) => el.offsetParent);
+    const kad = [...hal.querySelectorAll("article.kad")].filter((el) => el.offsetParent);
+    const semua = [...kpi, ...kad];
+    const tinggi = Math.max(...semua.map((el) => kotak(el).y + kotak(el).h)) + 24 * skala;
+    const kanvas = document.createElement("canvas");
+    kanvas.width = asas.width * skala;
+    kanvas.height = tinggi;
+    const ctx = kanvas.getContext("2d");
+    ctx.fillStyle = warna("--page") || "#fff";
+    ctx.fillRect(0, 0, kanvas.width, kanvas.height);
+    const teksKotak = (t, x, y, px, berat, warnaTeks) => { ctx.font = `${berat} ${px * skala}px system-ui, sans-serif`; ctx.fillStyle = warnaTeks; ctx.fillText(t, x, y); };
+    const bulat = (k, fill) => { ctx.beginPath(); ctx.roundRect(k.x, k.y, k.w, k.h, 14 * skala); ctx.fillStyle = fill; ctx.fill(); };
+    // Kepala laporan
+    teksKotak($("tajuk").textContent, 24 * skala, 36 * skala, 20, 800, warna("--ink"));
+    teksKotak($("info").textContent, 24 * skala, 62 * skala, 12, 500, warna("--muted"));
+    // Kad KPI
+    for (const el of kpi) {
+      const k = kotak(el);
+      bulat(k, warna("--surface"));
+      const lab = el.querySelector(".label")?.textContent || "";
+      const nil = el.querySelector(".nilai")?.textContent || "";
+      const sub = el.querySelector(".sub")?.textContent || "";
+      teksKotak(lab, k.x + 16 * skala, k.y + 26 * skala, 12, 600, warna("--ink-2"));
+      teksKotak(nil, k.x + 16 * skala, k.y + 66 * skala, 26, 800, warna("--ink"));
+      teksKotak(sub, k.x + 16 * skala, k.y + 92 * skala, 11, 500, warna("--muted"));
+    }
+    // Kad carta
+    const siap = [];
+    for (const el of kad) {
+      const k = kotak(el);
+      bulat(k, warna("--surface"));
+      const h2 = el.querySelector("h2")?.textContent || "";
+      teksKotak(h2, k.x + 18 * skala, k.y + 28 * skala, 14, 700, warna("--ink"));
+      for (const c of el.querySelectorAll(".carta")) {
+        const inst = echarts.getInstanceByDom(c);
+        if (!inst) continue;
+        const rc = kotak(c);
+        siap.push(new Promise((res, rej) => {
+          const im = new Image();
+          im.onload = () => { ctx.drawImage(im, rc.x, rc.y, rc.w, rc.h); res(); };
+          im.onerror = () => rej(new Error("gagal muat carta"));
+          im.src = inst.getDataURL({ type: "png", pixelRatio: skala, backgroundColor: warna("--surface") });
+        }));
+      }
+    }
+    await Promise.all(siap);
+    const blob = await new Promise((res) => kanvas.toBlob(res, "image/png"));
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "ringkasan-mko-" + new Date().toISOString().slice(0, 10) + ".png";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
   }
 
   // ---------- Peta ----------
@@ -2180,6 +2259,8 @@
       $("logKata").value = "";
       toast(S.pentadbir ? "Log masuk berjaya. Anda boleh muat naik data." : "Log masuk berjaya, tetapi e-mel ini tiada kebenaran muat naik.", 5000);
     });
+    $("btnCetak").addEventListener("click", () => window.print());
+    $("btnPng").addEventListener("click", () => eksportPngRingkasan().catch((err) => alert("Gagal jana gambar: " + err.message)));
     $("btnMuatNaik").addEventListener("click", () => {
       $("fail").value = ""; hasilBaca = null; failDibaca = []; $("semakan").innerHTML = ""; $("mnRalat").textContent = "";
       $("btnSahMuatNaik").disabled = true;

@@ -507,3 +507,32 @@ td.io-merah { background: rgba(201, 54, 54, .08); }
 .tr3 { font-variant-numeric: tabular-nums; white-space: nowrap; font-size: 12.5px; }
 .tr3 i { font-style: normal; color: var(--muted); }
 .fe-wrap { display: block; }
+
+/* Ringkasan: kemunculan berperingkat, kilau pada kad hero, butang eksport, cetakan */
+.aksi-ringkasan { display: flex; align-items: center; justify-content: flex-end; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+.aksi-ringkasan .nota { margin-right: auto; }
+#kpi > .kpi { animation: fe-up .6s cubic-bezier(.2,.7,.2,1) both; }
+#kpi > .kpi:nth-child(2) { animation-delay: .05s; }
+#kpi > .kpi:nth-child(3) { animation-delay: .1s; }
+#kpi > .kpi:nth-child(4) { animation-delay: .15s; }
+#kpi > .kpi:nth-child(5) { animation-delay: .2s; }
+#kpi > .kpi:nth-child(6) { animation-delay: .25s; }
+.kpi-hero { position: relative; overflow: hidden; }
+.kpi-hero::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none; border-radius: inherit;
+  background: linear-gradient(110deg, transparent 35%, rgba(255,255,255,.10) 50%, transparent 65%);
+  background-size: 250% 100%; animation: fe-sheen 7s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  #kpi > .kpi, .kpi-hero::after { animation: none !important; }
+}
+@media print {
+  :root, :root[data-theme="dark"] {
+    --page: #ffffff; --surface: #ffffff; --surface-2: #f5f7fa; --ink: #111827; --ink-2: #374151; --muted: #6b7280; --grid: #e5e7eb; --axis: #9ca3af;
+  }
+  body { background: #fff !important; color: #111 !important; }
+  .kepala-kanan, .tab, .penapis, .cip-baris, .aksi-ringkasan, .kaki, #laci, #popover, #kosong, .btn, button { display: none !important; }
+  .kad, .kpi, .kad-penemuan { box-shadow: none !important; break-inside: avoid; }
+  #kpi > .kpi, .kpi-hero::after { animation: none !important; }
+  .kepala { position: static !important; }
+}
