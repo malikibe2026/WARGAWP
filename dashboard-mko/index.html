@@ -286,23 +286,27 @@
 
   <dialog id="dMuatNaik" class="dialog dialog-lebar">
     <div>
-      <h2>Muat naik data terbaru</h2>
-      <p class="nota">Format: .xlsx, .xls atau .csv. Boleh pilih <strong>beberapa fail</strong> (header berlainan pun boleh) — rekod digabung ikut <strong>No. Siri</strong>.
-        Jika nilai bercanggah, fail yang terkemudian dalam senarai digunakan.</p>
+      <h2>Muat naik / kemas kini data</h2>
+      <div class="panduan">
+        <p><b>Frame</b> = senarai pertubuhan tulang belakang. Fail lain hanya <b>mengemas kini</b> pertubuhan yang ada dalam frame — tiada pertubuhan ditambah atau dibuang, dan sel kosong tidak memadam nilai.</p>
+        <ul>
+          <li><b>K7</b> → Status Respon &amp; Status Rekod sahaja</li>
+          <li><b>K5</b> → Pendapatan, Perbelanjaan, Gaji, Harta Tetap, Pekerja, Stok, Jualan, Tarikh Terima, Cara Terima, Catatan MKO / Negeri, Kes Anggaran</li>
+          <li><b>Umum</b> → semua lajur dalam fail (cth. fail No. Siri + Pegawai Kerja Luar untuk tukar nama FE)</li>
+        </ul>
+        <p class="nota">Jenis dikesan ikut nama fail dan boleh ditukar. Data semasa: <span id="bilSediaAda">0</span> pertubuhan.</p>
+      </div>
       <label class="zon-fail">
         <input id="fail" type="file" accept=".xlsx,.xls,.csv" multiple>
         <span>Pilih satu atau lebih fail, atau seret ke sini</span>
       </label>
-      <label id="gabungSediaAdaBox" class="pilihan-gabung" hidden>
-        <input id="gabungSediaAda" type="checkbox">
-        <span><b>Gabung dengan data sedia ada</b> (<span id="bilSediaAda">0</span> rekod) — kemas kini ikut No. Siri, bukan ganti semua</span>
-      </label>
       <div id="semakan" class="semakan"></div>
       <div id="kemajuan" class="kemajuan" hidden><div id="kemajuanBar"></div></div>
       <p id="mnRalat" class="ralat"></p>
+      <div id="senaraiVersi" class="senarai-versi"></div>
       <div class="dialog-butang">
         <button type="button" class="btn btn-garis" data-tutup>Tutup</button>
-        <button id="btnSahMuatNaik" type="button" class="btn btn-utama" disabled>Ganti data</button>
+        <button id="btnSahMuatNaik" type="button" class="btn btn-utama" disabled>Simpan</button>
       </div>
     </div>
   </dialog>

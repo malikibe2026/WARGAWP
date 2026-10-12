@@ -377,3 +377,16 @@ h1 { font-size: 18px; font-weight: 700; white-space: nowrap; overflow: hidden; t
 .io-merah { color: var(--bad) !important; font-weight: 700; }
 td.io-merah { background: rgba(201, 54, 54, .08); }
 @media (max-width: 1024px) { .io-kpi { grid-template-columns: minmax(0, 1fr); } .donut-susun { grid-template-columns: minmax(0, 1fr); } }
+
+.panduan { background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; margin-top: 10px; font-size: 13px; }
+.panduan p { margin: 4px 0; }
+.panduan ul { margin: 4px 0; padding-left: 18px; }
+.semak-fail select { border: 1px solid var(--border-strong); border-radius: 7px; padding: 3px 6px; background: var(--surface); font-size: 12.5px; max-width: 230px; }
+.ringkas-ubah { margin-top: 10px; font-size: 13px; }
+.ringkas-ubah p { margin: 6px 0 2px; }
+.ringkas-ubah ul { margin: 2px 0 6px; padding-left: 18px; }
+.kotak-amaran { border: 1px solid var(--bad); background: rgba(201,54,54,.06); border-radius: 10px; padding: 10px 14px; margin-top: 10px; font-size: 13px; color: var(--ink); }
+.kotak-amaran ul { margin: 6px 0; padding-left: 18px; color: var(--bad); }
+.senarai-versi { margin-top: 12px; font-size: 13px; }
+.senarai-versi summary { cursor: pointer; color: var(--accent); font-weight: 600; }
+.senarai-versi table { margin-top: 8px; }

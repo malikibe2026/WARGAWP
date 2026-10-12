@@ -52,9 +52,16 @@ Kategori kod respon: **Kod 11 + 14** · **LK (Lain-lain Keputusan)** = 12–60 k
 - Jika lajur tahun tiada: 2026 = Survei Semasa, 2023 = Survei Sebelum (**andaian**, dinyatakan pada halaman).
 - VA = lajur VA jika ada; jika tiada dianggarkan sebagai output − input.
 
-## Fail utama semasa gabung
-Hanya No. Siri yang ada dalam **fail utama** dimasukkan. Lalai: fail bernama PROFILING / FRAME / RANGKA / SENARAI, jika tiada fail paling banyak rekod; boleh ditukar dalam dialog muat naik.
-Lajur yang tidak dikenal disimpan dalam `tambahan` (dipapar dalam butiran rekod).
+## Frame + kemas kini (cara muat naik)
+- **Frame** = senarai pertubuhan tulang belakang (populasi). Muat naik frame menetapkan pertubuhan yang dilapor; nilai K5/K7 terdahulu bagi pertubuhan yang sama dikekalkan.
+- Fail lain hanya **mengemas kini** pertubuhan dalam frame — tiada pertubuhan ditambah/dibuang, sel kosong tidak memadam nilai:
+  - **K7** → Status Respon Lawatan (Semasa/Sebelum) & Status Rekod sahaja.
+  - **K5** → Pendapatan, Perbelanjaan, Harta Tetap, Pekerja, Gaji, Stok Akhir, Nilai Jualan (Sebelum/Semasa & 2015/2023/2026), Tarikh Terima, Cara Terima, Kes Anggaran, Catatan MKO/Negeri, lajur tambahan (cth. Borang). Status dalam K5 **diabaikan**.
+  - **Umum** → semua lajur dalam fail (cth. No. Siri + Pegawai Kerja Luar untuk tukar nama FE).
+- Jenis dikesan ikut nama fail (K5 / K7 / FRAME / PROFILING / FASA…) dan boleh ditukar dalam dialog.
+- Pratonton menunjukkan bilangan nilai yang **berubah** bagi setiap lajur sebelum simpan.
+- Pengawal: jika fail frame hanya ada No. Siri/Nama, atau lajur penting (FE, status, Parlimen…) akan jadi kosong, simpan disekat sehingga pentadbir sahkan.
+- **Versi data**: senarai versi dalam dialog muat naik, dengan butang *Pulihkan*.
 
 ## Peta
 Sempadan rasmi OpenDOSM (`peta/`): daerah, negeri dan **parlimen**. Daerah diambil daripada lajur *Semasa*; jika kosong, lajur *Label* digunakan.

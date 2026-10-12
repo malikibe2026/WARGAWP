@@ -69,6 +69,7 @@
   ];
   const JENIS = Object.fromEntries(LAJUR.map(([k, , j]) => [k, j]));
   const LABEL = Object.fromEntries(LAJUR.map(([k, l]) => [k, l]));
+  LABEL.tambahan = "Lajur tambahan (cth. Borang)";
 
   const UKURAN = [
     ["pendapatan", "Pendapatan (RM)", true],
@@ -1552,7 +1553,7 @@
       rekod.push(r);
     }
     const hilang = LAJUR.map((l) => l[0]).filter((k) => !guna.has(k) && !(k === "msic_3" && guna.has("msic_5")));
-    return { rekod, hilang, tidakDikenal, helaian: terbaik.helaian, nama: fail.name, siriSalah, siriLapik, contohLapik };
+    return { rekod, hilang, tidakDikenal, helaian: terbaik.helaian, nama: fail.name, siriSalah, siriLapik, contohLapik, lajurFail: [...guna.keys()] };
   }
 
   // ---------- Gabung beberapa fail ikut No. Siri ----------
@@ -1574,58 +1575,109 @@
     return n.nilai;
   }
   const SISTEM = new Set(["id", "muat_naik_id", "_kat", "_tahap", "_dl", "_dp"]);
-  function gabungSumber(sumber, utama) {
-    // sumber: [{ nama, rekod }]; sumber[utama] = senarai pertubuhan induk.
-    // Hanya No. Siri yang ada dalam fail utama dimasukkan; sumber lain hanya menambah/mengemas kini nilai.
-    utama = utama || 0;
-    const urutan = [sumber[utama]].concat(sumber.filter((_, i) => i !== utama));
-    const peta = new Map(), tanpaKunci = [];
-    let kunciUtama = null;
-    let konflik = 0;
-    const contoh = [];
-    const statistik = urutan.map((src, ix) => {
-      const st = { nama: src.nama, rekod: src.rekod.length, padan: 0, baharu: 0, duplikat: 0, tanpaKunci: 0, takPadan: 0, utama: ix === 0, src };
-      const dilihat = new Set(), sebelum = new Set(peta.keys());
-      for (const asal of src.rekod) {
-        const r = {};
-        for (const k in asal) if (!SISTEM.has(k)) r[k] = asal[k];
-        const kunci = kunciRekod(r);
-        if (!kunci) { st.tanpaKunci++; tanpaKunci.push(r); continue; }
-        r.no_siri = kunci;
-        if (kunciUtama && !kunciUtama.has(kunci)) { st.takPadan++; continue; }   // tiada dalam fail utama
-        if (dilihat.has(kunci)) st.duplikat++;
-        else if (sebelum.has(kunci)) st.padan++;
-        dilihat.add(kunci);
-        const lama = peta.get(kunci);
-        if (!lama) { peta.set(kunci, r); st.baharu++; continue; }
-        for (const k in r) {
-          const v = r[k];
-          if (v == null || v === "") continue;                  // sel kosong tidak memadam nilai sedia ada
-          if (k === "tambahan") { lama.tambahan = { ...(lama.tambahan || {}), ...v }; continue; }
-          if (lama[k] != null && lama[k] !== "" && String(lama[k]) !== String(v)) {
-            konflik++;
-            if (contoh.length < 5) contoh.push(`${lama.no_siri || kunci}: ${LABEL[k] || k} "${lama[k]}" → "${v}"`);
-          }
-          lama[k] = v;
+  // ---------- Frame + kemas kini terpilih ----------
+  // Frame = senarai pertubuhan tulang belakang (populasi). Fail lain hanya mengemas kini lajur tertentu
+  // bagi No. Siri yang ada dalam frame; rekod tidak ditambah atau dibuang, sel kosong tidak memadam nilai.
+  const JENIS_FAIL = {
+    Frame: { label: "Frame (tulang belakang)", lajur: null },
+    K7: { label: "K7 · Status respon & status rekod", lajur: ["status_respon_semasa", "status_respon_sebelum", "status_rekod"] },
+    K5: { label: "K5 · Nilai utama, tarikh & catatan", lajur: [
+      ...["pendapatan", "perbelanjaan", "harta_tetap", "pekerja", "gaji", "stok_akhir", "nilai_jualan"].flatMap((k) => [k + "_sebelum", k + "_semasa"]),
+      ...["2015", "2023", "2026"].flatMap((y) => ["pendapatan_" + y, "perbelanjaan_" + y, "va_" + y]),
+      "tarikh_terima", "cara_terima", "kes_anggaran", "catatan_kes_anggaran", "catatan_mko", "catatan_negeri", "tambahan"] },
+    Umum: { label: "Umum · semua lajur dalam fail (cth. nama FE)", lajur: "semua" },
+  };
+  const BUKAN_KEMASKINI = new Set(["no_siri", "bil", "id", "muat_naik_id"]);
+  function teka_jenis(nama) {
+    if (/\bk\s*-?\s*7\b|jadual\s*k7/i.test(nama)) return "K7";
+    if (/\bk\s*-?\s*5\b|jadual\s*k5/i.test(nama)) return "K5";
+    if (/frame|profil|rangka|fasa|induk|senarai[_\s]pertubuhan/i.test(nama)) return "Frame";
+    return "Umum";
+  }
+  function lajurBolehUbah(jenis, h) {
+    const j = JENIS_FAIL[jenis];
+    const dalamFail = new Set(h.lajurFail || []);
+    if (h.rekod.some((r) => r.tambahan)) dalamFail.add("tambahan");
+    let calon = j.lajur === "semua" || j.lajur == null ? [...dalamFail] : j.lajur.filter((k) => dalamFail.has(k));
+    if (dalamFail.has("msic_5") && (j.lajur === "semua" || j.lajur == null)) calon.push("msic_3");
+    return calon.filter((k) => !BUKAN_KEMASKINI.has(k));
+  }
+  const bersih = (r) => { const o = {}; for (const k in r) if (!SISTEM.has(k)) o[k] = r[k]; return o; };
+  const kosong = (v) => v == null || v === "";
+
+  function binaData(fail, asas) {
+    // fail: [{ h, jenis }]; asas: rekod sedia ada (boleh kosong)
+    const frame = fail.filter((f) => f.jenis === "Frame");
+    const kemaskini = fail.filter((f) => f.jenis !== "Frame")
+      .sort((a, b) => ["Umum", "K5", "K7"].indexOf(a.jenis) - ["Umum", "K5", "K7"].indexOf(b.jenis));
+    const stat = new Map();
+    const pop = new Map();
+    let dibuangFrame = 0, mod;
+    if (frame.length) {
+      mod = "frame";
+      for (const f of frame) {
+        const st = { padan: 0, baharu: 0, takPadan: 0, duplikat: 0, ubah: {} };
+        const lihat = new Set();
+        for (const r0 of f.h.rekod) {
+          const k = kunciRekod(r0); if (!k) continue;
+          if (lihat.has(k)) st.duplikat++; lihat.add(k);
+          const r = bersih(r0); r.no_siri = k;
+          const lama = pop.get(k);
+          if (!lama) { pop.set(k, r); st.baharu++; continue; }
+          for (const c in r) if (!kosong(r[c])) lama[c] = c === "tambahan" ? { ...(lama.tambahan || {}), ...r[c] } : r[c];
+        }
+        stat.set(f, st);
+      }
+      // Kekalkan nilai sedia ada (K5/K7 terdahulu) bagi pertubuhan yang masih dalam frame
+      const lamaPeta = new Map((asas || []).map((r) => [kunciRekod(r), r]));
+      for (const [k, r] of pop) {
+        const lama = lamaPeta.get(k);
+        if (!lama) continue;
+        const gabung = bersih(lama);
+        for (const c in r) if (!kosong(r[c])) gabung[c] = c === "tambahan" ? { ...(gabung.tambahan || {}), ...r[c] } : r[c];
+        pop.set(k, gabung);
+      }
+      dibuangFrame = [...lamaPeta.keys()].filter((k) => k && !pop.has(k)).length;
+    } else if (asas && asas.length) {
+      mod = "kemaskini";
+      for (const r of asas) { const k = kunciRekod(r); if (k) pop.set(k, bersih(r)); }
+    } else {
+      return { ralat: "Belum ada data. Muat naik fail Frame (senarai pertubuhan tulang belakang) dahulu, atau tukar jenis salah satu fail kepada “Frame”." };
+    }
+    for (const f of kemaskini) {
+      const st = { padan: 0, baharu: 0, takPadan: 0, duplikat: 0, ubah: {} };
+      const lajur = lajurBolehUbah(f.jenis, f.h);
+      const lihat = new Set();
+      for (const r of f.h.rekod) {
+        const k = kunciRekod(r); if (!k) continue;
+        const sasar = pop.get(k);
+        if (!sasar) { st.takPadan++; continue; }
+        if (lihat.has(k)) st.duplikat++; else st.padan++;
+        lihat.add(k);
+        for (const c of lajur) {
+          let v = c === "msic_3" ? (r.msic_3 || (r.msic_5 ? String(r.msic_5).replace(/\D/g, "").slice(0, 3) : null)) : r[c];
+          if (kosong(v)) continue;
+          if (c === "tambahan") { sasar.tambahan = { ...(sasar.tambahan || {}), ...v }; continue; }
+          if (String(sasar[c] ?? "") !== String(v)) { st.ubah[c] = (st.ubah[c] || 0) + 1; sasar[c] = v; }
         }
       }
-      if (ix === 0) kunciUtama = new Set(peta.keys());
-      return st;
-    });
-    const rekod = [...peta.values()];   // rekod tanpa No. Siri 12 digit tidak dimuat naik
+      st.lajur = lajur;
+      stat.set(f, st);
+    }
+    const rekod = [...pop.values()];
     for (const r of rekod) if (!r.msic_3 && r.msic_5) r.msic_3 = String(r.msic_5).replace(/\D/g, "").slice(0, 3) || null;
-    return { rekod, statistik, konflik, contoh, tanpaKunci: tanpaKunci.length, takPadan: statistik.reduce((a, st) => a + st.takPadan, 0) };
+    return { rekod, stat, mod, dibuangFrame };
   }
 
   // ---------- Muat naik ----------
   let hasilBaca = null;
-  let failDibaca = [];
-  let failUtama = null;
+  let failDibaca = [];       // [{ h, jenis }]
+  let sahAmaran = false;
   async function pilihFail(e) {
     const senarai = [...(e.target.files || [])];
     failDibaca = [];
-    failUtama = null;
     hasilBaca = null;
+    sahAmaran = false;
     $("btnSahMuatNaik").disabled = true;
     $("mnRalat").textContent = "";
     $("semakan").innerHTML = "";
@@ -1636,75 +1688,85 @@
       try {
         const h = await bacaFail(f);
         if (!h.rekod.length) throw new Error("tiada baris data di bawah header");
-        failDibaca.push(h);
+        failDibaca.push({ h, jenis: teka_jenis(f.name) });
       } catch (err) { ralat.push(f.name + ": " + (err.message || err)); }
     }
+    // Jika belum ada data dan tiada fail Frame, jadikan fail pertama Frame
+    if (!S.rekod.length && failDibaca.length && !failDibaca.some((f) => f.jenis === "Frame")) failDibaca[0].jenis = "Frame";
     $("mnRalat").textContent = ralat.length ? "Diabaikan — " + ralat.join(" | ") : "";
-    paparSemakan();
+    paparPratonton();
   }
-  function paparSemakan() {
+  function paparPratonton() {
     hasilBaca = null;
     $("btnSahMuatNaik").disabled = true;
     if (!failDibaca.length) { $("semakan").innerHTML = ""; return; }
-    const gabungLama = $("gabungSediaAda").checked && S.rekod.length;
-    const sumber = (gabungLama ? [{ nama: "Data sedia ada", rekod: S.rekod }] : []).concat(failDibaca);
-    // Fail utama: pilihan pengguna; lalai = data sedia ada (jika digabung) atau fail paling banyak rekod
-    if (failUtama == null || failUtama >= sumber.length) {
-      // Utamakan fail rangka/senarai induk (cth. "PROFILING", "FRAME", "RANGKA", "Senarai Pertubuhan"), jika tiada pilih yang paling banyak rekod
-      const induk = sumber.findIndex((x) => /profil|frame|rangka|induk|kawalan|senarai/i.test(x.nama || ""));
-      failUtama = gabungLama ? 0 : induk >= 0 ? induk : sumber.reduce((b, x, i) => (x.rekod.length > sumber[b].rekod.length ? i : b), 0);
+    const g = binaData(failDibaca, S.rekod);
+    const pilihJenis = (i, j) => `<select data-jenis="${i}">${Object.entries(JENIS_FAIL).map(([k, v]) => `<option value="${k}"${k === j ? " selected" : ""}>${esc(v.label)}</option>`).join("")}</select>`;
+    let html = `<table class="jadual semak-fail"><thead><tr><th>Fail</th><th>Jenis</th><th class="num">Baris</th><th class="num">Padan</th><th class="num">Tiada dalam frame</th></tr></thead><tbody>` +
+      failDibaca.map((f, i) => {
+        const st = g.stat ? g.stat.get(f) : null;
+        const isFrame = f.jenis === "Frame";
+        return `<tr><td>${esc(f.h.nama)} <span class="nota">(${esc(f.h.helaian)})</span></td><td>${pilihJenis(i, f.jenis)}</td><td class="num">${fmtN.format(f.h.rekod.length)}</td>` +
+          `<td class="num">${st ? (isFrame ? fmtN.format(st.baharu) + " (populasi)" : fmtN.format(st.padan)) : "–"}</td>` +
+          `<td class="num${st && st.takPadan ? " turun" : ""}">${st && !isFrame ? fmtN.format(st.takPadan) + (st.takPadan ? " (diabaikan)" : "") : "–"}</td></tr>`;
+      }).join("") + `</tbody></table>`;
+    if (g.ralat) {
+      $("semakan").innerHTML = html + `<p class="amaran">${esc(g.ralat)}</p>`;
+      return;
     }
-    const g = gabungSumber(sumber, failUtama);
-    const banyak = sumber.length > 1;
-    hasilBaca = {
-      nama: (gabungLama ? [S.muatNaik?.nama_fail || "data sedia ada"] : []).concat(failDibaca.map((h) => h.nama)).join(" + ").slice(0, 500),
-      rekod: g.rekod,
-    };
-    // Lajur yang ada nilai dalam sekurang-kurangnya satu sumber
-    const adaNilai = new Set();
-    for (const r of g.rekod) for (const k in r) if (r[k] != null && r[k] !== "") adaNilai.add(k);
-    const hilang = LAJUR.map((l) => l[0]).filter((k) => !adaNilai.has(k));
+    // Lajur yang akan dikemas kini setiap fail
+    const amaran = [];
+    html += `<div class="ringkas-ubah">` + failDibaca.map((f) => {
+      const st = g.stat.get(f);
+      if (f.jenis === "Frame") {
+        const lj = (f.h.lajurFail || []).filter((k) => !BUKAN_KEMASKINI.has(k));
+        if (lj.length <= 1) amaran.push(`${f.h.nama}: hanya ${lj.length} lajur dikenal (selain No. Siri) — semak header fail.`);
+        return `<p><b>${esc(f.h.nama)}</b> → frame dengan ${lj.length} lajur: <span class="nota">${lj.map((k) => esc(LABEL[k] || k)).join(", ")}</span></p>`;
+      }
+      const ubahan = Object.entries(st.ubah).sort((a, b) => b[1] - a[1]);
+      if (!st.lajur.length) amaran.push(`${f.h.nama}: tiada lajur jenis ${f.jenis} dijumpai dalam fail ini — tiada apa dikemas kini.`);
+      return `<p><b>${esc(f.h.nama)}</b> → kemas kini ${st.lajur.length} lajur bagi ${fmtN.format(st.padan)} pertubuhan:</p>` +
+        (ubahan.length ? `<ul>${ubahan.map(([k, n]) => `<li>${esc(LABEL[k] || k)}: <b>${fmtN.format(n)}</b> berubah</li>`).join("")}</ul>` : `<p class="nota">Tiada nilai berubah.</p>`) +
+        (st.lajur.length ? `<p class="nota">Lajur yang dibenarkan: ${st.lajur.map((k) => esc(LABEL[k] || k)).join(", ")}. Lajur lain dalam fail ini diabaikan.</p>` : "");
+    }).join("") + `</div>`;
+    // Pengawal: lajur penting yang berisi sebelum ini tidak boleh jadi kosong
+    if (S.rekod.length) {
+      const penting = ["pegawai_kerja_luar", "status_respon_semasa", "status_rekod", "parlimen", "pendapatan_semasa", "tarikh_terima", "fasa_be", "tier"];
+      for (const c of penting) {
+        const sebelum = S.rekod.filter((r) => !kosong(r[c])).length / S.rekod.length;
+        const selepas = g.rekod.filter((r) => !kosong(r[c])).length / (g.rekod.length || 1);
+        if (sebelum >= 0.3 && selepas < sebelum * 0.5) amaran.push(`${LABEL[c] || c} akan jatuh daripada ${fmtP(sebelum)} berisi kepada ${fmtP(selepas)}.`);
+      }
+    }
     const kat = {}; for (const r of g.rekod) { const k = kategori(r.status_respon_semasa); kat[k] = (kat[k] || 0) + 1; }
-    const tanpaSiriSemua = failDibaca.filter((h) => !h.rekod.some((r) => kunciRekod(r)));
-    const lajurDikenal = (h) => (h.lajur ? h.lajur : LAJUR.length - h.hilang.length);
-    let html = "";
-    if (banyak) {
-      html += `<table class="jadual semak-fail"><thead><tr><th>#</th><th>Sumber</th><th class="num">Rekod</th><th class="num">Lajur dikenal</th><th class="num">Padan No. Siri</th><th class="num">Tak padan (dibuang)</th><th class="num">No. Siri tidak sah</th></tr></thead><tbody>` +
-        g.statistik.map((st, i) => {
-          const h = failDibaca.includes(st.src) ? st.src : null;
-          return `<tr${st.utama ? ' class="jumlah"' : ""}><td class="num">${i + 1}</td><td>${esc(st.nama)}${h ? ` <span class="nota">(${esc(h.helaian)})</span>` : ""}${st.utama ? ' <span class="pil capai">Fail utama</span>' : ""}</td><td class="num">${fmtN.format(st.rekod)}</td>` +
-            `<td class="num">${h ? lajurDikenal(h) + " / " + LAJUR.length : "–"}</td><td class="num">${st.utama ? "–" : fmtN.format(st.padan)}</td>` +
-            `<td class="num${st.takPadan ? " turun" : ""}">${st.utama ? "–" : fmtN.format(st.takPadan)}</td>` +
-            `<td class="num${h && h.siriSalah.length ? " turun" : ""}">${h ? fmtN.format(h.siriSalah.length) : "–"}</td></tr>`;
-        }).join("") + `</tbody></table>` +
-        `<label class="pilih-utama">Fail utama (senarai pertubuhan induk): <select id="pilihFailUtama">${sumber.map((x, i) => `<option value="${i}"${i === failUtama ? " selected" : ""}>${esc(x.nama)} (${fmtN.format(x.rekod.length)})</option>`).join("")}</select></label>`;
-    }
-    html += `<p><strong>${fmtN.format(g.rekod.length)}</strong> rekod ${banyak ? "selepas digabung ikut <b>No. Siri</b>" : `dijumpai (helaian: ${esc(failDibaca[0].helaian)})`}.</p><ul>` +
-      `<li>Kategori respon: ${KATEGORI.filter((c) => kat[c.k]).map((c) => esc(c.label.split(" ·")[0]) + " " + fmtN.format(kat[c.k])).join(", ")}</li>` +
-      `<li>Rekod tanpa Tarikh Terima: ${fmtN.format(g.rekod.filter((r) => !r.tarikh_terima).length)}</li>` +
-      (banyak ? `<li>Nilai berbeza antara sumber: ${fmtN.format(g.konflik)}${g.konflik ? " — nilai daripada sumber yang <b>terkemudian</b> dalam senarai digunakan" : ""}</li>` : "") +
-      (g.statistik.some((st) => st.duplikat) ? `<li class="amaran">No. Siri berulang dalam fail yang sama: ${g.statistik.filter((st) => st.duplikat).map((st) => esc(st.nama) + " (" + st.duplikat + ")").join(", ")} — baris terakhir digunakan</li>` : "") +
-      (g.tanpaKunci ? `<li class="amaran">${fmtN.format(g.tanpaKunci)} rekod sedia ada tiada No. Siri 12 digit — tidak dimasukkan</li>` : "") +
-      (g.takPadan ? `<li class="amaran">${fmtN.format(g.takPadan)} baris daripada fail lain <b>tidak dimasukkan</b> kerana No. Siri tiada dalam fail utama</li>` : "") +
-      `</ul>` +
-      (g.contoh.length ? `<p class="nota">Contoh: ${g.contoh.map(esc).join("; ")}</p>` : "") +
-      (tanpaSiriSemua.length && banyak ? `<p class="amaran">Fail tanpa lajur No. Siri: ${tanpaSiriSemua.map((h) => esc(h.nama)).join(", ")}. Data fail ini tidak dapat dipadankan.</p>` : "") +
-      (hilang.includes("status_respon_semasa") ? `<p class="amaran">Tiada sumber yang ada "Status Respon Lawatan Semasa" — kategori respon tidak dapat dikira.</p>` : "") +
-      (hilang.length ? `<details><summary>${hilang.length} lajur tiada nilai dalam mana-mana sumber</summary><p class="nota">${hilang.map((k) => esc(LABEL[k])).join("; ")}</p></details>` : "") +
-      (failDibaca.some((h) => h.tidakDikenal.length) ? `<p class="nota">Lajur tambahan (disimpan, dipapar dalam butiran rekod sahaja): ${[...new Set(failDibaca.flatMap((h) => h.tidakDikenal))].map(esc).join("; ")}</p>` : "") +
-      (S.rekod.length && !gabungLama ? `<p>Data semasa (${fmtN.format(S.rekod.length)} rekod) akan <strong>diganti</strong>.</p>` : "");
-    // Semakan No. Siri 12 digit
-    const salah = failDibaca.flatMap((h) => h.siriSalah.map((x) => ({ ...x, fail: h.nama })));
-    const lapik = failDibaca.reduce((a, h) => a + h.siriLapik, 0);
-    const contohLapik = failDibaca.flatMap((h) => h.contohLapik).slice(0, 3);
-    html = (salah.length
-      ? `<p class="amaran"><b>${fmtN.format(salah.length)} baris ditolak</b> kerana No. Siri bukan 12 digit (kosong, ada huruf atau lebih 12 digit). Baris ini <b>tidak</b> dimuat naik.</p>` +
-        `<details><summary>Lihat baris ditolak</summary><p class="nota">${salah.slice(0, 30).map((x) => `${esc(x.fail)} baris ${x.baris}: ${esc(x.nilai)}`).join("<br>")}${salah.length > 30 ? "<br>…" : ""}</p></details>`
-      : `<p class="naik">✓ Semua No. Siri sah (12 digit).</p>`) +
-      (lapik ? `<p class="nota">${fmtN.format(lapik)} No. Siri kurang 12 digit (sifar di depan dibuang oleh Excel) dilapik dengan sifar, cth. ${contohLapik.map(esc).join(", ")}. Semak jika ini betul.</p>` : "") + html;
+    html += `<p><strong>${fmtN.format(g.rekod.length)}</strong> pertubuhan selepas simpan` +
+      (g.mod === "frame" ? ` (frame baharu${S.rekod.length ? `; ${fmtN.format(g.dibuangFrame)} pertubuhan lama tiada dalam frame baharu akan dikeluarkan` : ""}).` : ` (sama seperti sekarang — tiada pertubuhan ditambah atau dibuang).`) + `</p>` +
+      `<p class="nota">Kategori respon: ${KATEGORI.filter((c) => kat[c.k]).map((c) => esc(c.pendek || c.label) + " " + fmtN.format(kat[c.k])).join(" · ")}</p>`;
+    // No. Siri tidak sah
+    const salah = failDibaca.flatMap((f) => f.h.siriSalah.map((x) => ({ ...x, fail: f.h.nama })));
+    const lapik = failDibaca.reduce((a, f) => a + f.h.siriLapik, 0);
+    if (salah.length) html = `<p class="amaran"><b>${fmtN.format(salah.length)} baris diabaikan</b> kerana No. Siri bukan 12 digit.</p>` +
+      `<details><summary>Lihat baris</summary><p class="nota">${salah.slice(0, 30).map((x) => `${esc(x.fail)} baris ${x.baris}: ${esc(x.nilai)}`).join("<br>")}${salah.length > 30 ? "<br>…" : ""}</p></details>` + html;
+    if (lapik) html += `<p class="nota">${fmtN.format(lapik)} No. Siri kurang 12 digit dilapik dengan sifar di depan.</p>`;
+    if (amaran.length) html += `<div class="kotak-amaran"><b>⚠ Semak sebelum simpan:</b><ul>${amaran.map((a) => `<li>${esc(a)}</li>`).join("")}</ul>` +
+      `<label class="pilihan-gabung"><input type="checkbox" id="sahAmaran"${sahAmaran ? " checked" : ""}> <span>Saya faham dan tetap mahu simpan</span></label></div>`;
     $("semakan").innerHTML = html;
-    $("btnSahMuatNaik").disabled = !g.rekod.length;
-    $("btnSahMuatNaik").textContent = gabungLama ? "Gabung & simpan" : banyak ? "Gabung & ganti data" : "Ganti data";
+    hasilBaca = { nama: (g.mod === "kemaskini" ? "Kemas kini: " : "Frame: ") + failDibaca.map((f) => f.h.nama + " [" + f.jenis + "]").join(" + ").slice(0, 480), rekod: g.rekod };
+    $("btnSahMuatNaik").disabled = !g.rekod.length || (amaran.length && !sahAmaran);
+    $("btnSahMuatNaik").textContent = g.mod === "frame" ? "Simpan frame" : "Simpan kemas kini";
+  }
+
+  async function muatVersi() {
+    const el = $("senaraiVersi");
+    if (!S.pentadbir) { el.innerHTML = ""; return; }
+    const { data, error } = await sb.rpc("senarai_versi");
+    if (error || !Array.isArray(data)) { el.innerHTML = ""; return; }
+    const lama = data.filter((v) => v.status === "lama");
+    el.innerHTML = `<details><summary>Versi data (${data.length}) · pulihkan jika tersalah muat naik</summary>` +
+      (lama.length ? "" : `<p class="nota">Tiada versi lama disimpan.</p>`) +
+      `<table class="jadual"><tbody>${data.map((v) => `<tr><td>${new Date(v.created_at).toLocaleString("ms-MY", { dateStyle: "medium", timeStyle: "short" })}</td>` +
+        `<td class="nama" title="${esc(v.nama_fail)}">${esc(v.nama_fail)}</td><td class="num">${fmtN.format(v.bil_rekod)}</td>` +
+        `<td>${v.status === "aktif" ? '<span class="pil capai">Aktif</span>' : `<button class="btn btn-garis" data-pulih="${v.id}">Pulihkan</button>`}</td></tr>`).join("")}</tbody></table></details>`;
   }
 
   async function sahMuatNaik() {
@@ -1807,15 +1869,26 @@
     $("btnMuatNaik").addEventListener("click", () => {
       $("fail").value = ""; hasilBaca = null; failDibaca = []; $("semakan").innerHTML = ""; $("mnRalat").textContent = "";
       $("btnSahMuatNaik").disabled = true;
-      $("btnSahMuatNaik").textContent = "Ganti data";
-      $("gabungSediaAda").checked = false;
-      $("gabungSediaAdaBox").hidden = !S.rekod.length;
+      $("btnSahMuatNaik").textContent = "Simpan";
       $("bilSediaAda").textContent = fmtN.format(S.rekod.length);
       $("dMuatNaik").showModal();
+      muatVersi();
     });
     $("fail").addEventListener("change", pilihFail);
-    $("gabungSediaAda").addEventListener("change", () => { failUtama = null; paparSemakan(); });
-    $("semakan").addEventListener("change", (e) => { if (e.target.id === "pilihFailUtama") { failUtama = +e.target.value; paparSemakan(); } });
+    $("semakan").addEventListener("change", (e) => {
+      if (e.target.dataset.jenis != null) { failDibaca[+e.target.dataset.jenis].jenis = e.target.value; sahAmaran = false; paparPratonton(); }
+      else if (e.target.id === "sahAmaran") { sahAmaran = e.target.checked; paparPratonton(); }
+    });
+    $("senaraiVersi").addEventListener("click", async (e) => {
+      const b = e.target.closest("[data-pulih]");
+      if (!b) return;
+      if (!confirm("Pulihkan versi ini sebagai data aktif? Versi semasa disimpan sebagai versi lama.")) return;
+      const { data: n, error } = await sb.rpc("pulihkan_muat_naik", { p_id: b.dataset.pulih });
+      if (error) { toast("Gagal: " + error.message, 5000); return; }
+      $("dMuatNaik").close();
+      toast("Versi dipulihkan: " + fmtN.format(n) + " rekod.");
+      S.muatNaik = null; await muatData();
+    });
     const zon = document.querySelector(".zon-fail");
     ["dragenter", "dragover"].forEach((ev) => zon.addEventListener(ev, (e) => { e.preventDefault(); zon.classList.add("atas"); }));
     ["dragleave", "drop"].forEach((ev) => zon.addEventListener(ev, () => zon.classList.remove("atas")));
