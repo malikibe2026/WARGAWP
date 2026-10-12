@@ -62,6 +62,9 @@
     ["pendapatan_2015", "Pendapatan / Output 2015 (RM)", "n"], ["perbelanjaan_2015", "Perbelanjaan / Input 2015 (RM)", "n"], ["va_2015", "Nilai Ditambah (VA) 2015 (RM)", "n"],
     ["pendapatan_2023", "Pendapatan / Output 2023 (RM)", "n"], ["perbelanjaan_2023", "Perbelanjaan / Input 2023 (RM)", "n"], ["va_2023", "Nilai Ditambah (VA) 2023 (RM)", "n"],
     ["pendapatan_2026", "Pendapatan / Output 2026 (RM)", "n"], ["perbelanjaan_2026", "Perbelanjaan / Input 2026 (RM)", "n"], ["va_2026", "Nilai Ditambah (VA) 2026 (RM)", "n"],
+    ["gaji_2015", "Gaji / Upah 2015 (RM)", "n"], ["gaji_2023", "Gaji / Upah 2023 (RM)", "n"], ["gaji_2026", "Gaji / Upah 2026 (RM)", "n"],
+    ["pekerja_2015", "Bilangan Pekerja 2015", "n"], ["pekerja_2023", "Bilangan Pekerja 2023", "n"], ["pekerja_2026", "Bilangan Pekerja 2026", "n"],
+    ["harta_tetap_2015", "Harta Tetap 2015 (RM)", "n"], ["harta_tetap_2023", "Harta Tetap 2023 (RM)", "n"], ["harta_tetap_2026", "Harta Tetap 2026 (RM)", "n"],
     ["catatan_negeri", "Catatan Negeri", "t"],
     ["ditambah_oleh", "Ditambah oleh", "t"],
     ["dikemaskini_oleh", "Dikemaskini oleh", "t"],
@@ -150,6 +153,9 @@
       if (/^va|nilaiditambah|valueadded/.test(n) || n.includes("nilaiditambah")) return "va_" + y;
       if (/^(pendapatan|output|jumlahoutput|hasil|jumlahpendapatan)/.test(n)) return "pendapatan_" + y;
       if (/^(perbelanjaan|input|jumlahinput|jumlahperbelanjaan|kos)/.test(n)) return "perbelanjaan_" + y;
+      if (/^(gaji|upah)/.test(n)) return "gaji_" + y;
+      if (/^(bilanganpekerja|pekerja|jumlahpekerja)/.test(n)) return "pekerja_" + y;
+      if (/^(harta|hartatetap|jumlahharta)/.test(n)) return "harta_tetap_" + y;
     }
     if (n.startsWith("kodindustrimsic2008")) return n.slice(19).startsWith("3") ? "msic_3" : "msic_5";
     if (n.startsWith("kodindustrimsic")) return /3(digit)?$/.test(n) ? "msic_3" : "msic_5";
@@ -217,7 +223,7 @@
     rekod: [], muatNaik: null, pentadbir: false, sesi: null,
     tapis: {},             // dim -> Set(nilai)
     hal: "ringkasan",
-    dimensi: null, peratus: true, sasaran: 0, ambang: 50, ukuranSerak: "pendapatan",
+    dimensi: null, peratus: true, sasaran: 0, ambang: 50, tigaLaras: {}, ukuranSerak: "pendapatan",
     petaAras: "lokasi", petaUkuran: "selesai", ukurPrestasi: "tahap",
     cari: "", halaman: 0, susunK: null, susunArah: 1,
     carta: {},
@@ -460,6 +466,7 @@
       else cartaKuadran(R);
     }
     else if (S.hal === "io") paparIo(R);
+    else if (S.hal === "tiga") paparTiga(R);
     else if (S.hal === "nilai") { paparKewangan(R); cartaSerak(R); paparSemakan(R); }
     else if (S.hal === "rekod") paparRekod(R);
     requestAnimationFrame(() => Object.values(S.carta).forEach((c) => {
@@ -1204,6 +1211,137 @@
     const kepala = ["No. Siri", "Nama"].concat(TAHUN_IO.flatMap((y) => [`Output ${y}`, `Input ${y}`, `IO ${y}`, `VA ${y}`]));
     unduh("input-output-" + new Date().toISOString().slice(0, 10) + ".csv", [kepala].concat(ioSemasa.map((o) =>
       [o.r.no_siri, o.r.nama].concat(TAHUN_IO.flatMap((y) => { const v = o.v[y] || {}; return [v.out ?? "", v.inp ?? "", v.io == null ? "" : v.io.toFixed(4), v.va ?? ""]; })))));
+  }
+
+  // ---------- Perbandingan 3 tahun (2015 · 2023 · 2026) ----------
+  const TAHUN3 = ["2015", "2023", "2026"];
+  const VAR3 = [["pendapatan", "Pendapatan", true], ["perbelanjaan", "Perbelanjaan", true], ["gaji", "Gaji / upah", true], ["pekerja", "Bilangan pekerja", false], ["harta_tetap", "Harta tetap", true]];
+  const WARNA_TAHUN = { "2015": "--s0", "2023": "--s1", "2026": "--s3" };
+  let tigaCache = null;
+  // Lajur tahun jika ada; jika tiada, guna Survei Sebelum (2023) / Survei Semasa (2026) sebagai andaian
+  function lajurTiga(k, y) {
+    if (adaLajur(`${k}_${y}`)) return `${k}_${y}`;
+    const alt = y === "2023" ? "sebelum" : y === "2026" ? "semasa" : null;
+    if (alt && adaLajur(`${k}_${alt}`)) return `${k}_${alt}`;
+    return null;
+  }
+  const nombor = (v) => (v == null || v === "" || !isFinite(+v) ? null : +v);
+  function dataTiga(R) {
+    const out = {};
+    for (const [k, label, rm] of VAR3) {
+      const col = Object.fromEntries(TAHUN3.map((y) => [y, lajurTiga(k, y)]));
+      const andaian = Object.fromEntries(TAHUN3.map((y) => [y, col[y] && !col[y].startsWith(`${k}_${y}`) ? (y === "2023" ? "Survei Sebelum" : "Survei Semasa") : null]));
+      const t = {}, n = {};
+      for (const y of TAHUN3) {
+        t[y] = null; n[y] = 0;
+        if (!col[y]) continue;
+        let s = 0;
+        for (const r of R) { const v = nombor(r[col[y]]); if (v != null) { s += v; n[y]++; } }
+        t[y] = n[y] ? s : null;
+      }
+      // Perubahan dikira pada rekod yang ada nilai bagi kedua-dua tahun (perbandingan adil)
+      const pasang = (y1, y2) => {
+        if (!col[y1] || !col[y2]) return null;
+        let a = 0, b = 0, c = 0;
+        for (const r of R) {
+          const x = nombor(r[col[y1]]), z = nombor(r[col[y2]]);
+          if (x != null && z != null) { a += x; b += z; c++; }
+        }
+        return c && a ? { pct: b / a - 1, n: c } : null;
+      };
+      out[k] = { label, rm, col, andaian, t, n, d1523: pasang("2015", "2023"), d2326: pasang("2023", "2026"), d1526: pasang("2015", "2026") };
+    }
+    return out;
+  }
+  const fmTiga = (v, rm) => (v == null || !isFinite(v) ? "–" : rm ? ringkas(v, true) : fmtN.format(Math.round(v)));
+  const dpTiga = (a, b) => (a == null || b == null || !b ? "–" : `${a >= b ? "▲" : "▼"} ${fmtP(Math.abs(a / b - 1))}`);
+  const chipTiga = (lab, d) => `<span class="chip ${d ? (d.pct >= 0 ? "chip-naik" : "chip-turun") : ""}">${lab} ${d ? (d.pct >= 0 ? "▲" : "▼") + " " + fmtP(Math.abs(d.pct)) : "–"}</span>`;
+  const pctTiga = (d) => (d == null ? "–" : `<span class="${d.pct >= 0 ? "naik" : "turun"}">${d.pct >= 0 ? "▲ " : "▼ "}${fmtP(Math.abs(d.pct))}</span>`);
+
+  function paparTiga(R) {
+    const D = (tigaCache = dataTiga(R));
+    const ada = VAR3.filter(([k]) => TAHUN3.some((y) => D[k].t[y] != null));
+    const sumber = TAHUN3.map((y) => {
+      const kurang = VAR3.filter(([k]) => D[k].t[y] == null).map(([, l]) => l);
+      const guna = VAR3.filter(([k]) => D[k].andaian[y]).map(([, l]) => l);
+      return `<b>${y}</b>${kurang.length ? " tiada: " + kurang.join(", ") : " lengkap"}${guna.length ? " · andaian " + VAR3.filter(([k]) => D[k].andaian[y]).map(([k]) => D[k].andaian[y]).filter((v, i, a) => a.indexOf(v) === i).join("/") : ""}`;
+    }).join(" · ");
+    $("tigaNota").innerHTML = ada.length ? sumber + ". Perubahan (%) dikira pada rekod yang ada nilai bagi kedua-dua tahun." : "Tiada data 2015, 2023 atau 2026 dalam tapisan ini. Sertakan lajur seperti <i>Gaji 2015</i>, <i>Pekerja 2023</i>, <i>Harta Tetap 2026</i>.";
+
+    // Jadual ringkasan
+    $("tTiga").innerHTML = `<thead><tr><th>Pemboleh ubah</th><th class="num">2015</th><th class="num">2023</th><th class="num">2026</th>` +
+      `<th class="num">2015 → 2023</th><th class="num">2023 → 2026</th><th class="num">2015 → 2026</th><th class="num">Rekod padan</th></tr></thead><tbody>` +
+      ada.map(([k, label, rm]) => {
+        const d = D[k];
+        return `<tr><td><b>${label}</b></td>${TAHUN3.map((y) => `<td class="num">${fmTiga(d.t[y], rm)}</td>`).join("")}` +
+          `<td class="num">${pctTiga(d.d1523)}</td><td class="num">${pctTiga(d.d2326)}</td><td class="num">${pctTiga(d.d1526)}</td>` +
+          `<td class="num">${d.d1526 ? fmtN.format(d.d1526.n) : "–"}</td></tr>`;
+      }).join("") + `</tbody>`;
+
+    // Kad per pemboleh ubah
+    $("tigaKad").innerHTML = ada.map(([k, label, rm]) => {
+      const d = D[k];
+      const vals = TAHUN3.map((y) => d.t[y]).filter((v) => v != null);
+      const mx = Math.max(1, ...vals);
+      return `<div class="tiga-kad"><div class="tiga-tajuk">${label}</div><div class="tiga-bars">` +
+        TAHUN3.map((y) => {
+          const v = d.t[y];
+          const h = v == null ? 4 : Math.max(6, Math.round((v / mx) * 110));
+          return `<div class="tiga-bar"><span class="tiga-nilai">${v == null ? "–" : rm ? ringkas(v, false) : fmtN.format(Math.round(v))}</span>` +
+            `<i style="height:${h}px;background:${v == null ? "var(--grid)" : css(WARNA_TAHUN[y])}"></i><b>${y}</b></div>`;
+        }).join("") +
+        `</div><div class="tiga-chips">${chipTiga("15→23", d.d1523)}${chipTiga("23→26", d.d2326)}</div></div>`;
+    }).join("") || '<p class="nota">Tiada data.</p>';
+
+    // Carta indeks (2015 = 100)
+    const ch = carta("cIndeks");
+    const siri = ada.filter(([k]) => D[k].t["2015"] != null).map(([k, label]) => {
+      const b = D[k].t["2015"];
+      return { name: label, type: "line", smooth: 0.25, symbol: "circle", symbolSize: 9, connectNulls: true,
+        lineStyle: { width: 2.8 }, data: TAHUN3.map((y) => (D[k].t[y] == null ? null : +((D[k].t[y] / b) * 100).toFixed(1))),
+        label: { show: true, position: "top", fontSize: 11.5, fontWeight: 700, color: css("--ink"), formatter: (p) => (p.dataIndex === TAHUN3.length - 1 && p.value != null ? p.value : "") } };
+    });
+    if (!siri.length) kosongkanCarta(ch, "Perlu data 2015 untuk indeks");
+    else ch.setOption({
+      ...asasTema(),
+      color: ["--s1", "--s3", "--s7", "--s4", "--s5"].map(css),
+      legend: { bottom: 0, itemWidth: 10, itemHeight: 10, textStyle: { color: css("--ink-2"), fontSize: 11.5 } },
+      grid: { left: 8, right: 20, top: 24, bottom: 40, containLabel: true },
+      tooltip: { ...tooltipAsas(), trigger: "axis", formatter: (ps) => `<b>${ps[0].axisValue}</b><br>` + ps.map((p) => `${tanda(p.color)}${esc(p.seriesName)}: <b>${p.value == null ? "–" : p.value}</b>`).join("<br>") },
+      xAxis: { type: "category", data: TAHUN3, boundaryGap: false, ...paksi(), splitLine: { show: false } },
+      yAxis: { type: "value", scale: true, ...paksi() },
+      series: siri,
+    }, true);
+    paparKawal();
+  }
+
+  // Kawal anggaran: laras 2026 (−30% hingga +30%), kesan dikira serta-merta
+  function paparKawal() {
+    const D = tigaCache || {};
+    const rows = VAR3.filter(([k]) => D[k]).map(([k, label, rm]) => {
+      const d = D[k];
+      const b26 = d.t["2026"], L = S.tigaLaras[k] || 0;
+      const dil = b26 == null ? null : b26 * (1 + L / 100);
+      return `<div class="laras-baris" data-k="${k}">` +
+        `<div class="laras-atas"><b>${label}</b><span class="laras-pct">${L >= 0 ? "+" : ""}${L}%</span></div>` +
+        `<input type="range" min="-30" max="30" step="1" value="${L}" data-k="${k}"${b26 == null ? " disabled" : ""} aria-label="Laras ${esc(label)} 2026">` +
+        `<div class="laras-info"><span>2026 asal <b>${fmTiga(b26, rm)}</b></span><span>Dilaras <b data-out="dil">${fmTiga(dil, rm)}</b></span></div>` +
+        `<div class="laras-info"><span>vs 2023 <b data-out="d23">${dpTiga(dil, d.t["2023"])}</b></span><span>vs 2015 <b data-out="d15">${dpTiga(dil, d.t["2015"])}</b></span></div>` +
+        `</div>`;
+    });
+    $("tigaKawal").innerHTML = rows.join("") || '<p class="nota">Tiada data 2026 untuk dilaraskan.</p>';
+  }
+  function kemaskiniKawal(k) {
+    const d = tigaCache && tigaCache[k];
+    const row = document.querySelector(`.laras-baris[data-k="${k}"]`);
+    if (!d || !row) return;
+    const L = S.tigaLaras[k] || 0;
+    const b26 = d.t["2026"];
+    const dil = b26 == null ? null : b26 * (1 + L / 100);
+    row.querySelector(".laras-pct").textContent = `${L >= 0 ? "+" : ""}${L}%`;
+    row.querySelector('[data-out="dil"]').textContent = fmTiga(dil, d.rm);
+    row.querySelector('[data-out="d23"]').textContent = dpTiga(dil, d.t["2023"]);
+    row.querySelector('[data-out="d15"]').textContent = dpTiga(dil, d.t["2015"]);
   }
 
   // ---------- Prestasi ----------
@@ -2063,6 +2201,13 @@
     });
     $("pilihDimIo").innerHTML = DIMENSI_IO.map(([k, l]) => `<option value="${k}">${esc(l)}</option>`).join("");
     $("pilihDimIo").addEventListener("change", (e) => { e.target.dataset.dipilih = "1"; papar(); });
+    $("tigaKawal").addEventListener("input", (e) => {
+      const k = e.target.dataset.k;
+      if (!k) return;
+      S.tigaLaras[k] = +e.target.value;
+      kemaskiniKawal(k);
+    });
+    $("btnResetLaras").addEventListener("click", () => { S.tigaLaras = {}; paparKawal(); });
     $("ioBawah1").addEventListener("change", () => { ioHal = 0; paparSenaraiIo(ditapis()); });
     let tundaIo;
     $("ioCari").addEventListener("input", () => { clearTimeout(tundaIo); tundaIo = setTimeout(() => { ioHal = 0; paparSenaraiIo(ditapis()); }, 200); });

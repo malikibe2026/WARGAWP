@@ -44,6 +44,7 @@
     <button role="tab" data-hal="peta">Peta Daerah</button>
     <button role="tab" data-hal="prestasi">Prestasi Pegawai</button>
     <button role="tab" data-hal="io">Input-Output & VA</button>
+    <button role="tab" data-hal="tiga">Perbandingan 3 Tahun</button>
     <button role="tab" data-hal="nilai">Analisis Nilai</button>
     <button role="tab" data-hal="rekod">Senarai Rekod</button>
   </nav>
@@ -217,6 +218,30 @@
             <span id="ioHal"></span>
             <button id="ioSelepas" class="btn btn-garis" aria-label="Selepas">›</button>
           </div>
+        </article>
+      </section>
+    </div>
+
+    <!-- PERBANDINGAN 3 TAHUN -->
+    <div class="halaman" data-hal="tiga" hidden>
+      <p id="tigaNota" class="nota io-nota"></p>
+      <section class="grid g-12">
+        <article class="kad s-12">
+          <header class="kad-kepala"><div><h2>Ringkasan 2015 · 2023 · 2026</h2><p class="kad-sub">Jumlah ikut tahun dan peratus perubahan</p></div></header>
+          <div class="jadual-bungkus"><table id="tTiga" class="jadual"></table></div>
+        </article>
+        <article class="kad s-12">
+          <header class="kad-kepala"><div><h2>Perbandingan setiap pemboleh ubah</h2><p class="kad-sub">Bar mengikut skala sebenar · chip = peratus perubahan</p></div></header>
+          <div id="tigaKad" class="tiga-grid"></div>
+        </article>
+        <article class="kad s-7">
+          <header class="kad-kepala"><div><h2>Indeks pertumbuhan</h2><p class="kad-sub">2015 = 100</p></div></header>
+          <div id="cIndeks" class="carta carta-tinggi"></div>
+        </article>
+        <article class="kad s-5">
+          <header class="kad-kepala"><div><h2>Kawal anggaran 2026</h2><p class="kad-sub">Laraskan 2026 untuk lihat kesannya terhadap perubahan. Nilai 2015 &amp; 2023 tidak berubah.</p></div>
+            <button id="btnResetLaras" class="btn btn-garis">Set semula</button></header>
+          <div id="tigaKawal" class="laras-senarai"></div>
         </article>
       </section>
     </div>
