@@ -680,3 +680,29 @@ td.io-merah { background: rgba(201, 54, 54, .08); }
 @media (max-width: 420px) { .sektor-rings .sektor-ring, .sektor-rings .sektor-ring svg, .sektor-rings .sektor-ring b { width: 58px; height: 58px; } }
 .sektor-atas { margin-bottom: 4px; }
 .sektor-atas + .sektor-nama { margin-top: 18px; }
+
+/* Kad sektor: lebih kecil, 4 sebaris pada desktop */
+.sektor-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.sektor-kad { min-height: 0; padding: 12px; border-radius: 14px; }
+.sektor-atas { margin-bottom: 0; }
+.sektor-ikon { width: 30px; height: 30px; border-radius: 9px; }
+.sektor-ikon svg { width: 16px; height: 16px; }
+.sektor-atas + .sektor-nama { margin-top: 10px; font-size: 13.5px; }
+.sektor-kp { font-size: 10.5px; }
+.sektor-nilai { font-size: 22px; margin-top: 4px; }
+.sektor-sub { font-size: 10.5px; line-height: 1.35; }
+.sektor-statistik { gap: 4px; margin-top: 8px; }
+.sektor-stat { padding: 5px 6px; border-radius: 8px; }
+.sektor-stat span { font-size: 9.5px; }
+.sektor-stat b { font-size: 12.5px; }
+.sektor-stat small { font-size: 9.5px; }
+.sektor-bar { margin-top: 8px; height: 4px; }
+.sektor-proses { margin-top: 8px; padding: 5px 8px; font-size: 10.5px; }
+.sektor-rings { gap: 4px; }
+.sektor-rings .sektor-ring, .sektor-rings .sektor-ring svg, .sektor-rings .sektor-ring b { width: 44px; height: 44px; }
+.sektor-rings .sektor-ring b { font-size: 10px; }
+.sektor-rings .sektor-ring small { font-size: 7.5px; margin-top: 2px; }
+@media (max-width: 1100px) { .sektor-rings .sektor-ring, .sektor-rings .sektor-ring svg, .sektor-rings .sektor-ring b { width: 40px; height: 40px; } .sektor-rings .sektor-ring small { display: none; } }
+@media (max-width: 720px) { .sektor-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .sektor-rings .sektor-ring small { display: block; } .sektor-rings .sektor-ring, .sektor-rings .sektor-ring svg, .sektor-rings .sektor-ring b { width: 46px; height: 46px; } }
+@media (max-width: 420px) { .sektor-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; } .sektor-kad { padding: 10px; } .sektor-nilai { font-size: 19px; } }
+.sektor-atas + .sektor-nama { margin-top: 16px; }

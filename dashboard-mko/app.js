@@ -223,8 +223,9 @@
     { k: "Pertanian", kod: ["101", "103", "104", "105"], c1: "#22c55e", c2: "#14b8a6", ikon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20C4 10 10 4 20 4c0 10-6 16-16 16zM4 20l9-9"/></svg>' },
     { k: "Perlombongan & Pengkuarian", kod: ["200", "207"], c1: "#8b5cf6", c2: "#ec4899", ikon: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M2 20L9 7l4 6 2-3 7 10z"/></svg>' },
   ];
+  // Ambil kod 3 digit di depan sahaja (cth. "205 - Pembuatan" atau "KP 205")
   function sektorUtama(v) {
-    const m = String(v == null ? "" : v).match(/\d{3}/);
+    const m = String(v == null ? "" : v).match(/^\s*(?:KP\s*)?(\d{3})(?!\d)/i);
     if (!m) return KOSONG;
     const s = SEKTOR_UTAMA.find((x) => x.kod.includes(m[0]));
     return s ? s.k : "Sektor lain";
@@ -235,7 +236,7 @@
     r._tahap = tahap(r.status_rekod);
     r._dl = r.daerah_lokasi_semasa || r.daerah_lokasi_label || null;
     r._dp = r.daerah_pos_semasa || r.daerah_pos_label || null;
-    r._sektor4 = sektorUtama(r.kod_kp);
+    r._sektor4 = sektorUtama(r.kod_kp || r.kod_survei);
     return r;
   }
   const ADA_TAHAP = () => S.rekod.some((r) => r._tahap !== "Tiada");
