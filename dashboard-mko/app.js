@@ -584,18 +584,23 @@
     const ada = R.some((r) => r._sektor4 && r._sektor4 !== KOSONG);
     $("sektorNota").textContent = ada ? "Klik kad untuk tapis. Pertubuhan tanpa kod KP yang dikenali tidak dikira dalam kad ini." :
       "Lajur Kod KP belum ada dalam data. Muat naik fail yang mengandungi kod KP (cth. KP 205) untuk melihat sektor.";
-    $("sektorKad").innerHTML = SEKTOR_UTAMA.map((s, i) => {
+    const jumlahTapisan = R.length || 1;
+    // Bulatan peratus: nilai (0–1) dan label; dipaparkan dalam kad sektor
+    const cincin = (lab, v, tajuk) => `<span class="sektor-ring" title="${esc(tajuk)}: ${fmtP(v)}"><svg viewBox="0 0 36 36" aria-hidden="true"><circle class="rt" cx="18" cy="18" r="15.5"/>` +
+      `<circle class="rv" cx="18" cy="18" r="15.5" pathLength="100" stroke-dasharray="${(v * 100).toFixed(1)} 100"/></svg>` +
+      `<b>${Math.round(v * 100)}%</b><small>${lab}</small></span>`;
+    $("sektorKad").innerHTML = SEKTOR_UTAMA.map((s) => {
       const rs = R.filter((r) => r._sektor4 === s.k);
       const c = kiraKat(rs), m = c._n || 0;
       const cap = m ? capai(c) / m : 0;
       const pSek = R.length ? m / R.length : 0;
       const aktif = S.tapis._sektor4 && S.tapis._sektor4.has(s.k);
+      const bil = (k) => (c.T[k] || 0);
+      const negeri = m ? bil("Negeri") / m : 0, smd = m ? bil("SMD") / m : 0;
+      const proses = bil("Proses") / jumlahTapisan;
       return `<button type="button" class="sektor-kad${aktif ? " aktif" : ""}" data-sektor="${esc(s.k)}" aria-pressed="${!!aktif}" style="--c1:${s.c1};--c2:${s.c2}">` +
         `<div class="sektor-atas"><span class="sektor-ikon">${s.ikon}</span>` +
-        `<div class="sektor-rings">${[["Negeri", (c.T.Negeri || 0) / (m || 1)], ["SMD", (c.T.SMD || 0) / (m || 1)]].map(([lab, v]) =>
-          `<span class="sektor-ring" title="Semakan ${lab}: ${fmtP(v)}"><svg viewBox="0 0 36 36" aria-hidden="true"><circle class="rt" cx="18" cy="18" r="15.5"/>` +
-          `<circle class="rv" cx="18" cy="18" r="15.5" pathLength="100" stroke-dasharray="${(v * 100).toFixed(1)} 100"/></svg>` +
-          `<b>${m ? Math.round(v * 100) : 0}%</b><small>${lab}</small></span>`).join("")}</div></div>` +
+        `<div class="sektor-rings">${cincin("Negeri", negeri, "Semakan DOSM Negeri")}${cincin("SMD", smd, "Semakan SMD")}</div></div>` +
         `<div class="sektor-nama">${esc(s.k)}</div><div class="sektor-kp">KP ${s.kod.join(", ")}</div>` +
         `<div class="sektor-nilai">${fmtN.format(m)}</div>` +
         `<div class="sektor-sub">${fmtP(pSek)} daripada tapisan · ${fmtP(cap)} ${ukurUtama() === "selesai" ? "selesai" : "ada respon"}</div>` +
@@ -603,6 +608,8 @@
         [["Kod 11", c.A1], ["LK", c.LK], ["Kod B", c.KodB], ["Pinda", c.T.Pinda]].map(([lab, v]) =>
           `<div class="sektor-stat"><span>${lab}</span><b>${fmtN.format(v || 0)}</b><small>${m ? fmtP((v || 0) / m) : "–"}</small></div>`).join("") +
         `</div>` +
+        `<div class="sektor-proses">${cincin("Proses", proses, "Dalam Proses daripada keseluruhan tapisan")}` +
+        `<div><b>Dalam Proses</b><span>${fmtN.format(bil("Proses"))} daripada ${fmtN.format(jumlahTapisan)} rekod tapisan</span></div></div>` +
         `<div class="sektor-bar" aria-hidden="true"><i style="--w:${(cap * 100).toFixed(1)}%"></i></div></button>`;
     }).join("");
   }
