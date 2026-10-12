@@ -33,7 +33,7 @@ Jika fail tiada Status Rekod, dashboard kembali menggunakan kadar respons (ada k
 Penapis utama: **Sektor, Subsektor, Pegawai Kerja Luar** (pilihan berbilang). Penapis lain dalam butang *Penapis lain*.
 Klik pada mana-mana carta/peta untuk tapis silang. Tema terang/gelap. Sasaran % dan ambang disimpan dalam pelayar.
 
-Kategori kod respon: **Kod 11 + 14** · **LK (Lain-lain Keputusan)** = 12–60 kecuali 14 · **Kod B** = 71–77 · lain-lain · belum.
+Kategori kod respon: **Kod A = 11 + LK** · **Kod 11** · **Kod 14** (dikira dalam LK, dipaparkan berasingan) · **LK (Lain-lain Keputusan)** = 12–60 · **Kod B** = 71–77 · lain-lain · belum.
 
 ## Gabung beberapa fail (kunci: No. Siri)
 - Header yang diterima untuk No. Siri: `No. Siri`, `No Siri`, `Nombor Siri`, `ID Establishment`, `No ID Establishment`.

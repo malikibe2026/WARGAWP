@@ -170,19 +170,23 @@
 
   // ---------- Kategori status respon (kod MKO) ----------
   const KATEGORI = [
-    { k: "A1", label: "Kod 11 + 14", pendek: "11+14", warna: "--s1" },
+    { k: "A1", label: "Kod 11 · Lengkap", pendek: "11", warna: "--s1" },
     { k: "LK", label: "LK · Lain-lain Keputusan (12–60)", pendek: "LK", warna: "--s3" },
     { k: "KodB", label: "Kod B (71–77)", pendek: "Kod B", warna: "--s4" },
     { k: "Lain", label: "Kod lain", pendek: "Lain", warna: "--s5" },
     { k: "Belum", label: "Belum ada respon", pendek: "Belum", warna: "--s0" },
   ];
   const KAT_LABEL = Object.fromEntries(KATEGORI.map((c) => [c.k, c.label]));
-  // Definisi pengguna: 11 + 14 = lengkap/diliputi; LK = 12–60 (kecuali 14); Kod B = 71–77
+  // Kod A = Kod 11 + LK (12–60). Kod 14 dikira dalam LK dan dipaparkan berasingan. Kod B = 71–77
+  function kodNombor(status) {
+    const m = String(status == null ? "" : status).trim().match(/^(\d{1,3})/);
+    return m ? +m[1] : null;
+  }
   function kategori(status) {
     const m = String(status == null ? "" : status).trim().match(/^(\d{1,3})/);
     if (!m) return String(status == null ? "" : status).trim() ? "Lain" : "Belum";
     const k = +m[1];
-    if (k === 11 || k === 14) return "A1";
+    if (k === 11) return "A1";
     if (k >= 12 && k <= 60) return "LK";
     if (k >= 71 && k <= 77) return "KodB";
     return "Lain";
@@ -324,7 +328,9 @@
     const o = { _n: R.length, T: {} };
     for (const c of KATEGORI) o[c.k] = 0;
     for (const t of TAHAP) o.T[t.k] = 0;
-    for (const r of R) { o[r._kat]++; o.T[r._tahap]++; }
+    o.K14 = 0;
+    for (const r of R) { o[r._kat]++; o.T[r._tahap]++; if (kodNombor(r.status_respon_semasa) === 14) o.K14++; }
+    o.KodA = o.A1 + o.LK;
     o.siap = o._n - o.Belum;
     o.selesai = o.T.Selesai;
     return o;
@@ -575,7 +581,7 @@
       ["Dalam Proses", fmtN.format(T.Proses), fmtP(T.Proses / n) + " · di peringkat FE", T.Proses / n, "--s4"],
     ] : [
       ["Jumlah pertubuhan", fmtN.format(k._n), "dalam tapisan semasa", null, "--ink-2"],
-      ["Kod 11 + 14", fmtN.format(k.A1), fmtP(k.A1 / n), k.A1 / n, "--s1"],
+      ["Kod A (11 + LK)", fmtN.format(k.KodA), fmtP(k.KodA / n), k.KodA / n, "--s1"],
       ["LK · Lain-lain Keputusan", fmtN.format(k.LK), fmtP(k.LK / n), k.LK / n, "--s3"],
       ["Kod B · Dalam proses", fmtN.format(k.KodB), fmtP(k.KodB / n), k.KodB / n, "--s4"],
       ["Belum ada respon", fmtN.format(k.Belum), fmtP(k.Belum / n), k.Belum / n, "--s0"],
@@ -818,7 +824,7 @@
     for (const r of R) m[r._kat][r._tahap]++;
     const bAda = baris.filter((a) => lajur.some((b) => m[a][b])), lAda = lajur.filter((b) => baris.some((a) => m[a][b]));
     const maks = Math.max(1, ...bAda.flatMap((a) => lAda.map((b) => m[a][b])));
-    const pendekK = { A1: "11+14", LK: "LK", KodB: "Kod B", Lain: "Lain", Belum: "Belum" };
+    const pendekK = { A1: "11", LK: "LK", KodB: "Kod B", Lain: "Lain", Belum: "Belum" };
     const pendekT = { Selesai: "Selesai", SMD: "SMD", Negeri: "Negeri", Pinda: "Pinda", Proses: "Proses", Tiada: "Tiada" };
     const biru = css("--s1");
     let h = `<table class="matriks"><thead><tr><th class="baris">Respon ↓</th>${lAda.map((b) => `<th>${pendekT[b]}</th>`).join("")}</tr></thead><tbody>`;
@@ -949,9 +955,9 @@
   const kodKL = () => (GEO.n.features.find((f) => normNama(f.properties.state) === "kualalumpur") || { properties: {} }).properties.code_state;
   function nilaiUkuran(c) {
     const n = c._n || 1;
-    return { selesai: (c.selesai / n) * 100, kadar: (c.siap / n) * 100, jumlah: c._n, belumSelesai: c._n - c.selesai, a1: (c.A1 / n) * 100 }[S.petaUkuran];
+    return { selesai: (c.selesai / n) * 100, kadar: (c.siap / n) * 100, jumlah: c._n, belumSelesai: c._n - c.selesai, kodA: (c.KodA / n) * 100 }[S.petaUkuran];
   }
-  const UKURAN_PETA = { selesai: ["% Selesai", true], kadar: ["Kadar respons", true], jumlah: ["Jumlah pertubuhan", false], belumSelesai: ["Belum selesai", false], a1: ["Kod 11+14", true] };
+  const UKURAN_PETA = { selesai: ["% Selesai", true], kadar: ["Kadar respons", true], jumlah: ["Jumlah pertubuhan", false], belumSelesai: ["Belum selesai", false], kodA: ["Kod A (11 + LK)", true] };
 
   async function paparPeta(R) {
     const ch = carta("cPeta");
@@ -1460,8 +1466,8 @@
     const kpi = [
       ["Jumlah agihan", fmtN.format(n), "pertubuhan dalam tapisan", "--ink-2", null],
       [nm, fmtN.format(siap), fmtP(pSiap) + " daripada agihan", "--s3", pSiap],
-      ["Kod 11 + 14", fmtN.format(T.A1), fmtP(T.A1 / n) + " daripada agihan", "--s1", T.A1 / n],
-      ["LK (12–60)", fmtN.format(T.LK), fmtP(T.LK / n) + " daripada agihan", "--s7", T.LK / n],
+      ["Kod A (11 + LK)", fmtN.format(T.KodA), fmtP(T.KodA / n) + " daripada agihan", "--s1", T.KodA / n],
+      ["LK (12–60)", fmtN.format(T.LK), fmtP(T.LK / n) + " daripada agihan · termasuk 14: " + fmtN.format(T.K14), "--s7", T.LK / n],
       ["Kod B (71–77)", fmtN.format(T.KodB), fmtP(T.KodB / n) + " daripada agihan", "--s4", T.KodB / n],
       ["Baki belum " + nm.toLowerCase(), fmtN.format(baki), "agihan − " + nm.toLowerCase(), "--bad", baki / n],
     ];
@@ -1478,7 +1484,7 @@
         `<div class="ffe-no${i === 0 ? " ffe-juara" : ""}">${i + 1}</div>` +
         `<div class="ffe-nm" title="${esc(f.nama)}">${esc(f.nama)}</div>` +
         `<div class="ffe-num" data-count="${f.n}">0</div>` +
-        `<div class="ffe-mini"><span>11+14 <b>${fmtN.format(c.A1)}</b></span><span>LK <b>${fmtN.format(c.LK)}</b></span><span>B <b>${fmtN.format(c.KodB)}</b></span></div>` +
+        `<div class="ffe-mini"><span>11 <b>${fmtN.format(c.A1)}</b></span><span>14 <b>${fmtN.format(c.K14)}</b></span><span>LK <b>${fmtN.format(c.LK)}</b></span><span>Kod A <b>${fmtP(c.KodA / (c._n || 1))}</b></span><span>B <b>${fmtN.format(c.KodB)}</b></span></div>` +
         `<div class="ffe-bar"><div class="ffe-track"><i style="--w:${pct.toFixed(2)}%;--d:${360 + i * 60}ms"></i></div><b class="ffe-pct" data-count="${pct.toFixed(1)}" data-suffix="%">0%</b></div>` +
         `<div class="ffe-baki">${fmtN.format(c._n - capai(c))}</div></div>`;
     }).join("");
@@ -1573,17 +1579,17 @@
     const T = kiraKat(R);
     const tahapMod = ukurUtama() === "selesai";
     const nm = tahapMod ? "Selesai" : "Siap";
-    skorSemasa = [[label, "Jumlah", nm, "% " + nm, "Semakan SMD", "Semakan Negeri", "Pinda Semula", "Dalam Proses", "Kod 11+14", "LK (12-60)", "Kod B (71-77)"]]
-      .concat(g.map(([v, c]) => [v, c._n, capai(c), (capai(c) / c._n * 100).toFixed(1), c.T.SMD, c.T.Negeri, c.T.Pinda, c.T.Proses, c.A1, c.LK, c.KodB]));
+    skorSemasa = [[label, "Jumlah", nm, "% " + nm, "Semakan SMD", "Semakan Negeri", "Pinda Semula", "Dalam Proses", "Kod 11", "Kod 14", "LK (12-60)", "Kod A (11+LK)", "Kod B (71-77)"]]
+      .concat(g.map(([v, c]) => [v, c._n, capai(c), (capai(c) / c._n * 100).toFixed(1), c.T.SMD, c.T.Negeri, c.T.Pinda, c.T.Proses, c.A1, c.K14, c.LK, c.KodA, c.KodB]));
     const nCapai = g.filter(([, c]) => sas && capai(c) / c._n * 100 >= sas).length;
     $("skorSub").textContent = `${g.length} kumpulan · disusun ikut % ${nm.toLowerCase()}`;
     const sel = (c) => `<td class="num">${fmtN.format(c._n)}</td><td class="num">${fmtN.format(capai(c))}</td>` +
       `<td><span class="bar-mini"><i style="width:${Math.min(100, capai(c) / c._n * 100)}%"></i></span>${fmtP(capai(c) / c._n)}</td>` +
       (tahapMod ? `<td class="num">${fmtN.format(c.T.SMD)}</td><td class="num">${fmtN.format(c.T.Negeri)}</td><td class="num">${fmtN.format(c.T.Pinda)}</td><td class="num">${fmtN.format(c.T.Proses)}</td>` : "") +
-      `<td class="num">${fmtN.format(c.A1)}</td><td class="num">${fmtN.format(c.LK)}</td><td class="num">${fmtN.format(c.KodB)}</td>`;
+      `<td class="num">${fmtN.format(c.A1)}</td><td class="num">${fmtN.format(c.K14)}</td><td class="num">${fmtN.format(c.LK)}</td><td class="num">${fmtN.format(c.KodA)}</td><td class="num">${fmtN.format(c.KodB)}</td>`;
     $("tSkor").innerHTML = `<thead><tr><th>#</th><th>${esc(label)}</th><th class="num">Jumlah</th><th class="num">${nm}</th><th>% ${nm}</th>` +
       (tahapMod ? `<th class="num">SMD</th><th class="num">Negeri</th><th class="num">Pinda</th><th class="num">Proses</th>` : "") +
-      `<th class="num">11+14</th><th class="num">LK</th><th class="num">Kod B</th></tr></thead><tbody>` +
+      `<th class="num">11</th><th class="num">14</th><th class="num">LK</th><th class="num">Kod A</th><th class="num">Kod B</th></tr></thead><tbody>` +
       g.map(([v, c], i) => `<tr><td class="num">${i + 1}</td><td><b>${esc(v)}</b></td>${sel(c)}</tr>`).join("") +
       `<tr class="jumlah"><td></td><td>Jumlah</td>${sel(T)}</tr></tbody>`;
   }
