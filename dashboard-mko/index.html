@@ -141,6 +141,24 @@
       <section class="grid g-12">
         <article class="kad s-12">
           <header class="kad-kepala">
+            <div><h2>Paparan FE</h2><p class="kad-sub">Pilih cara melihat prestasi Pegawai Kerja Luar</p></div>
+            <div class="segmen" id="segPaparanFe" role="group" aria-label="Paparan">
+              <button data-v="kad" aria-pressed="true">Kad FE</button>
+              <button data-v="kuadran">Kuadran</button>
+              <button data-v="jadual">Jadual & bar</button>
+            </div>
+          </header>
+          <div id="kadFe" class="fe-grid"></div>
+          <div id="artFeLegenda" class="fe-legenda-kuadran" hidden>
+            <span><i class="kd-dot" style="background:var(--good)"></i>Bintang · banyak &amp; siap tinggi</span>
+            <span><i class="kd-dot" style="background:var(--s4)"></i>Perlu bantuan · banyak, siap rendah</span>
+            <span><i class="kd-dot" style="background:var(--s1)"></i>Cekap · kecil, siap tinggi</span>
+            <span><i class="kd-dot" style="background:var(--bad)"></i>Perlu susulan · kecil, siap rendah</span>
+          </div>
+          <div id="cKuadran" class="carta carta-kuadran" hidden></div>
+        </article>
+        <article id="artJadual" class="kad s-12" hidden>
+          <header class="kad-kepala">
             <div><h2>Pencapaian ikut <select id="pilihDimensi" class="pilih-tajuk" aria-label="Pecahan ikut"></select></h2>
               <p class="kad-sub">Bar disusun ikut % · klik bar untuk tapis</p></div>
             <div class="kawalan">
@@ -156,7 +174,7 @@
           </header>
           <div id="cDimensi" class="carta"></div>
         </article>
-        <article class="kad s-12">
+        <article id="artSkor" class="kad s-12" hidden>
           <header class="kad-kepala"><div><h2>Kad skor</h2><p class="kad-sub" id="skorSub"></p></div>
             <button id="btnEksportSkor" class="btn btn-garis">Eksport CSV</button></header>
           <div class="jadual-bungkus"><table id="tSkor" class="jadual"></table></div>

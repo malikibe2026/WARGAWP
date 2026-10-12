@@ -447,7 +447,18 @@
       paparMatriks(R); paparPenemuan(R);
       document.querySelectorAll("[data-perlu-tahap]").forEach((el) => (el.hidden = !ADA_TAHAP()));
     } else if (S.hal === "peta") paparPeta(R);
-    else if (S.hal === "prestasi") { cartaDimensi(R); paparSkor(R); }
+    else if (S.hal === "prestasi") {
+      const mod = S.paparFe || "kad";
+      const jadual = mod === "jadual";
+      $("artJadual").hidden = !jadual;
+      $("artSkor").hidden = !jadual;
+      $("kadFe").hidden = mod !== "kad";
+      $("cKuadran").hidden = mod !== "kuadran";
+      $("artFeLegenda").hidden = mod !== "kuadran";
+      if (jadual) { cartaDimensi(R); paparSkor(R); }
+      else if (mod === "kad") paparKadFe(R);
+      else cartaKuadran(R);
+    }
     else if (S.hal === "io") paparIo(R);
     else if (S.hal === "nilai") { paparKewangan(R); cartaSerak(R); paparSemakan(R); }
     else if (S.hal === "rekod") paparRekod(R);
@@ -1258,6 +1269,79 @@
     ch.off("click");
     ch.on("click", (p) => klikTapis(d, p.name));
   }
+  // ---------- Paparan FE: kad & kuadran ----------
+  const FE_KEY = "pegawai_kerja_luar";
+  function dataFe(R) {
+    const m = kumpulKat(R, (r) => (r[FE_KEY] == null || r[FE_KEY] === "" ? null : String(r[FE_KEY])));
+    return [...m.entries()].map(([nama, rs]) => {
+      const c = kiraKat(rs);
+      return { nama, c, n: c._n, p: capai(c) / (c._n || 1) };
+    }).sort((a, b) => b.p - a.p || b.n - a.n);
+  }
+  function paparKadFe(R) {
+    const el = $("kadFe");
+    const senarai = dataFe(R);
+    if (!senarai.length) { el.innerHTML = '<p class="nota">Tiada lajur Pegawai Kerja Luar dalam data.</p>'; return; }
+    const nm = ukurUtama() === "selesai" ? "Selesai" : "Siap";
+    el.innerHTML = senarai.map((f, i) => {
+      const c = f.c;
+      const bar = TAHAP.map((t) => (c.T[t.k] ? `<i style="flex:${c.T[t.k]};background:${css(t.warna)}" title="${esc(t.label)}: ${fmtN.format(c.T[t.k])}"></i>` : "")).join("");
+      const legenda = TAHAP.filter((t) => c.T[t.k]).map((t) => `<span><b>${fmtN.format(c.T[t.k])}</b> ${esc(t.pendek)}</span>`).join("");
+      return `<div class="fe-kad${i === 0 ? " fe-top" : ""}">` +
+        `<div class="fe-atas"><span class="fe-rank">#${i + 1}</span><div class="fe-nama" title="${esc(f.nama)}">${esc(f.nama)}</div></div>` +
+        `<div class="fe-tengah"><div class="fe-cincin">${cincin(f.p, nm)}</div>` +
+        `<div><div class="fe-pct">${fmtP(f.p)}</div><div class="nota">${fmtN.format(capai(c))} / ${fmtN.format(f.n)} ${nm.toLowerCase()}</div></div></div>` +
+        `<div class="fe-bar">${bar}</div><div class="fe-legenda">${legenda}</div></div>`;
+    }).join("");
+    el.onclick = (e) => {
+      const kad = e.target.closest(".fe-kad");
+      if (!kad) return;
+      const nama = kad.querySelector(".fe-nama").textContent;
+      klikTapis(FE_KEY, nama);
+    };
+  }
+  function cartaKuadran(R) {
+    const ch = carta("cKuadran");
+    const senarai = dataFe(R);
+    if (senarai.length < 2) return kosongkanCarta(ch, "Perlu sekurang-kurangnya 2 FE");
+    const medN = median(senarai.map((f) => f.n));
+    const medP = median(senarai.map((f) => f.p * 100));
+    const kuad = (f) => (f.n >= medN ? (f.p * 100 >= medP ? "Bintang" : "Perlu bantuan") : (f.p * 100 >= medP ? "Cekap · kecil" : "Perlu susulan"));
+    const warnaK = { "Bintang": "--good", "Perlu bantuan": "--s4", "Cekap · kecil": "--s1", "Perlu susulan": "--bad" };
+    const data = senarai.map((f) => ({ name: f.nama, value: [f.n, +(f.p * 100).toFixed(1)], k: kuad(f), itemStyle: { color: css(warnaK[kuad(f)]) } }));
+    const label = senarai.length <= 30;
+    // Julat paksi: pastikan titik tak tercantum walaupun nilai hampir sama
+    const julat = (nilai, pad, had) => {
+      let lo = Math.min(...nilai) - pad, hi = Math.max(...nilai) + pad;
+      if (hi - lo < 2 * pad) { const tengah = (hi + lo) / 2; lo = tengah - pad; hi = tengah + pad; }
+      return [Math.max(0, Math.floor(lo)), Math.min(had, Math.ceil(hi))];
+    };
+    const nMin = Math.min(...senarai.map((f) => f.n)), nMax = Math.max(...senarai.map((f) => f.n));
+    // Jika ada FE yang jauh lebih besar (cth. 18,000 vs 1,000), guna skala log supaya yang kecil tetap kelihatan
+    const logX = nMax / Math.max(1, nMin) > 15;
+    const [xMin, xMax] = logX ? [Math.max(1, Math.floor(nMin * 0.7)), Math.ceil(nMax * 1.3)] : julat(senarai.map((f) => f.n), Math.max(2, Math.round(nMax * 0.08)), Infinity);
+    const [yMin, yMax] = julat(senarai.map((f) => f.p * 100), 3, 100);
+    ch.setOption({
+      ...asasTema(),
+      grid: { left: 8, right: 24, top: 30, bottom: 44, containLabel: true },
+      tooltip: { ...tooltipAsas(), trigger: "item",
+        formatter: (p) => `<b>${esc(p.name)}</b><br>${fmtN.format(p.value[0])} pertubuhan · <b>${p.value[1].toFixed(1)}%</b> selesai<br>Kuadran: <b>${esc(p.data.k)}</b>` },
+      xAxis: { type: logX ? "log" : "value", name: "Jumlah pertubuhan" + (logX ? " (skala log)" : ""), nameLocation: "middle", nameGap: 26, nameTextStyle: { color: css("--muted"), fontSize: 11.5 }, ...paksi(), min: xMin, max: xMax },
+      yAxis: { type: "value", name: "% selesai", nameTextStyle: { color: css("--muted"), fontSize: 11.5 }, ...paksi(), min: yMin, max: yMax, axisLabel: { ...paksi().axisLabel, formatter: "{value}%" } },
+      series: [{
+        type: "scatter", symbolSize: (v) => 14 + Math.min(18, Math.sqrt(v[0]) * 1.4), data,
+        itemStyle: { opacity: 0.9, borderColor: css("--surface"), borderWidth: 2 },
+        emphasis: { focus: "self", scale: 1.15 },
+        labelLayout: { hideOverlap: true, moveOverlap: "shiftY" },
+        label: { show: label, position: "right", color: css("--ink"), fontSize: 11, fontWeight: 600, formatter: (p) => p.name },
+        markLine: { symbol: "none", silent: true, lineStyle: { color: css("--muted"), type: "dashed", width: 1.2 }, label: { show: false },
+          data: [{ xAxis: medN }, { yAxis: +medP.toFixed(1) }] },
+      }],
+    }, true);
+    ch.off("click");
+    ch.on("click", (p) => klikTapis(FE_KEY, p.name));
+  }
+
   let skorSemasa = [];
   function paparSkor(R) {
     const d = S.dimensi;
@@ -1968,6 +2052,7 @@
     $("pilihDimensi").addEventListener("change", (e) => { S.dimensi = e.target.value; papar(); });
     segmen("segPeratus", (v) => { S.peratus = v === "1"; simpanPaparan(); papar(); });
     segmen("segUkurPrestasi", (v) => { S.ukurPrestasi = v; papar(); });
+    segmen("segPaparanFe", (v) => { S.paparFe = v; papar(); });
 
     $("btnEksportSkor").addEventListener("click", () => unduh("kad-skor-" + new Date().toISOString().slice(0, 10) + ".csv", skorSemasa));
 
