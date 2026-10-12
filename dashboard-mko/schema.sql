@@ -32,7 +32,7 @@ create table public.rekod (
   harta_tetap_sebelum numeric, harta_tetap_semasa numeric, pekerja_sebelum numeric, pekerja_semasa numeric,
   gaji_sebelum numeric, gaji_semasa numeric, stok_akhir_sebelum numeric, stok_akhir_semasa numeric,
   nilai_jualan_sebelum numeric, nilai_jualan_semasa numeric,
-  catatan_mko text, catatan_negeri text, ditambah_oleh text, dikemaskini_oleh text, tarikh_dikemaskini text
+  catatan_mko text, catatan_negeri text, catatan_pinda_smd text, ditambah_oleh text, dikemaskini_oleh text, tarikh_dikemaskini text
 );
 create index rekod_muat_naik_idx on public.rekod (muat_naik_id);
 -- No. Siri wajib tepat 12 digit dan unik dalam setiap muat naik

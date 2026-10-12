@@ -66,6 +66,7 @@
     ["pekerja_2015", "Bilangan Pekerja 2015", "n"], ["pekerja_2023", "Bilangan Pekerja 2023", "n"], ["pekerja_2026", "Bilangan Pekerja 2026", "n"],
     ["harta_tetap_2015", "Harta Tetap 2015 (RM)", "n"], ["harta_tetap_2023", "Harta Tetap 2023 (RM)", "n"], ["harta_tetap_2026", "Harta Tetap 2026 (RM)", "n"],
     ["catatan_negeri", "Catatan Negeri", "t"],
+    ["catatan_pinda_smd", "Catatan Pinda SMD", "t"],
     ["ditambah_oleh", "Ditambah oleh", "t"],
     ["dikemaskini_oleh", "Dikemaskini oleh", "t"],
     ["tarikh_dikemaskini", "Tarikh Dikemaskini", "t"],
@@ -96,7 +97,7 @@
     kodsurveisemasa: "kod_survei", kodsurveilabel: "kod_survei2",
     kodindustrisemasa: "msic_5", kodindustrilabel: "kod_industri_label",
     sektor: "sektor", subsektor: "subsektor", pmks: "pmks",
-    catatannegeri: "catatan_negeri", ditambaholeh: "ditambah_oleh", dikemaskinioleh: "dikemaskini_oleh",
+    catatannegeri: "catatan_negeri", catatanpindasmd: "catatan_pinda_smd", ditambaholeh: "ditambah_oleh", dikemaskinioleh: "dikemaskini_oleh",
     tarikhdikemaskini: "tarikh_dikemaskini",
     daerahpentadbiranposlabel: "daerah_pos_label", daerahpentadbiranpossemasa: "daerah_pos_semasa",
     daerahpentadbiranlokasilabel: "daerah_lokasi_label", daerahpentadbiranlokasisemasa: "daerah_lokasi_semasa",
@@ -146,6 +147,7 @@
     if (alias) return alias;
     if (n.startsWith("fasa")) return "fasa_be";
     if (n.startsWith("tier")) return "tier";
+    if (n.includes("catatan") && n.includes("pinda")) return "catatan_pinda_smd";
     // Nilai ikut tahun, cth. "Pendapatan 2015", "Output (RM) 2023", "VA 2026", "Nilai Ditambah 2015"
     const th = n.match(/(2015|2023|2026)/);
     if (th) {
@@ -2014,7 +2016,7 @@
     K5: { label: "K5 · Nilai utama, tarikh & catatan", lajur: [
       ...["pendapatan", "perbelanjaan", "harta_tetap", "pekerja", "gaji", "stok_akhir", "nilai_jualan"].flatMap((k) => [k + "_sebelum", k + "_semasa"]),
       ...["2015", "2023", "2026"].flatMap((y) => ["pendapatan_" + y, "perbelanjaan_" + y, "va_" + y]),
-      "tarikh_terima", "cara_terima", "kes_anggaran", "catatan_kes_anggaran", "catatan_mko", "catatan_negeri", "tambahan"] },
+      "tarikh_terima", "cara_terima", "kes_anggaran", "catatan_kes_anggaran", "catatan_mko", "catatan_negeri", "catatan_pinda_smd", "tambahan"] },
     Umum: { label: "Umum · semua lajur dalam fail (cth. nama FE)", lajur: "semua" },
   };
   const BUKAN_KEMASKINI = new Set(["no_siri", "bil", "id", "muat_naik_id"]);
