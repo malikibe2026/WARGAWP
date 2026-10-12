@@ -137,6 +137,8 @@
     const n = norm(h);
     if (!n) return null;
     if (HEADER_TETAP[n]) return HEADER_TETAP[n];
+    // Nama FE dalam apa-apa bentuk: "FE", "NAMA FE", "Pegawai FE", "Nama Enumerator", "PKL", "Pegawai Kerja Luar"
+    if (/(^|[^a-z])fe([^a-z]|$)/i.test(String(h)) && !/(fasa|kod|respon|status)/i.test(String(h)) || /^(namapegawai|namaenumerator|enumerator|pkl)/.test(n)) return "pegawai_kerja_luar";
     const alias = petaAlias(n);
     if (alias) return alias;
     if (n.startsWith("fasa")) return "fasa_be";
