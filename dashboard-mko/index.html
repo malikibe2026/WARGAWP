@@ -41,10 +41,8 @@
 
   <nav class="tab" role="tablist" aria-label="Halaman laporan">
     <button role="tab" data-hal="ringkasan" aria-selected="true">Ringkasan</button>
-    <button role="tab" data-hal="peta">Peta Daerah</button>
     <button role="tab" data-hal="prestasi">Prestasi Pegawai</button>
-    <button role="tab" data-hal="io">Input-Output & VA</button>
-    <button role="tab" data-hal="tiga">Perbandingan 3 Tahun</button>
+    <button role="tab" data-hal="peta">Peta Parlimen</button>
     <button role="tab" data-hal="nilai">Analisis Nilai</button>
     <button role="tab" data-hal="rekod">Senarai Rekod</button>
   </nav>
@@ -64,6 +62,7 @@
   <main id="utama" class="utama">
     <!-- RINGKASAN -->
     <div class="halaman" data-hal="ringkasan">
+      <button id="amaranPinda" class="amaran-pinda" type="button" hidden></button>
       <div class="aksi-ringkasan">
         <p class="nota">Untuk laporan pengurusan: cetak ke PDF atau muat turun gambar ringkasan</p>
         <button id="btnCetak" class="btn btn-garis" type="button">Cetak / Simpan PDF</button>
@@ -84,9 +83,10 @@
           <header class="kad-kepala"><div><h2>Pencapaian ikut pejabat</h2><p class="kad-sub">% setiap tahap · klik untuk tapis</p></div></header>
           <div id="cIkut" class="carta"></div>
         </article>
-        <article class="kad s-6">
-          <header class="kad-kepala"><div><h2>Kemajuan borang diterima</h2><p class="kad-sub">Kumulatif ikut Tarikh Terima</p></div></header>
-          <div id="cTarikh" class="carta"></div>
+        <article class="kad s-12">
+          <header class="kad-kepala"><div><h2>Trend borang diterima</h2><p class="kad-sub" id="trendSub">Bilangan harian dan purata bergerak 7 hari · ikut Tarikh Terima</p></div></header>
+          <div id="cTarikh" class="carta carta-tinggi"></div>
+          <p id="trendNota" class="nota"></p>
         </article>
         <article class="kad s-8">
           <header class="kad-kepala"><div><h2>Status respon lawatan semasa</h2><p class="kad-sub">Kategori kod respon · klik untuk tapis</p></div></header>
@@ -100,11 +100,11 @@
           <div id="matriks" class="matriks-bungkus"></div>
         </article>
         <article class="kad s-6">
-          <header class="kad-kepala"><div><h2>Cara terima</h2></div></header>
+          <header class="kad-kepala"><div><h2>Cara terima</h2><p class="kad-sub" id="caraSub">Pertubuhan yang sudah ada respon</p></div></header>
           <div id="cCara" class="carta carta-kecil"></div>
         </article>
         <article class="kad s-6">
-          <header class="kad-kepala"><div><h2>Saiz pertubuhan (PMKS)</h2></div></header>
+          <header class="kad-kepala"><div><h2>Saiz pertubuhan (PMKS)</h2><p class="kad-sub">Bilangan pertubuhan ikut PMKS</p></div></header>
           <div id="cPmks" class="carta carta-kecil"></div>
         </article>
       </section>
@@ -115,14 +115,8 @@
       <section class="grid g-12">
         <article class="kad s-8 kad-peta">
           <header class="kad-kepala">
-            <div><h2>Peta daerah pentadbiran</h2><p class="kad-sub" id="petaSub">Klik daerah untuk tapis</p></div>
+            <div><h2>Peta parlimen</h2><p class="kad-sub" id="petaSub">Klik parlimen untuk tapis</p></div>
             <div class="kawalan">
-              <div class="segmen" id="segPetaAras" role="group" aria-label="Aras peta">
-                <button data-v="lokasi" aria-pressed="true">Daerah lokasi</button>
-                <button data-v="pos">Daerah pos</button>
-                <button data-v="parlimen">Parlimen</button>
-                <button data-v="negeri">Negeri</button>
-              </div>
               <select id="pilihUkuranPeta" aria-label="Ukuran peta">
                 <option value="selesai">% Selesai</option>
                 <option value="belumSelesai">Belum selesai (bilangan)</option>
@@ -188,8 +182,22 @@
       </section>
     </div>
 
-    <!-- INPUT-OUTPUT -->
-    <div class="halaman" data-hal="io" hidden>
+    <!-- NILAI -->
+    <div class="halaman" data-hal="nilai" hidden>
+      <section class="grid g-12">
+        <article class="kad s-12 tafsiran-kad">
+          <header class="kad-kepala"><div><h2>Tafsiran analisis</h2><p class="kad-sub">Dijana automatik daripada tapisan semasa · nilai nominal (RM), tanpa pelarasan harga</p></div></header>
+          <ul id="tafsiranTeks" class="penemuan"></ul>
+        </article>
+      </section>
+      <h3 class="bahagian-nilai">Input-Output &amp; Nilai Ditambah</h3>
+      <section class="grid g-12">
+        <article class="kad s-12">
+          <header class="kad-kepala"><div><h2>Statistik deskriptif</h2><p class="kad-sub">Median, kuartil, pekali variasi (CV) dan pertumbuhan tahunan purata (CAGR) bagi setiap tahun</p></div></header>
+          <div class="jadual-bungkus"><table id="tStatistik" class="jadual"></table></div>
+        </article>
+      </section>
+
       <p id="ioNota" class="nota io-nota"></p>
       <section id="ioKpi" class="io-kpi"></section>
       <section class="grid g-12">
@@ -225,10 +233,9 @@
           </div>
         </article>
       </section>
-    </div>
 
-    <!-- PERBANDINGAN 3 TAHUN -->
-    <div class="halaman" data-hal="tiga" hidden>
+      <h3 class="bahagian-nilai">Perbandingan 3 Tahun (2015 · 2023 · 2026)</h3>
+
       <p id="tigaNota" class="nota io-nota"></p>
       <section class="grid g-12">
         <article class="kad s-12">
@@ -264,10 +271,8 @@
           <div id="tigaKawal" class="laras-senarai"></div>
         </article>
       </section>
-    </div>
 
-    <!-- NILAI -->
-    <div class="halaman" data-hal="nilai" hidden>
+      <h3 class="bahagian-nilai">Penyiasatan nilai</h3>
       <section class="grid g-12">
         <article class="kad s-12">
           <header class="kad-kepala"><div><h2>Perbandingan nilai penyiasatan</h2>
@@ -298,6 +303,7 @@
           <div><h2>Senarai rekod <span id="bilRekod" class="kad-sub"></span></h2></div>
           <div class="kawalan">
             <input id="cari" type="search" class="cari" placeholder="Cari No. Siri, nama atau pegawai…" aria-label="Cari rekod">
+            <button id="btnPinda" class="btn btn-garis" type="button" aria-pressed="false">Catatan pinda SMD sahaja</button>
             <button id="btnEksport" class="btn btn-garis">Eksport CSV</button>
           </div>
         </header>

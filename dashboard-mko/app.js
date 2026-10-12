@@ -228,9 +228,9 @@
   const S = {
     rekod: [], muatNaik: null, pentadbir: false, sesi: null,
     tapis: {},             // dim -> Set(nilai)
-    hal: "ringkasan",
+    hal: "ringkasan", hanyaPinda: false,
     dimensi: null, peratus: true, sasaran: 0, ambang: 50, tigaLaras: {}, ukuranSerak: "pendapatan",
-    petaAras: "lokasi", petaUkuran: "selesai", ukurPrestasi: "tahap",
+    petaAras: "parlimen", petaUkuran: "selesai", ukurPrestasi: "tahap",
     cari: "", halaman: 0, susunK: null, susunArah: 1,
     carta: {},
   };
@@ -249,8 +249,6 @@
     ["pejabat_operasi", "Pejabat Perangkaan / Operasi"],
     ["penyelia", "Penyelia"],
     ["pegawai", "Pegawai"],
-    ["_dl", "Daerah Lokasi"],
-    ["_dp", "Daerah Pos"],
     ["parlimen", "Parlimen"],
     ["pmks", "PMKS"],
     ["msic_3", "Kod Industri 3 digit"],
@@ -279,8 +277,6 @@
     ["subsektor", "Subsektor"],
     ["pmks", "PMKS"],
     ["pejabat_operasi", "Pejabat Perangkaan"],
-    ["_dl", "Daerah Lokasi"],
-    ["_dp", "Daerah Pos"],
     ["parlimen", "Parlimen"],
     ["kod_survei", "Kod Survei"],
     ["msic_3", "Kod Industri 3 digit"],
@@ -456,8 +452,12 @@
     const R = ditapis();
     if (S.hal === "ringkasan") {
       paparKpi(R); cartaAliran(R); cartaDonut(R); cartaStatus(R); cartaTarikh(R); cartaPencapaianIkut(R);
-      cartaBar("cCara", R, "cara_terima", 8);
-      cartaBar("cPmks", R, adaLajur("pmks") ? "pmks" : "bbu_sbu", 8);
+      // Cara terima kosong = pertubuhan belum ada respon (dikira sebagai "Belum ada respon"), jadi tidak dipaparkan di sini
+      const adaRespon = R.filter((r) => String(r.cara_terima == null ? "" : r.cara_terima).trim() !== "");
+      cartaBar("cCara", adaRespon, "cara_terima", 8);
+      $("caraSub").textContent = `Pertubuhan yang sudah ada respon · ${fmtN.format(R.length - adaRespon.length)} belum ada respon tidak dipaparkan`;
+      cartaBar("cPmks", R, "pmks", 8);
+      paparAmaranPinda(R);
       paparMatriks(R); paparPenemuan(R);
       document.querySelectorAll("[data-perlu-tahap]").forEach((el) => (el.hidden = !ADA_TAHAP()));
     } else if (S.hal === "peta") paparPeta(R);
@@ -473,10 +473,8 @@
       else if (mod === "kad") paparKadFe(R);
       else cartaKuadran(R);
     }
-    else if (S.hal === "io") paparIo(R);
-    else if (S.hal === "tiga") paparTiga(R);
-    else if (S.hal === "nilai") { paparKewangan(R); cartaSerak(R); paparSemakan(R); }
-    else if (S.hal === "rekod") paparRekod(R);
+    else if (S.hal === "nilai") { paparIo(R); paparTiga(R); paparTafsiran(R); paparKewangan(R); cartaSerak(R); paparSemakan(R); }
+    else if (S.hal === "rekod") { paparRekod(R); $("btnPinda").setAttribute("aria-pressed", String(!!S.hanyaPinda)); $("btnPinda").classList.toggle("aktif", !!S.hanyaPinda); }
     requestAnimationFrame(() => Object.values(S.carta).forEach((c) => {
       if (c.getDom().offsetParent) c.resize();
     }));
@@ -720,39 +718,58 @@
   function cartaTarikh(R) {
     const semua = R.map((r) => r.tarikh_terima).filter(Boolean).sort();
     const ch = carta("cTarikh");
-    if (!semua.length) return kosongkanCarta(ch, "Tiada Tarikh Terima dalam tapisan");
+    const nota = $("trendNota");
+    if (!semua.length) { nota.textContent = ""; return kosongkanCarta(ch, "Tiada Tarikh Terima dalam tapisan"); }
     // Abaikan tarikh terpencil yang sangat lama (cth. 2010): mula dari persentil ke-1
     const mula = semua[Math.floor(semua.length * 0.01)];
     const awal = semua.filter((t) => t < mula).length;
     const kira = new Map();
     for (const t of semua) if (t >= mula) kira.set(t, (kira.get(t) || 0) + 1);
-    const hari = [...kira.keys()].sort();
-    let k = awal;
-    const kum = hari.map((h) => (k += kira.get(h)));
+    // Isi hari tanpa penerimaan dengan 0 supaya paksi masa betul
+    const hari = [];
+    for (let d = new Date(mula + "T00:00:00"), akhir = new Date(semua[semua.length - 1] + "T00:00:00"); d <= akhir; d.setDate(d.getDate() + 1)) hari.push(tarikhIso(d));
+    const bil = hari.map((h) => kira.get(h) || 0);
+    const ma7 = bil.map((_, i) => (i < 6 ? null : +(bil.slice(i - 6, i + 1).reduce((x, y) => x + y, 0) / 7).toFixed(1)));
+    const kum = []; bil.reduce((k, v, i) => (kum[i] = k + v), awal);
     const n = R.length || 1;
-    const sas = S.sasaran;
+    const puncak = bil.indexOf(Math.max(...bil));
+    const min7 = (a, b) => bil.slice(a, b).reduce((x, y) => x + y, 0) / Math.max(1, b - a);
+    const L = bil.length;
+    const ini = L >= 7 ? min7(L - 7, L) : null, lepas = L >= 14 ? min7(L - 14, L - 7) : null;
+    nota.innerHTML = `Puncak: <b>${tarikhPapar(hari[puncak])}</b> (${fmtN.format(bil[puncak])} borang) · purata harian ${fmtN.format(+(bil.reduce((x, y) => x + y, 0) / L).toFixed(1))}` +
+      (ini != null && lepas != null ? ` · purata 7 hari terakhir <b>${ini.toFixed(1)}</b> berbanding <b>${lepas.toFixed(1)}</b> 7 hari sebelumnya (${ini >= lepas ? "▲" : "▼"} ${fmtP(Math.abs(ini / (lepas || 1) - 1))})` : "") +
+      (awal ? ` · ${fmtN.format(awal)} borang sebelum ${tarikhPapar(mula)} tidak dipaparkan dalam trend` : "");
     ch.setOption({
       ...asasTema(),
-      grid: { left: 4, right: 56, top: 22, bottom: 4, containLabel: true },
+      grid: { left: 4, right: 16, top: 34, bottom: 4, containLabel: true },
+      legend: { top: 0, right: 0, itemWidth: 12, itemHeight: 8, textStyle: { color: css("--ink-2"), fontSize: 11.5 } },
       tooltip: { ...tooltipAsas(), trigger: "axis", axisPointer: { type: "line", lineStyle: { color: css("--axis") } },
-        formatter: (ps) => { const i = ps[0].dataIndex; return `<b>${tarikhPapar(hari[i])}</b><br>Diterima hari ini: ${fmtN.format(kira.get(hari[i]))}<br>Kumulatif: <b>${fmtN.format(kum[i])}</b> (${fmtP(kum[i] / n)})`; } },
-      xAxis: { type: "category", data: hari.map(tarikhPapar), boundaryGap: false, ...paksi(), splitLine: { show: false } },
-      yAxis: { type: "value", ...paksi(), max: (v) => Math.max(v.max, sas ? Math.ceil(sas / 100 * n) : 0) },
-      series: [{ type: "line", data: kum, smooth: 0.2, showSymbol: hari.length <= 31, symbol: "circle", symbolSize: 7,
-        lineStyle: { width: 2.5, color: css("--s1") }, itemStyle: { color: css("--s1"), borderColor: css("--surface"), borderWidth: 2 },
-        areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: css("--s1") + "40" }, { offset: 1, color: css("--s1") + "00" }]) },
-        endLabel: { show: true, formatter: (p) => fmtN.format(p.value), color: css("--ink"), fontWeight: 700, fontSize: 12 },
-        markLine: sas ? { symbol: "none", silent: true, lineStyle: { color: css("--bad"), type: "dashed", width: 1.5 },
-          label: { formatter: `Sasaran ${sas}% (${fmtN.format(Math.ceil(sas / 100 * n))})`, color: css("--bad"), fontSize: 11, position: "insideStartTop" },
-          data: [{ yAxis: Math.ceil(sas / 100 * n) }] } : undefined }],
+        formatter: (ps) => { const i = ps[0].dataIndex; return `<b>${tarikhPapar(hari[i])}</b><br>Diterima: <b>${fmtN.format(bil[i])}</b><br>Purata 7 hari: ${ma7[i] == null ? "–" : ma7[i]}<br>Kumulatif: ${fmtN.format(kum[i])} (${fmtP(kum[i] / n)})`; } },
+      xAxis: { type: "category", data: hari.map(tarikhPapar), ...paksi(), boundaryGap: true, splitLine: { show: false },
+        axisLabel: { color: css("--muted"), fontSize: 11, hideOverlap: true } },
+      yAxis: { type: "value", ...paksi(), minInterval: 1 },
+      series: [
+        { name: "Diterima (harian)", type: "bar", data: bil, barMaxWidth: 14, itemStyle: { color: css("--s1"), borderRadius: [4, 4, 0, 0], opacity: 0.5 } },
+        { name: "Purata 7 hari", type: "line", data: ma7, smooth: true, showSymbol: false, connectNulls: false,
+          lineStyle: { width: 2.5, color: css("--s3") }, itemStyle: { color: css("--s3") } },
+      ],
     }, true);
     $("cTarikh").closest(".kad").querySelector(".kad-sub").textContent =
-      "Kumulatif ikut Tarikh Terima" + (awal ? ` · ${fmtN.format(awal)} borang sebelum ${tarikhPapar(mula)} termasuk dalam titik pertama` : "");
+      `Bilangan harian dan purata bergerak 7 hari · ${fmtN.format(hari.length)} hari · ikut Tarikh Terima`;
+  }
+
+  // Amaran jumlah catatan pinda SMD; klik untuk buka senarai rekod yang ditapis
+  const adaPinda = (r) => String(r.catatan_pinda_smd == null ? "" : r.catatan_pinda_smd).trim() !== "";
+  function paparAmaranPinda(R) {
+    const el = $("amaranPinda");
+    const n = R.filter(adaPinda).length;
+    el.hidden = !n;
+    el.innerHTML = `<span class="amaran-ikon" aria-hidden="true">!</span><span><b>${fmtN.format(n)}</b> rekod ada catatan <b>Pinda SMD</b> · klik untuk lihat senarai</span>`;
   }
 
   // Bar bertindan 100% tahap pencapaian ikut satu dimensi (Pejabat / Daerah / dll.)
   function cartaPencapaianIkut(R) {
-    const calon = ["pejabat_operasi", "_dl", "subsektor", "sektor", "kod_survei"];
+    const calon = ["pejabat_operasi", "subsektor", "sektor", "kod_survei"];
     const d = calon.find((x) => { const n = new Set(R.map((r) => nilaiDim(r, x))).size; return n > 1 && n <= 40; }) || "pejabat_operasi";
     const tajuk = { pejabat_operasi: "pejabat perangkaan", _dl: "daerah", subsektor: "subsektor", sektor: "sektor", kod_survei: "kod survei" }[d];
     $("cIkut").closest(".kad").querySelector("h2").textContent = "Pencapaian ikut " + tajuk;
@@ -792,7 +809,7 @@
 
   function cartaBar(id, R, d, had) {
     const tajukEl = $(id).closest(".kad").querySelector("h2");
-    if (id === "cPmks") tajukEl.textContent = d === "pmks" ? "Saiz pertubuhan (PMKS)" : "BBU / SBU";
+    if (id === "cPmks") tajukEl.textContent = "Saiz pertubuhan (PMKS)";
     const kira = new Map();
     for (const r of R) { const v = nilaiDim(r, d); kira.set(v, (kira.get(v) || 0) + 1); }
     let s = [...kira.entries()].sort((a, b) => b[1] - a[1]);
@@ -869,14 +886,13 @@
     };
     terbaikTerendah("pejabat_operasi", "Pejabat", 20);
     terbaikTerendah("pegawai_kerja_luar", "Pegawai Kerja Luar", 20);
-    terbaikTerendah("_dl", "Daerah", 20);
     if (k.KodB) out.push(["amaran", "B", `<b>${fmtN.format(k.KodB)}</b> pertubuhan berstatus Kod B (71–77) — perlu susulan.`]);
     const tarikh = R.map((r) => r.tarikh_terima).filter(Boolean).sort();
     if (tarikh.length) {
       const akhir = new Date(tarikh[tarikh.length - 1] + "T00:00:00");
       const h7 = new Date(akhir); h7.setDate(h7.getDate() - 6);
       const h14 = new Date(akhir); h14.setDate(h14.getDate() - 13);
-      const iso = (d) => d.toISOString().slice(0, 10);
+      const iso = tarikhIso;
       const ini = tarikh.filter((t) => t >= iso(h7)).length;
       const lepas = tarikh.filter((t) => t >= iso(h14) && t < iso(h7)).length;
       const ub = lepas ? (ini - lepas) / lepas : NaN;
@@ -1004,6 +1020,85 @@
     setTimeout(() => URL.revokeObjectURL(url), 4000);
   }
 
+  // ---------- Tafsiran & statistik (tab Analisis Nilai) ----------
+  const ADA = (x) => x != null && isFinite(x);
+  const kuartil = (arr, q) => {
+    if (!arr.length) return null;
+    const a = arr.slice().sort((x, y) => x - y), pos = (a.length - 1) * q, lo = Math.floor(pos), hi = Math.ceil(pos);
+    return a[lo] + (a[hi] - a[lo]) * (pos - lo);
+  };
+  const cagr = (a, b, tahun) => (ADA(a) && ADA(b) && a > 0 && b > 0 ? Math.pow(b / a, 1 / tahun) - 1 : null);
+  const peratus = (x, dp = 1) => (ADA(x) ? (x * 100).toFixed(dp) + "%" : "–");
+  const TAHUN_TAFSIR = { "2015": 2015, "2023": 2023, "2026": 2026 };
+  function statistikIo(R, y) {
+    const pa = R.map((r) => nilaiIo(r, y)).filter((o) => o && ADA(o.io));
+    const io = pa.map((o) => o.io), n = io.length;
+    const min = n ? io.reduce((a, b) => a + b, 0) / n : null;
+    const sd = n > 1 ? Math.sqrt(io.reduce((acc, x) => acc + (x - min) ** 2, 0) / (n - 1)) : null;
+    const q1 = kuartil(io, 0.25), q3 = kuartil(io, 0.75), iqr = ADA(q1) ? q3 - q1 : null;
+    const terpencil = ADA(iqr) ? io.filter((x) => x < q1 - 1.5 * iqr || x > q3 + 1.5 * iqr).length : 0;
+    const va = R.map((r) => nilaiIo(r, y)).filter((o) => o && ADA(o.va) && o.out > 0);
+    const marjin = va.length ? va.reduce((a, o) => a + o.va, 0) / va.reduce((a, o) => a + o.out, 0) : null;
+    return { n, median: n ? median(io) : null, q1, q3, cv: ADA(sd) && ADA(min) && min ? sd / min : null,
+      bawah: n ? io.filter((x) => x < 1).length / n : null, terpencil, marjin };
+  }
+  function paparTafsiran(R) {
+    sediaSumberIo();
+    const D = dataTiga(R);
+    const rg = Object.fromEntries(TAHUN_IO.map((y) => [y, ringkasIo(R, y)]));
+    const st = Object.fromEntries(TAHUN_IO.map((y) => [y, statistikIo(R, y)]));
+    const pendapatan = (y) => D.pendapatan.t[y], pekerja = (y) => D.pekerja.t[y], gaji = (y) => D.gaji.t[y];
+    const vaPekerja = (y) => (ADA(rg[y].va) && ADA(pekerja(y)) && pekerja(y) > 0 ? rg[y].va / pekerja(y) : null);
+    const gajiPekerja = (y) => (ADA(gaji(y)) && ADA(pekerja(y)) && pekerja(y) > 0 ? gaji(y) / pekerja(y) : null);
+    const [a, b, c] = TAHUN_IO;
+    const tahunAntara = (y1, y2) => TAHUN_TAFSIR[y2] - TAHUN_TAFSIR[y1];
+    const L = [];
+    const r3 = rg[c], s3 = st[c];
+    if (r3.io != null) {
+      const beza = ADA(s3.median) ? Math.abs(s3.median - r3.io) : 0;
+      L.push(["", "IO", `IO agregat 2026 ialah <b>${fmtIo(r3.io)}</b>: setiap RM1 output memerlukan RM${fmtIo(r3.io)} input. ` +
+        (r3.io < 1 ? "Secara agregat output melebihi input (lebihan kasar positif)." : "Secara agregat input melebihi output; margin operasi negatif.") +
+        ` Median IO pertubuhan ialah <b>${fmtIo(s3.median)}</b>, ${beza > 0.1 ? "jauh berbeza daripada IO agregat. Taburan condong dan dipengaruhi pertubuhan bersaiz besar; median lebih sesuai untuk tafsiran biasa." : "hampir sama dengan IO agregat, menandakan taburan agak simetri."}`]);
+    }
+    const g1 = cagr(pendapatan(a), pendapatan(b), tahunAntara(a, b)), g2 = cagr(pendapatan(b), pendapatan(c), tahunAntara(b, c));
+    if (g1 != null || g2 != null) L.push(["", "↗", `Output nominal (pendapatan) berkembang <b>${peratus(g1)}</b> setahun 2015–2023 dan <b>${peratus(g2)}</b> setahun 2023–2026. ` +
+      (ADA(g1) && ADA(g2) ? (g2 > g1 ? "Momentum pertumbuhan meningkat selepas 2023." : "Momentum pertumbuhan menyederhana selepas 2023.") : "")]);
+    const pv1 = vaPekerja(a), pv3 = vaPekerja(c), gp1 = gajiPekerja(a), gp3 = gajiPekerja(c);
+    if (ADA(pv1) && ADA(pv3)) L.push(["", "⚙", `Produktiviti (VA per pekerja) berubah daripada RM${fmtN.format(Math.round(pv1))} (2015) kepada RM${fmtN.format(Math.round(pv3))} (2026), kadar <b>${peratus(cagr(pv1, pv3, tahunAntara(a, c)))}</b> setahun. Anggaran kasar: VA dan pekerja dikira pada tapisan yang berlainan.`]);
+    if (ADA(gp1) && ADA(gp3)) L.push(["", "₴", `Gaji purata per pekerja: RM${fmtN.format(Math.round(gp1))} (2015) → RM${fmtN.format(Math.round(gp3))} (2026), kadar <b>${peratus(cagr(gp1, gp3, tahunAntara(a, c)))}</b> setahun.`]);
+    if (ADA(st[a].bawah) && ADA(s3.bawah)) L.push([s3.bawah < st[a].bawah ? "amaran" : "baik", "%", `Pertubuhan dengan IO &lt; 1 berubah daripada <b>${peratus(st[a].bawah)}</b> (2015) kepada <b>${peratus(s3.bawah)}</b> (2026).`]);
+    if (ADA(rg[a].io) && ADA(r3.io)) L.push(["", "M", `Margin nilai tambah (VA ÷ output) ${peratus(st[a].marjin)} pada 2015 dan ${peratus(s3.marjin)} pada 2026.`]);
+    if (s3.terpencil) L.push(["amaran", "!", `<b>${fmtN.format(s3.terpencil)}</b> pertubuhan IO 2026 berada di luar julat 1.5 × IQR. Semak dahulu sebelum membuat kesimpulan agregat.`]);
+    const cov = (y) => D.pendapatan.n[y] || 0;
+    const jumlah = R.length || 1;
+    L.push(["", "n", `Perbandingan 3 tahun hanya guna rekod yang ada nilai bagi tahun berkenaan: 2015 (${fmtN.format(cov(a))}), 2023 (${fmtN.format(cov(b))}), 2026 (${fmtN.format(cov(c))}) daripada ${fmtN.format(jumlah)} rekod.` +
+      (s3.n < 30 ? " <b>Sampel 2026 kecil</b>, tafsiran perlu dibuat dengan berhati-hati." : "")]);
+    L.push(["", "$", "Semua nilai adalah nominal (RM). Kadar pertumbuhan belum ditolak inflasi; untuk kadar sebenar, tolak kadar IHP bagi tempoh yang sama."]);
+    $("tafsiranTeks").innerHTML = L.map(([j, t, h]) => `<li><span class="tanda ${j}">${t}</span><span>${h}</span></li>`).join("");
+
+    // Jadual statistik deskriptif
+    const baris = [
+      ["Output agregat (RM)", (y) => fmTiga(pendapatan(y), true), (x) => cagr(pendapatan(a), pendapatan(c), tahunAntara(a, c))],
+      ["Input agregat (RM)", (y) => fmTiga(D.perbelanjaan.t[y], true), (x) => cagr(D.perbelanjaan.t[a], D.perbelanjaan.t[c], tahunAntara(a, c))],
+      ["IO agregat", (y) => fmtIo(rg[y].io), null],
+      ["IO median", (y) => fmtIo(st[y].median), null],
+      ["IO kuartil (Q1 – Q3)", (y) => (ADA(st[y].q1) ? `${fmtIo(st[y].q1)} – ${fmtIo(st[y].q3)}` : "–"), null],
+      ["Pekali variasi IO (CV)", (y) => peratus(st[y].cv), null],
+      ["% pertubuhan IO < 1", (y) => peratus(st[y].bawah), null],
+      ["Margin VA ÷ output", (y) => peratus(st[y].marjin), null],
+      ["Nilai ditambah (RM)", (y) => fmTiga(rg[y].va, true), (x) => cagr(rg[a].va, rg[c].va, tahunAntara(a, c))],
+      ["Bilangan pekerja", (y) => fmTiga(pekerja(y), false), (x) => cagr(pekerja(a), pekerja(c), tahunAntara(a, c))],
+      ["VA per pekerja (RM)", (y) => fmTiga(vaPekerja(y), true), (x) => cagr(vaPekerja(a), vaPekerja(c), tahunAntara(a, c))],
+      ["Gaji purata per pekerja (RM)", (y) => fmTiga(gajiPekerja(y), true), (x) => cagr(gajiPekerja(a), gajiPekerja(c), tahunAntara(a, c))],
+      ["Bilangan rekod padan (IO)", (y) => fmtN.format(st[y].n), null],
+    ];
+    $("tStatistik").innerHTML = `<thead><tr><th>Metrik</th>${TAHUN_IO.map((y) => `<th class="num">${y}</th>`).join("")}<th class="num">CAGR 2015 → 2026</th></tr></thead><tbody>` +
+      baris.map(([lab, f, g]) => `<tr><td><b>${lab}</b></td>${TAHUN_IO.map((y) => `<td class="num">${f(y)}</td>`).join("")}<td class="num">${g ? peratus(g()) : "–"}</td></tr>`).join("") + "</tbody>";
+  }
+
+  // Format YYYY-MM-DD ikut tarikh tempatan (toISOString guna UTC dan boleh tolak sehari di Malaysia)
+  const tarikhIso = (d) => [d.getFullYear(), String(d.getMonth() + 1).padStart(2, "0"), String(d.getDate()).padStart(2, "0")].join("-");
+
   // ---------- Peta ----------
   let GEO = null;
   const normNama = (s) => String(s == null ? "" : s).normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase()
@@ -1069,7 +1164,7 @@
     if (m) { const k = "P." + String(+m[1]).padStart(3, "0"); if (GEO.kodP.has(k)) return GEO.kodP.get(k); }
     return GEO.idxP.get(normNama(s)) || null;
   }
-  const lajurPeta = () => ({ negeri: "negeri", parlimen: "parlimen", pos: "_dp" }[S.petaAras] || "_dl");
+  const lajurPeta = () => "parlimen";
   const kodKL = () => (GEO.n.features.find((f) => normNama(f.properties.state) === "kualalumpur") || { properties: {} }).properties.code_state;
   function nilaiUkuran(c) {
     const n = c._n || 1;
@@ -1303,7 +1398,7 @@
       `<tr class="jumlah"><td>Jumlah</td><td class="num">${fmtN.format(T.length)}</td>${sel(T)}</tr></tbody>`;
     paparSenaraiIo(R);
   }
-  const DIMENSI_IO = [["fasa_be", "Fasa BE"], ["tier", "Tier"], ["sektor", "Sektor"], ["subsektor", "Subsektor"], ["pegawai_kerja_luar", "Pegawai Kerja Luar"], ["_dl", "Daerah"], ["parlimen", "Parlimen"], ["_kat", "Kategori Respon"], ["_tahap", "Tahap Pencapaian"]];
+  const DIMENSI_IO = [["fasa_be", "Fasa BE"], ["tier", "Tier"], ["sektor", "Sektor"], ["subsektor", "Subsektor"], ["pegawai_kerja_luar", "Pegawai Kerja Luar"], ["parlimen", "Parlimen"], ["_kat", "Kategori Respon"], ["_tahap", "Tahap Pencapaian"]];
   let ioHal = 0, ioSemasa = [];
   function paparSenaraiIo(R) {
     const q = ($("ioCari").value || "").trim().toLowerCase();
@@ -1797,9 +1892,11 @@
   // ---------- Jadual rekod ----------
   const LAJUR_JADUAL = [
     ["no_siri", "No. Siri"], ["nama", "Nama Pendaftaran"], ["pegawai_kerja_luar", "Pegawai Kerja Luar"],
-    ["_dl", "Daerah Lokasi"], ["msic_5", "Kod Industri"], ["status_respon_semasa", "Status Semasa"], ["status_respon_sebelum", "Status Sebelum"],
-    ["status_rekod", "Status Rekod"], ["tarikh_terima", "Tarikh Terima"], ["pendapatan_semasa", "Pendapatan Semasa"],
-    ["pekerja_semasa", "Pekerja Semasa"],
+    ["msic_5", "Kod Industri"], ["status_respon_semasa", "Status Semasa"], ["status_respon_sebelum", "Status Sebelum"],
+    ["status_rekod", "Status Rekod"], ["cara_terima", "Cara Terima"], ["tarikh_terima", "Tarikh Terima"], ["pmks", "PMKS"],
+    ["pendapatan_semasa", "Pendapatan Semasa"], ["perbelanjaan_semasa", "Perbelanjaan Semasa"], ["gaji_semasa", "Gaji Semasa"],
+    ["pekerja_semasa", "Pekerja Semasa"], ["harta_tetap_semasa", "Harta Tetap Semasa"],
+    ["catatan_negeri", "Catatan Negeri"], ["catatan_pinda_smd", "Catatan Pinda SMD"],
   ];
   const SAIZ_HAL = 50;
   let lajurJadual = LAJUR_JADUAL;
@@ -1807,6 +1904,7 @@
   function rekodCarian(R) {
     const q = S.cari.trim().toLowerCase();
     let x = q ? R.filter((r) => [r.no_id, r.nama, r.no_siri, r.pegawai_kerja_luar].some((v) => v != null && String(v).toLowerCase().includes(q))) : R.slice();
+    if (S.hanyaPinda) x = x.filter(adaPinda);
     if (S.susunK) {
       const k = S.susunK, j = JENIS[k], arah = S.susunArah;
       x.sort((a, b) => {
@@ -1854,7 +1952,7 @@
     const r = S.rekod.find((z) => String(z.id) === String(id));
     if (!r) return;
     $("butiranTajuk").textContent = (r.no_siri || r.no_id || "") + " · " + (r.nama || "");
-    $("butiranIsi").innerHTML = LAJUR.map(([k, l, j]) => {
+    $("butiranIsi").innerHTML = LAJUR.filter(([k]) => !DAERAH_BUANG.has(k)).map(([k, l, j]) => {
       const v = r[k];
       const t = v == null || v === "" ? "–" : j === "n" ? fmtN.format(v) : j === "d" ? tarikhPapar(v) : v;
       return `<dt>${esc(l)}</dt><dd>${esc(t)}</dd>`;
@@ -2006,6 +2104,8 @@
     const n = normSiri(r.no_siri);
     return n.nilai;
   }
+  // Daerah pos & lokasi tidak lagi dipaparkan (peta, penapis, carta, jadual atau butiran)
+  const DAERAH_BUANG = new Set(["daerah_pos_label", "daerah_pos_semasa", "daerah_lokasi_label", "daerah_lokasi_semasa", "_dl", "_dp"]);
   const SISTEM = new Set(["id", "muat_naik_id", "_kat", "_tahap", "_dl", "_dp"]);
   // ---------- Frame + kemas kini terpilih ----------
   // Frame = senarai pertubuhan tulang belakang (populasi). Fail lain hanya mengemas kini lajur tertentu
@@ -2299,6 +2399,8 @@
       toast(S.pentadbir ? "Log masuk berjaya. Anda boleh muat naik data." : "Log masuk berjaya, tetapi e-mel ini tiada kebenaran muat naik.", 5000);
     });
     $("btnCetak").addEventListener("click", () => window.print());
+    $("amaranPinda").addEventListener("click", () => { S.hanyaPinda = true; S.halaman = 0; tukarHalaman("rekod"); });
+    $("btnPinda").addEventListener("click", () => { S.hanyaPinda = !S.hanyaPinda; S.halaman = 0; papar(); });
     $("btnPng").addEventListener("click", () => eksportPngRingkasan().catch((err) => alert("Gagal jana gambar: " + err.message)));
     $("btnMuatNaik").addEventListener("click", () => {
       $("fail").value = ""; hasilBaca = null; failDibaca = []; $("semakan").innerHTML = ""; $("mnRalat").textContent = "";
@@ -2385,7 +2487,6 @@
     });
 
     // Peta
-    segmen("segPetaAras", (v) => { S.petaAras = v; papar(); });
     $("pilihUkuranPeta").addEventListener("change", (e) => { S.petaUkuran = e.target.value; papar(); });
     $("tKedudukan").addEventListener("click", (e) => {
       const tr = e.target.closest("tr[data-mentah]");
