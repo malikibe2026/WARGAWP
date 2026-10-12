@@ -669,12 +669,14 @@ td.io-merah { background: rgba(201, 54, 54, .08); }
 .sektor-ring small { margin-top: 4px; font-size: 10px; text-transform: uppercase; letter-spacing: .08em; opacity: .95; }
 @media (max-width: 720px) { .sektor-ring, .sektor-ring svg, .sektor-ring b { width: 56px; height: 56px; } .sektor-ring b { font-size: 12.5px; } }
 
-/* Bulatan Dalam Proses di bahagian bawah kad sektor */
-.sektor-proses { display: flex; align-items: center; gap: 12px; margin-top: 12px; padding: 8px 10px; border-radius: 12px; background: rgba(15,23,42,.18); border: 1px solid rgba(255,255,255,.18); }
-.sektor-proses .sektor-ring { width: 56px; flex: none; }
-.sektor-proses .sektor-ring svg { width: 56px; height: 56px; }
-.sektor-proses .sektor-ring b { width: 56px; height: 56px; font-size: 12.5px; }
-.sektor-proses > div:last-child { min-width: 0; }
-.sektor-proses > div:last-child b { display: block; font-size: 13px; font-weight: 800; }
-.sektor-proses > div:last-child span { display: block; font-size: 11.5px; opacity: .92; line-height: 1.3; }
-.sektor-kad .sektor-bar { margin-top: 10px; }
+/* Tiga bulatan (Negeri, SMD, Dalam Proses) di sudut kanan atas kad sektor */
+.sektor-rings { gap: 6px; }
+.sektor-rings .sektor-ring, .sektor-rings .sektor-ring svg, .sektor-rings .sektor-ring b { width: 54px; height: 54px; }
+.sektor-rings .sektor-ring b { font-size: 12px; }
+.sektor-rings .sektor-ring small { font-size: 8.5px; letter-spacing: .04em; margin-top: 3px; white-space: nowrap; }
+.sektor-proses { margin-top: 10px; padding: 7px 10px; border-radius: 10px; background: rgba(15,23,42,.18); border: 1px solid rgba(255,255,255,.18); font-size: 12px; }
+.sektor-proses b { font-weight: 800; }
+@media (max-width: 720px) { .sektor-rings { gap: 4px; } .sektor-rings .sektor-ring, .sektor-rings .sektor-ring svg, .sektor-rings .sektor-ring b { width: 50px; height: 50px; } }
+@media (max-width: 420px) { .sektor-rings .sektor-ring, .sektor-rings .sektor-ring svg, .sektor-rings .sektor-ring b { width: 58px; height: 58px; } }
+.sektor-atas { margin-bottom: 4px; }
+.sektor-atas + .sektor-nama { margin-top: 18px; }

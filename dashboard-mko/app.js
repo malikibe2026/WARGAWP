@@ -600,7 +600,7 @@
       const proses = bil("Proses") / jumlahTapisan;
       return `<button type="button" class="sektor-kad${aktif ? " aktif" : ""}" data-sektor="${esc(s.k)}" aria-pressed="${!!aktif}" style="--c1:${s.c1};--c2:${s.c2}">` +
         `<div class="sektor-atas"><span class="sektor-ikon">${s.ikon}</span>` +
-        `<div class="sektor-rings">${cincin("Negeri", negeri, "Semakan DOSM Negeri")}${cincin("SMD", smd, "Semakan SMD")}</div></div>` +
+        `<div class="sektor-rings">${cincin("Negeri", negeri, "Semakan DOSM Negeri")}${cincin("SMD", smd, "Semakan SMD")}${cincin("Proses", proses, "Dalam Proses daripada keseluruhan tapisan")}</div></div>` +
         `<div class="sektor-nama">${esc(s.k)}</div><div class="sektor-kp">KP ${s.kod.join(", ")}</div>` +
         `<div class="sektor-nilai">${fmtN.format(m)}</div>` +
         `<div class="sektor-sub">${fmtP(pSek)} daripada tapisan · ${fmtP(cap)} ${ukurUtama() === "selesai" ? "selesai" : "ada respon"}</div>` +
@@ -608,8 +608,7 @@
         [["Kod 11", c.A1], ["LK", c.LK], ["Kod B", c.KodB], ["Pinda", c.T.Pinda]].map(([lab, v]) =>
           `<div class="sektor-stat"><span>${lab}</span><b>${fmtN.format(v || 0)}</b><small>${m ? fmtP((v || 0) / m) : "–"}</small></div>`).join("") +
         `</div>` +
-        `<div class="sektor-proses">${cincin("Proses", proses, "Dalam Proses daripada keseluruhan tapisan")}` +
-        `<div><b>Dalam Proses</b><span>${fmtN.format(bil("Proses"))} daripada ${fmtN.format(jumlahTapisan)} rekod tapisan</span></div></div>` +
+        `<div class="sektor-proses"><span>Dalam Proses: <b>${fmtN.format(bil("Proses"))}</b> daripada ${fmtN.format(jumlahTapisan)} rekod tapisan</span></div>` +
         `<div class="sektor-bar" aria-hidden="true"><i style="--w:${(cap * 100).toFixed(1)}%"></i></div></button>`;
     }).join("");
   }
