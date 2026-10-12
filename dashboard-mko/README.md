@@ -36,6 +36,8 @@ Klik pada mana-mana carta/peta untuk tapis silang. Tema terang/gelap. Sasaran % 
 Kategori kod respon: **Kod 11 + 14** · **LK (Lain-lain Keputusan)** = 12–60 kecuali 14 · **Kod B** = 71–77 · lain-lain · belum.
 
 ## Gabung beberapa fail (kunci: No. Siri)
+- Header yang diterima untuk No. Siri: `No. Siri`, `No Siri`, `Nombor Siri`, `ID Establishment`, `No ID Establishment`.
+- Excel buang sifar di depan. Nombor pendek dilapik semula ke 12 digit: `1234567` → `000001234567`.
 - Dalam dialog muat naik, pilih **beberapa fail sekali gus** — header boleh berlainan (cth. fail status + fail nilai kewangan).
 - Rekod dipadankan ikut **No. Siri**, yang mesti **tepat 12 digit**:
   - kurang 12 digit (Excel buang sifar di depan) → dilapik sifar, cth. `35070000021` → `035070000021` (dilaporkan sebelum simpan);

@@ -120,7 +120,9 @@
   };
   function petaAlias(n) {
     if (ALIAS[n]) return ALIAS[n];
-    if (/^no(\.)?siri/.test(n) || n.startsWith("nosiri")) return "no_siri";
+    // No. Siri / No Siri / Nombor Siri / ID Establishment / No ID Establishment → kunci rekod
+    if (/^(no|nombor|nomor)?siri/.test(n) || /^(no)?(id)?(establishment|estab|estb)/.test(n) || /^noid(establishment|estab)?$/.test(n)) return "no_siri";
+    if (n.startsWith("idestablishment") || n.startsWith("noidestablishment")) return "no_siri";
     if (n.includes("pegawaikerjaluar")) return "pegawai_kerja_luar";
     if (n.includes("penyelia")) return "penyelia";
     if (n.includes("statusrespon") || n.includes("koderespon")) return n.includes("sebelum") ? "status_respon_sebelum" : "status_respon_semasa";
