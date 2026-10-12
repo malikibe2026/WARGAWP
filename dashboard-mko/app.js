@@ -894,7 +894,7 @@
     }
     // Lajur Tier kosong (profiling)
     const tierKosong = R.filter((r) => !teks(r.tier)).length;
-    if (tierKosong) out.push(["amaran", "T", `Tier kosong untuk <b>${fmtN.format(tierKosong)}</b> rekod — semak profiling (nilai dijangka Tier 1, Tier 2 atau Tier 3).`]);
+    if (tierKosong) out.push(["amaran", "T", `Tier kosong untuk <b>${fmtN.format(tierKosong)}</b> rekod — semak profiling (nilai dijangka Diamond, Gold atau Silver).`]);
     $("penemuan").innerHTML = out.slice(0, 10).map(([j, t, h]) => `<li><span class="tanda ${j}">${t}</span><span>${h}</span></li>`).join("");
   }
 
