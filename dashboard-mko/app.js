@@ -691,9 +691,9 @@
     const ch = carta("cStatus");
     ch.setOption({
       ...asasTema(),
-      legend: { bottom: 0, left: "center", itemWidth: 10, itemHeight: 10, itemGap: 16, textStyle: { color: css("--ink-2"), fontSize: 11.5 },
+      legend: { top: 0, left: "center", itemWidth: 10, itemHeight: 10, itemGap: 16, textStyle: { color: css("--ink-2"), fontSize: 11.5 },
         data: KATEGORI.filter((c) => susun.some(([k]) => katDari(k).k === c.k)).map((c) => ({ name: c.label, itemStyle: { color: css(c.warna) } })) },
-      grid: { left: 4, right: 8, top: 22, bottom: 36, containLabel: true },
+      grid: { left: 4, right: 8, top: 44, bottom: 30, containLabel: true },
       tooltip: { ...tooltipAsas(), trigger: "item",
         formatter: (p) => `<b>${esc(contoh.get(susun[p.dataIndex][0]))}</b><br>${esc(katDari(susun[p.dataIndex][0]).label)}<br>${fmtN.format(p.value)} pertubuhan (${fmtP(p.value / R.length)})` },
       xAxis: { type: "category", data: susun.map((s) => kod(s[0])), ...paksi(), splitLine: { show: false },
@@ -941,6 +941,43 @@
       bulat(k, warna("--surface"));
       const h2 = el.querySelector("h2")?.textContent || "";
       teksKotak(h2, k.x + 18 * skala, k.y + 28 * skala, 14, 700, warna("--ink"));
+      // Penemuan utama: senarai teks dilukis semula dengan pembalutan baris
+      const li = [...el.querySelectorAll("#penemuan li")];
+      if (li.length) {
+        let y = k.y + 60 * skala;
+        const lebar = k.w - 56 * skala;
+        ctx.font = `500 ${12 * skala}px system-ui, sans-serif`;
+        for (const it of li) {
+          const tanda = it.querySelector(".tanda")?.textContent || "";
+          const ayat = it.lastElementChild?.textContent || "";
+          const baris = [];
+          let cur = "";
+          for (const w of ayat.split(/\s+/)) {
+            const uji = cur ? cur + " " + w : w;
+            if (ctx.measureText(uji).width > lebar && cur) { baris.push(cur); cur = w; } else cur = uji;
+          }
+          if (cur) baris.push(cur);
+          teksKotak(tanda, k.x + 18 * skala, y + 14 * skala, 12, 800, warna("--accent"));
+          baris.forEach((t, i) => teksKotak(t, k.x + 40 * skala, y + (14 + i * 17) * skala, 12, 500, warna("--ink-2")));
+          y += (baris.length * 17 + 12) * skala;
+        }
+      }
+      // Matriks respon × tahap: sel dilukis dengan warna latar dan teks
+      for (const sel of el.querySelectorAll("#matriks td, #matriks th")) {
+        if (!sel.getClientRects().length) continue;
+        const rs = kotak(sel);
+        const bg = getComputedStyle(sel).backgroundColor;
+        if (bg && bg !== "rgba(0, 0, 0, 0)" && bg !== "transparent") { ctx.fillStyle = bg; ctx.fillRect(rs.x, rs.y, rs.w, rs.h); }
+        const ya = sel.tagName === "TH" ? warna("--muted") : (getComputedStyle(sel).color || warna("--ink"));
+        ctx.font = `${sel.tagName === "TH" ? 600 : 700} ${(sel.tagName === "TH" ? 11 : 12) * skala}px system-ui, sans-serif`;
+        ctx.fillStyle = ya;
+        ctx.textAlign = sel.classList.contains("baris") ? "left" : "center";
+        ctx.textBaseline = "middle";
+        const tx = sel.classList.contains("baris") ? rs.x + 6 * skala : rs.x + rs.w / 2;
+        ctx.fillText(sel.textContent || "", tx, rs.y + rs.h / 2);
+      }
+      ctx.textAlign = "left";
+      ctx.textBaseline = "alphabetic";
       for (const c of el.querySelectorAll(".carta")) {
         const inst = echarts.getInstanceByDom(c);
         if (!inst) continue;
