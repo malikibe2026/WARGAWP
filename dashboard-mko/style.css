@@ -657,3 +657,14 @@ td.io-merah { background: rgba(201, 54, 54, .08); }
 .sektor-ring .rv { stroke: #fff; stroke-linecap: round; filter: drop-shadow(0 0 3px rgba(255,255,255,.7)); }
 .sektor-ring b { position: absolute; top: 0; left: 0; width: 46px; height: 46px; display: grid; place-items: center; font-size: 10.5px; font-weight: 800; }
 .sektor-ring small { display: block; margin-top: 2px; font-size: 9.5px; font-weight: 800; letter-spacing: .02em; }
+
+/* Bulatan semakan lebih besar dan kemas */
+.sektor-rings { gap: 10px; }
+.sektor-ring { width: 64px; }
+.sektor-ring svg { width: 64px; height: 64px; border-radius: 50%; background: rgba(255,255,255,.12); box-shadow: inset 0 1px 0 rgba(255,255,255,.3), 0 4px 10px rgba(15,23,42,.25); }
+.sektor-ring circle { stroke-width: 4.2; }
+.sektor-ring .rt { stroke: rgba(15,23,42,.28); }
+.sektor-ring .rv { filter: drop-shadow(0 0 4px rgba(255,255,255,.85)); }
+.sektor-ring b { width: 64px; height: 64px; font-size: 14px; font-weight: 900; letter-spacing: -.01em; }
+.sektor-ring small { margin-top: 4px; font-size: 10px; text-transform: uppercase; letter-spacing: .08em; opacity: .95; }
+@media (max-width: 720px) { .sektor-ring, .sektor-ring svg, .sektor-ring b { width: 56px; height: 56px; } .sektor-ring b { font-size: 12.5px; } }
