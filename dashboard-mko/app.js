@@ -2157,7 +2157,7 @@
   }
   // Daerah pos & lokasi tidak lagi dipaparkan (peta, penapis, carta, jadual atau butiran)
   const DAERAH_BUANG = new Set(["daerah_pos_label", "daerah_pos_semasa", "daerah_lokasi_label", "daerah_lokasi_semasa", "_dl", "_dp"]);
-  const SISTEM = new Set(["id", "muat_naik_id", "_kat", "_tahap", "_dl", "_dp"]);
+  const SISTEM = new Set(["id", "muat_naik_id", "_kat", "_tahap", "_dl", "_dp", "_sektor4"]);
   // ---------- Frame + kemas kini terpilih ----------
   // Frame = senarai pertubuhan tulang belakang (populasi). Fail lain hanya mengemas kini lajur tertentu
   // bagi No. Siri yang ada dalam frame; rekod tidak ditambah atau dibuang, sel kosong tidak memadam nilai.
