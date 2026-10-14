@@ -15,6 +15,7 @@
     { "src": "ikon/ikon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ],
   "shortcuts": [
+    { "name": "Buku Direktori", "url": "direktori.html", "icons": [{ "src": "ikon/ikon-192.png", "sizes": "192x192" }] },
     { "name": "Carta Organisasi", "url": "carta.html", "icons": [{ "src": "ikon/ikon-192.png", "sizes": "192x192" }] },
     { "name": "Program & Kehadiran", "url": "program.html", "icons": [{ "src": "ikon/ikon-192.png", "sizes": "192x192" }] },
     { "name": "Dashboard", "url": "dashboard.html", "icons": [{ "src": "ikon/ikon-192.png", "sizes": "192x192" }] }

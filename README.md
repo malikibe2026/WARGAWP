@@ -39,6 +39,7 @@ Settings → Pages → Source: **GitHub Actions**. Kod tidak mengandungi data st
 - **Laporan** (`laporan.html?id=…`): laporan rasmi A4 — ringkasan, ikut seksyen, senarai hadir/tidak hadir, ruang tandatangan. Cetak atau simpan PDF.
 
 ## Carta organisasi, dashboard & aplikasi
+- **Buku Direktori** (`direktori.html`, terbuka): halaman khas direktori dikumpul ikut seksyen/pejabat — indeks seksyen di sisi (cip lompat di telefon), carian dengan serlahan, tapis Staf Tetap/PMS, profil dengan Telefon/WhatsApp/E-mel/Simpan kenalan, pautan terus ke seksyen (`direktori.html#s-...`) atau carian (`?q=`), dan cetak/PDF dua lajur beserta nombor telefon & e-mel.
 - **Carta Organisasi** (`carta.html`, terbuka seperti direktori): Pengarah → Timbalan → seksyen/pejabat (ikut susunan direktori), ketua setiap seksyen, bilangan staf tetap & PMS, carian nama, Mod Pembentangan (skrin penuh) dan cetak A3 melintang.
   PMS dipadankan ke seksyen tanpa mengira huruf besar/kecil; seksyen PMS yang tiada padanan dipaparkan berasingan supaya ejaan boleh dibetulkan.
 - **Sasaran peserta** setiap program (`program.sasaran`: semua / tetap / pms / unit:<seksyen>) — digunakan untuk kadar kehadiran, senarai belum hadir, skrin paparan, laporan dan dashboard.

@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="ms">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#071a33">
+  <title>Buku Direktori — DOSM WP</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" href="ikon/favicon-32.png">
+  <link rel="apple-touch-icon" href="ikon/ikon-180.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="DOSM WP">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="bd-body">
+  <header class="hero hero-mini bd-hero">
+    <nav class="nav wrap">
+      <a class="brand" href="./" style="color:inherit;text-decoration:none">
+        <span class="jata" aria-hidden="true"><img src="ikon/jata-dosm.png" alt=""><i class="kilau"></i></span>
+        <div class="brand-text"><span class="brand-t">Jabatan Perangkaan Malaysia</span><span class="brand-s">Wilayah Persekutuan</span></div>
+      </a>
+      <div class="nav-actions">
+        <a href="carta.html" class="btn btn-glass" title="Carta organisasi">
+          <svg viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="5" rx="1"/><rect x="2" y="17" width="6" height="5" rx="1"/><rect x="16" y="17" width="6" height="5" rx="1"/><path d="M12 7v5M5 17v-5h14v5"/></svg><span>Carta</span>
+        </a>
+        <button id="btnKongsi" class="btn btn-glass" title="Salin pautan halaman ini">
+          <svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/></svg><span>Kongsi</span>
+        </button>
+        <button id="btnCetak" class="btn btn-glass" title="Cetak / simpan PDF buku direktori">
+          <svg viewBox="0 0 24 24"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg><span>Cetak</span>
+        </button>
+      </div>
+    </nav>
+    <div class="wrap hero-body">
+      <p class="eyebrow">Buku Direktori Warga</p>
+      <h1>Direktori Warga</h1>
+      <p class="lead">Jabatan Perangkaan Malaysia — Wilayah Persekutuan</p>
+      <div class="bd-ringkas" id="bdRingkas" aria-live="polite"></div>
+    </div>
+  </header>
+
+  <div class="bd-alat" id="bdAlat">
+    <div class="wrap bd-alat-dalam">
+      <label class="bd-cari">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input id="bdCarian" type="search" placeholder="Cari nama, jawatan, seksyen, telefon atau e-mel" aria-label="Carian" autocomplete="off">
+      </label>
+      <div class="seg seg-teks" id="bdKategori" role="group" aria-label="Kategori staf">
+        <button data-kategori="" class="active">Semua</button>
+        <button data-kategori="tetap">Staf Tetap</button>
+        <button data-kategori="pms" title="Personel MySTEPS">PMS</button>
+      </div>
+    </div>
+    <nav class="wrap bd-lompat" id="bdLompat" aria-label="Lompat ke seksyen"></nav>
+  </div>
+
+  <div class="wrap bd-susun">
+    <aside class="bd-sisi" aria-label="Senarai seksyen">
+      <p class="bd-sisi-t">Seksyen &amp; Pejabat</p>
+      <ol id="bdIndeks"></ol>
+    </aside>
+    <main id="bdUtama" class="bd-utama" aria-live="polite">
+      <p class="empty">Memuatkan direktori…</p>
+    </main>
+  </div>
+
+  <dialog id="dlgProfil" class="dialog dialog-profil">
+    <button class="icon-btn tutup" data-close aria-label="Tutup">
+      <svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>
+    </button>
+    <div id="butiranIsi"></div>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+  <footer class="footer">
+    <div class="wrap footer-inner">
+      <span>© Jabatan Perangkaan Malaysia, Wilayah Persekutuan</span>
+      <span class="muted" id="bdKemas"></span>
+    </div>
+  </footer>
+
+  <script src="config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="umur.js"></script>
+  <script src="storage.js"></script>
+  <script src="direktori.js"></script>
+  <script src="navbawah.js"></script>
+  <script src="pwa.js"></script>
+</body>
+</html>
