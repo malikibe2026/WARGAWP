@@ -1775,7 +1775,7 @@
         (p == null ? "" : `<div class="fe-kpi-track"><i style="--w:${(Math.min(1, p) * 100).toFixed(1)}%"></i></div>`) + `</div>`).join("") +
       `</div>` +
       `<div class="fe-komposisi"><div class="fe-komp-tajuk">Komposisi status respon</div><div class="fe-komp-bar">${segmen}</div><div class="fe-legenda-kuadran">${legenda}</div></div>` +
-      `<div class="fe-jadual"><div class="ffe-kepala"><div>#</div><div>Nama FE</div><div>Agihan</div><div>Komposisi (bil. · % agihan)</div><div>% Kod A</div><div>% ${nm}</div><div>Baki</div></div>` +
+      `<div class="fe-jadual"><div class="ffe-kepala"><div>#</div><div>Nama FE</div><div>Agihan</div><div class="ffe-kepala-komp">Komposisi <em>atas = bilangan · bawah = % agihan</em></div><div>% Kod A</div><div>% ${nm}</div><div>Baki</div></div>` +
       `<div class="ffe-senarai">${baris}</div></div>`;
     el.onclick = (e) => {
       const row = e.target.closest(".ffe-row");
