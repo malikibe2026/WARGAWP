@@ -1,0 +1,41 @@
+name: Deploy ke Netlify
+
+# Setiap push ke main yang mengubah dashboard-mko akan terus naik ke laman.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "dashboard-mko/**"
+      - ".github/workflows/netlify-deploy.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: netlify-deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Semak secret
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+        run: |
+          if [ -z "$NETLIFY_AUTH_TOKEN" ]; then
+            echo "::error::Secret NETLIFY_AUTH_TOKEN belum ditetapkan (Settings > Secrets and variables > Actions)."
+            exit 1
+          fi
+
+      - name: Deploy dashboard-mko ke Netlify
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: 8c8cfc65-8050-4d38-90fd-5e2479f448fd
+        run: |
+          npx -y netlify-cli@17.36.0 deploy \
+            --dir=dashboard-mko \
+            --prod \
+            --site="$NETLIFY_SITE_ID" \
+            --message="GitHub ${GITHUB_SHA::7}"
