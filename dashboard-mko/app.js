@@ -1722,6 +1722,8 @@
     const el = $("kadFe");
     const senarai = dataFe(R);
     if (!senarai.length) { el.innerHTML = '<p class="nota">Tiada lajur Pegawai Kerja Luar dalam data.</p>'; return; }
+    // Kedudukan berdasarkan peratus Kod A (11 + LK), kemudian bilangan Kod A, kemudian agihan
+    senarai.sort((a, b) => (b.c.KodA / (b.n || 1)) - (a.c.KodA / (a.n || 1)) || b.c.KodA - a.c.KodA || b.n - a.n);
     const T = kiraKat(R), n = T._n || 1;
     const tahapMod = ukurUtama() === "selesai";
     const nm = tahapMod ? "Selesai" : "Siap";
@@ -1733,7 +1735,7 @@
       ["Kod A (11 + LK)", fmtN.format(T.KodA), fmtP(T.KodA / n) + " daripada agihan", "--s1", T.KodA / n],
       ["LK (12–60)", fmtN.format(T.LK), fmtP(T.LK / n) + " daripada agihan · termasuk 14: " + fmtN.format(T.K14), "--s7", T.LK / n],
       ["Kod B (71–77)", fmtN.format(T.KodB), fmtP(T.KodB / n) + " daripada agihan", "--s4", T.KodB / n],
-      ["Baki belum " + nm.toLowerCase(), fmtN.format(baki), "agihan − " + nm.toLowerCase(), "--bad", baki / n],
+      ["Baki belum " + nm.toLowerCase(), fmtN.format(baki), "agihan − " + nm.toLowerCase(), "--pink", baki / n],
     ];
     const segmen = KATEGORI.filter((c) => T[c.k]).map((c, i, a) => {
       const w = (T[c.k] / n) * 100;
@@ -1741,16 +1743,24 @@
         (w >= 9 ? `<span>${esc(c.pendek || c.label.split(" ·")[0])} ${fmtP(T[c.k] / n)}</span>` : "") + `</i>`;
     }).join("");
     const legenda = KATEGORI.filter((c) => T[c.k]).map((c) => `<span><i class="kd-dot" style="background:${css(c.warna)}"></i>${esc(c.label)}: <b>${fmtN.format(T[c.k])}</b></span>`).join("");
+    // Singkatkan nama supaya muat dalam ruang: BIN / BINTI → B. / BT.
+    const pendekNama = (nama) => String(nama).replace(/\s+BINTI\s+/gi, " BT. ").replace(/\s+BINTE\s+/gi, " BT. ").replace(/\s+BIN\s+/gi, " B. ").replace(/\s+/g, " ").trim();
     const baris = senarai.map((f, i) => {
-      const c = f.c;
-      const pct = f.p * 100;
+      const c = f.c, jumlah = c._n || 1;
+      const pa = (c.KodA / jumlah) * 100;
+      const bakiFe = c._n - c.KodA;
       return `<div class="ffe-row" data-nama="${esc(f.nama)}" style="--d:${320 + i * 60}ms">` +
         `<div class="ffe-no${i === 0 ? " ffe-juara" : ""}">${i + 1}</div>` +
-        `<div class="ffe-nm" title="${esc(f.nama)}">${esc(f.nama)}</div>` +
+        `<div class="ffe-nm" title="${esc(f.nama)}">${esc(pendekNama(f.nama))}</div>` +
         `<div class="ffe-num" data-count="${f.n}">0</div>` +
-        `<div class="ffe-mini"><span>11 <b>${fmtN.format(c.A1)}</b></span><span>14 <b>${fmtN.format(c.K14)}</b></span><span>LK <b>${fmtN.format(c.LK)}</b></span><span>Kod A <b>${fmtP(c.KodA / (c._n || 1))}</b></span><span>B <b>${fmtN.format(c.KodB)}</b></span></div>` +
-        `<div class="ffe-bar"><div class="ffe-track"><i style="--w:${pct.toFixed(2)}%;--d:${360 + i * 60}ms"></i></div><b class="ffe-pct" data-count="${pct.toFixed(1)}" data-suffix="%">0%</b></div>` +
-        `<div class="ffe-baki">${fmtN.format(c._n - capai(c))}</div></div>`;
+        `<div class="ffe-mini">` +
+          `<span class="mn mn-11" title="Kod 11">11 <b>${fmtN.format(c.A1)}</b></span>` +
+          `<span class="mn" title="Kod 14 (termasuk dalam LK)">14 <b>${fmtN.format(c.K14)}</b></span>` +
+          `<span class="mn" title="LK (12–60)">LK <b>${fmtN.format(c.LK)}</b></span>` +
+          `<span class="mn mn-a" title="Kod A = 11 + LK">Kod A <b>${fmtN.format(c.KodA)}</b></span>` +
+          `<span class="mn" title="Kod B (71–77)">B <b>${fmtN.format(c.KodB)}</b></span></div>` +
+        `<div class="ffe-bar"><div class="ffe-track"><i style="--w:${pa.toFixed(2)}%;--d:${360 + i * 60}ms"></i></div><b class="ffe-pct" data-count="${pa.toFixed(1)}" data-suffix="%">0%</b></div>` +
+        `<div class="ffe-baki"><span>${fmtN.format(bakiFe)}</span></div></div>`;
     }).join("");
     el.innerHTML =
       `<div class="fe-hero">` +
@@ -1765,7 +1775,7 @@
         (p == null ? "" : `<div class="fe-kpi-track"><i style="--w:${(Math.min(1, p) * 100).toFixed(1)}%"></i></div>`) + `</div>`).join("") +
       `</div>` +
       `<div class="fe-komposisi"><div class="fe-komp-tajuk">Komposisi status respon</div><div class="fe-komp-bar">${segmen}</div><div class="fe-legenda-kuadran">${legenda}</div></div>` +
-      `<div class="fe-jadual"><div class="ffe-kepala"><div>#</div><div>Nama FE</div><div>Agihan</div><div>Komposisi</div><div>% ${nm}</div><div>Baki</div></div>` +
+      `<div class="fe-jadual"><div class="ffe-kepala"><div>#</div><div>Nama FE</div><div>Agihan</div><div>Komposisi</div><div>% Kod A</div><div>Baki</div></div>` +
       `<div class="ffe-senarai">${baris}</div></div>`;
     el.onclick = (e) => {
       const row = e.target.closest(".ffe-row");

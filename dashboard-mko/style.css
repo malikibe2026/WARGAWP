@@ -19,6 +19,7 @@
   --gold: #c99a2e;
   --good: #0a7d32;
   --bad: #c93636;
+  --pink: #ec4899;
   --s1: #2a78d6; --s3: #1baf7a; --s7: #4a3aa7; --s4: #eda100; --s5: #e87ba4; --s0: #c3c7cf;
   --seq-0: #eef4fc; --seq-1: #cde2fb; --seq-2: #86b6ef; --seq-3: #3987e5; --seq-4: #1c5cab; --seq-5: #0d366b;
   --shadow: 0 1px 2px rgba(16, 24, 40, .04), 0 4px 16px rgba(16, 24, 40, .05);
@@ -29,7 +30,7 @@
   --page: #0b0d12; --surface: #141821; --surface-2: #1a1f2b; --head-1: #070b14; --head-2: #0f1d36;
   --ink: #f3f5f9; --ink-2: #b8c0d0; --muted: #7d879b; --grid: #232a38; --axis: #2f3848;
   --border: #232a38; --border-strong: #323b4d; --accent: #3987e5; --accent-soft: rgba(57,135,229,.16);
-  --good: #2bbf5b; --bad: #e66767;
+  --good: #2bbf5b; --bad: #e66767; --pink: #f472b6;
   --s1: #3987e5; --s3: #199e70; --s7: #9085e9; --s4: #c98500; --s5: #d55181; --s0: #4a5263;
   --seq-0: #1b2333; --seq-1: #184f95; --seq-2: #1c5cab; --seq-3: #3987e5; --seq-4: #6da7ec; --seq-5: #b7d3f6;
   --shadow: 0 1px 2px rgba(0,0,0,.3);
@@ -40,7 +41,7 @@
     --page: #0b0d12; --surface: #141821; --surface-2: #1a1f2b; --head-1: #070b14; --head-2: #0f1d36;
     --ink: #f3f5f9; --ink-2: #b8c0d0; --muted: #7d879b; --grid: #232a38; --axis: #2f3848;
     --border: #232a38; --border-strong: #323b4d; --accent: #3987e5; --accent-soft: rgba(57,135,229,.16);
-    --good: #2bbf5b; --bad: #e66767;
+    --good: #2bbf5b; --bad: #e66767; --pink: #f472b6;
     --s1: #3987e5; --s3: #199e70; --s7: #9085e9; --s4: #c98500; --s5: #d55181; --s0: #4a5263;
     --seq-0: #1b2333; --seq-1: #184f95; --seq-2: #1c5cab; --seq-3: #3987e5; --seq-4: #6da7ec; --seq-5: #b7d3f6;
     --shadow: 0 1px 2px rgba(0,0,0,.3);
@@ -720,3 +721,29 @@ td.io-merah { background: rgba(201, 54, 54, .08); }
 .sektor-proses { font-size: 11px; font-weight: 700; }
 .sektor-ring small { font-weight: 900; }
 .sektor-ring b { font-weight: 900; text-shadow: 0 1px 3px rgba(0,0,0,.5); }
+
+/* Prestasi FE: garisan pemisah lajur, nama FE dipendekkan, Kod 11 / Kod A diserlahkan, baki merah jambu */
+.ffe-kepala, .ffe-row { grid-template-columns: 40px minmax(84px, .75fr) 64px minmax(230px, 1.7fr) minmax(160px, 1.3fr) 76px; gap: 0; padding: 0; align-items: stretch; }
+.ffe-kepala > div, .ffe-row > div { padding: 10px; display: flex; align-items: center; min-width: 0; border-left: 1px solid var(--border); }
+.ffe-kepala > div:first-child, .ffe-row > div:first-child { border-left: 0; justify-content: center; }
+.ffe-kepala > div { border-left-color: var(--border-strong, var(--border)); }
+.ffe-nm { display: block; align-self: center; font-size: 13px; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ffe-row > .ffe-nm { display: flex; align-items: center; }
+.ffe-num, .ffe-baki { justify-content: flex-end; }
+.ffe-mini { gap: 5px; flex-wrap: wrap; align-content: center; }
+.ffe-mini .mn { padding: 2px 7px; border-radius: 999px; background: var(--surface-2); color: var(--ink-2); font-size: 11.5px; font-weight: 600; white-space: nowrap; }
+.ffe-mini .mn b { color: var(--ink); }
+.ffe-mini .mn-11 { background: linear-gradient(135deg, #6366f1, #a855f7); color: #fff; box-shadow: 0 2px 6px rgba(99,102,241,.35); }
+.ffe-mini .mn-a { background: linear-gradient(135deg, #10b981, #06b6d4); color: #fff; box-shadow: 0 2px 6px rgba(16,185,129,.35); }
+.ffe-mini .mn-11 b, .ffe-mini .mn-a b { color: #fff; }
+.ffe-track i { background: linear-gradient(90deg, #10b981, #06b6d4); }
+.ffe-pct { color: #0e9f76; }
+.ffe-baki span { display: inline-block; min-width: 40px; padding: 3px 9px; border-radius: 999px; text-align: center; background: rgba(236,72,153,.14); color: #be185d; font-weight: 800; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .ffe-baki span { color: #f9a8d4; background: rgba(244,114,182,.18); } .ffe-pct { color: #34d399; } }
+:root[data-theme="dark"] .ffe-baki span { color: #f9a8d4; background: rgba(244,114,182,.18); }
+:root[data-theme="dark"] .ffe-pct { color: #34d399; }
+@media (max-width: 720px) {
+  .ffe-row { grid-template-columns: 30px minmax(0, 1fr) 70px; padding: 8px 4px; }
+  .ffe-row > div { padding: 2px 6px; border-left: 0; }
+  .ffe-baki { display: none; }
+}
