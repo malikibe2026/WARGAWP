@@ -782,3 +782,28 @@ td.io-merah { background: rgba(201, 54, 54, .08); }
 .ffe-pec .mn-11 span, .ffe-pec .mn-a span { background: rgba(0,0,0,.24); color: #fff; border-bottom-color: rgba(255,255,255,.3); }
 .ffe-pec .mn-11 b, .ffe-pec .mn-a b { color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.25); }
 .ffe-pec .mn-11 small, .ffe-pec .mn-a small { background: rgba(255,255,255,.24); color: #fff; border-top-color: rgba(255,255,255,.45); }
+
+/* Komposisi: jalur satu baris (kod · bilangan · %) bersebelahan, jimat ruang */
+.ffe-kepala, .ffe-row { grid-template-columns: 40px minmax(84px, .6fr) 64px minmax(410px, 2.6fr) minmax(120px, .9fr) minmax(120px, .9fr) 76px; }
+.ffe-mini { padding: 6px 10px; }
+.ffe-pc { display: flex; flex-wrap: wrap; gap: 5px; width: 100%; align-items: center; }
+.ffe-pc .pc { display: inline-flex; align-items: center; gap: 6px; padding: 2px 9px 2px 3px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--border-strong, var(--border)); line-height: 1.2; white-space: nowrap; }
+.ffe-pc .pc i { font-style: normal; font-size: 11px; font-weight: 800; color: var(--ink); background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 1px 7px; min-width: 22px; text-align: center; }
+.ffe-pc .pc b { font-size: 13.5px; font-weight: 800; color: var(--ink); font-variant-numeric: tabular-nums; }
+.ffe-pc .pc small { font-size: 11px; font-weight: 800; color: var(--accent); font-variant-numeric: tabular-nums; }
+.ffe-pc .pc small::before { content: "·"; margin-right: 5px; color: var(--muted); font-weight: 700; }
+.ffe-pc .mn-11 { background: linear-gradient(135deg, #2563eb, #38bdf8); border-color: transparent; box-shadow: 0 2px 6px rgba(37,99,235,.3); }
+.ffe-pc .mn-a { background: linear-gradient(135deg, #10b981, #06b6d4); border-color: transparent; box-shadow: 0 2px 6px rgba(16,185,129,.3); }
+.ffe-pc .mn-11 i, .ffe-pc .mn-a i { background: rgba(0,0,0,.22); border-color: transparent; color: #fff; }
+.ffe-pc .mn-11 b, .ffe-pc .mn-a b, .ffe-pc .mn-11 small, .ffe-pc .mn-a small { color: #fff; }
+.ffe-pc .mn-11 small::before, .ffe-pc .mn-a small::before { color: rgba(255,255,255,.7); }
+@media (max-width: 720px) {
+  .ffe-mini { padding: 2px 6px; }
+  .ffe-pc .pc { padding-right: 7px; }
+}
+.ffe-kepala, .ffe-row { grid-template-columns: 38px minmax(80px, .55fr) 62px minmax(600px, 3.6fr) minmax(100px, .7fr) minmax(100px, .7fr) 70px; }
+.ffe-pc { flex-wrap: nowrap; gap: 4px; }
+.ffe-pc .pc { gap: 5px; padding-right: 8px; }
+.ffe-pct { min-width: 44px; font-size: 13px; }
+@media (max-width: 1100px) { .ffe-pc { flex-wrap: wrap; } .ffe-kepala, .ffe-row { grid-template-columns: 38px minmax(70px, .5fr) 56px minmax(420px, 3fr) minmax(90px, .7fr) minmax(90px, .7fr) 64px; } }
+@media (max-width: 720px) { .ffe-pc { flex-wrap: wrap; } .ffe-kepala, .ffe-row { grid-template-columns: 30px minmax(0, 1fr) 70px; } }
