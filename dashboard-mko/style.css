@@ -807,3 +807,45 @@ td.io-merah { background: rgba(201, 54, 54, .08); }
 .ffe-pct { min-width: 44px; font-size: 13px; }
 @media (max-width: 1100px) { .ffe-pc { flex-wrap: wrap; } .ffe-kepala, .ffe-row { grid-template-columns: 38px minmax(70px, .5fr) 56px minmax(420px, 3fr) minmax(90px, .7fr) minmax(90px, .7fr) 64px; } }
 @media (max-width: 720px) { .ffe-pc { flex-wrap: wrap; } .ffe-kepala, .ffe-row { grid-template-columns: 30px minmax(0, 1fr) 70px; } }
+
+/* Komposisi sebagai jadual: kod = header, setiap kod dipecah Jml dan % */
+.ffe-kepala, .ffe-row { grid-template-columns: 38px minmax(80px, .55fr) 62px minmax(520px, 3fr) minmax(110px, .8fr) minmax(110px, .8fr) 70px; }
+.ffe-kepala > .ffe-kepala-komp, .ffe-row > .ffe-mini { padding: 0; align-items: stretch; }
+.ffe-kepala > .ffe-kepala-komp { display: flex; flex-direction: column; justify-content: stretch; align-items: stretch; text-transform: none; letter-spacing: 0; }
+.kk-tajuk { padding: 6px 10px 3px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+.kk-atas, .kk-bawah, .kk-isi { display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); width: 100%; }
+.kk-atas span { grid-column: span 2; padding: 4px 2px; text-align: center; font-size: 12px; font-weight: 800; color: var(--ink); background: var(--surface); border-top: 1px solid var(--border-strong, var(--border)); border-left: 1px solid var(--border-strong, var(--border)); }
+.kk-atas span:first-child { border-left: 0; }
+.kk-atas span.c11 { background: linear-gradient(135deg, #2563eb, #38bdf8); color: #fff; }
+.kk-atas span.cA { background: linear-gradient(135deg, #10b981, #06b6d4); color: #fff; }
+.kk-bawah span { padding: 2px 2px 3px; text-align: center; font-size: 10px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); background: var(--surface-2); border-top: 1px solid var(--border); }
+.kk-bawah span:nth-child(odd) { border-left: 1px solid var(--border-strong, var(--border)); }
+.kk-bawah span:nth-child(even) { border-left: 1px dashed var(--border); }
+.kk-bawah span:first-child { border-left: 0; }
+.kk-bawah span.c11 { background: rgba(37,99,235,.12); color: #1d4ed8; }
+.kk-bawah span.cA { background: rgba(16,185,129,.14); color: #047857; }
+.kg { display: contents; }
+.kk-isi { height: 100%; }
+.kk-isi span { display: flex; align-items: center; justify-content: center; padding: 8px 2px; font-variant-numeric: tabular-nums; }
+.kk-isi .kv { font-size: 14px; font-weight: 800; color: var(--ink); border-left: 1px solid var(--border-strong, var(--border)); }
+.kk-isi .kp { font-size: 12px; font-weight: 700; color: var(--accent); border-left: 1px dashed var(--border); }
+.kk-isi .kg:first-child .kv { border-left: 0; }
+.kk-isi .kv.c11, .kk-isi .kp.c11 { background: rgba(37,99,235,.10); }
+.kk-isi .kv.cA, .kk-isi .kp.cA { background: rgba(16,185,129,.12); }
+.kk-isi .kv.c11 { color: #1d4ed8; } .kk-isi .kv.cA { color: #047857; }
+:root[data-theme="dark"] .kk-bawah span.c11, :root[data-theme="dark"] .kk-isi .kv.c11 { color: #93c5fd; }
+:root[data-theme="dark"] .kk-bawah span.cA, :root[data-theme="dark"] .kk-isi .kv.cA { color: #6ee7b7; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .kk-bawah span.c11, :root:not([data-theme="light"]) .kk-isi .kv.c11 { color: #93c5fd; } :root:not([data-theme="light"]) .kk-bawah span.cA, :root:not([data-theme="light"]) .kk-isi .kv.cA { color: #6ee7b7; } }
+@media (max-width: 1100px) { .ffe-kepala, .ffe-row { grid-template-columns: 34px minmax(70px, .5fr) 56px minmax(430px, 3fr) minmax(90px, .7fr) minmax(90px, .7fr) 64px; } }
+@media (max-width: 720px) {
+  /* Telefon: tiada header, jadi setiap kod dilabel dalam kotak sendiri */
+  .ffe-mini { padding: 2px 6px !important; }
+  .kk-isi { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; }
+  .kg { display: flex; flex-direction: column; align-items: center; padding: 3px 2px; border-radius: 8px; background: var(--surface-2); border: 1px solid var(--border); }
+  .kg::before { content: attr(data-k); font-size: 10px; font-weight: 800; color: var(--muted); }
+  .kk-isi span { padding: 0; border: 0 !important; background: none !important; }
+  .kk-isi .kv { font-size: 13px; } .kk-isi .kp { font-size: 10.5px; }
+  .kg.c11 { background: linear-gradient(135deg, #2563eb, #38bdf8); border-color: transparent; }
+  .kg.cA { background: linear-gradient(135deg, #10b981, #06b6d4); border-color: transparent; }
+  .kg.c11::before, .kg.cA::before, .kg.c11 span, .kg.cA span { color: #fff !important; }
+}
