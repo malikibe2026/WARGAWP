@@ -897,3 +897,23 @@ td.io-merah { background: rgba(201, 54, 54, .08); }
 .kk-bawah span { background: #d5dbe6 !important; }
 :root[data-theme="dark"] .kk-bawah span { background: #0c1220 !important; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .kk-bawah span { background: #0c1220 !important; } }
+
+/* Garisan jadual FE: jelas dan hitam */
+.ffe-senarai, .ffe-kepala, .fe-jadual { border-color: #000 !important; }
+.ffe-kepala { border-top: 1px solid #000; border-bottom: 1px solid #000; }
+.ffe-row { border-bottom: 1px solid #000 !important; }
+.ffe-row > div { border-left: 1px solid #000 !important; }
+.ffe-row > div:first-child { border-left: 0 !important; }
+.ffe-kepala > div, .ffe-kepala > .ffe-kepala-komp { border-left: 1px solid #000 !important; }
+.ffe-kepala > div:first-child { border-left: 0 !important; }
+.kk-tajuk, .kk-atas span, .kk-bawah span, .kk-isi .kg, .kk-isi span { border-color: #000 !important; }
+.kk-atas span { border-top: 1px solid #000 !important; border-left: 1px solid #000 !important; }
+.kk-bawah span { border-top: 1px solid #000 !important; border-left: 1px solid #000 !important; }
+.kk-bawah span:first-child, .kk-atas span:first-child { border-left: 0 !important; }
+.kk-isi .kv, .kk-isi .kp { border-left: 1px solid #000 !important; }
+.kk-isi .kp { border-left-style: solid !important; }
+.kk-isi .kg:first-child .kv { border-left: 0 !important; }
+.kk-kodA, .kk-kodB { border-left: 1px solid #000 !important; }
+.kk-tajuk { border-bottom: 1px solid #000; }
+.kk-spacer { border-bottom: 1px solid #000; }
+:root[data-theme="dark"] .ffe-senarai, :root[data-theme="dark"] .ffe-row > div, :root[data-theme="dark"] .ffe-kepala > div { border-color: #000 !important; }
