@@ -963,3 +963,63 @@ td.io-merah { background: rgba(201, 54, 54, .08); }
   .ffe-no, .ffe-nm, .ffe-num { min-width: 0; }
   .ffe-row > div { border-left: 0 !important; }
 }
+
+/* ===== Telefon: kad FE premium ===== */
+@media (max-width: 720px) {
+  .fe-jadual { border: 0 !important; background: transparent !important; box-shadow: none !important; overflow: visible !important; }
+  .ffe-senarai { display: flex; flex-direction: column; gap: 12px; border: 0 !important; overflow: visible; }
+  .ffe-row {
+    display: grid !important;
+    grid-template-columns: repeat(10, minmax(0, 1fr)) !important;
+    grid-template-areas:
+      "no no nm nm nm nm nm nm baki baki"
+      "no no num num num num num num baki baki"
+      "k k k k k k a a b b"
+      "pa pa pa pa pa ps ps ps ps ps";
+    gap: 12px 8px !important; padding: 16px 14px !important;
+    background: var(--surface); border: 1px solid var(--border) !important; border-radius: 18px;
+    box-shadow: 0 1px 2px rgba(15,23,42,.06), 0 10px 24px -14px rgba(15,23,42,.35);
+    transform: none !important;
+  }
+  .ffe-row:hover { background: var(--surface); }
+  .ffe-row > div { padding: 0 !important; border: 0 !important; background: none !important; }
+  .ffe-no { grid-area: no !important; align-self: center; justify-self: center; width: 40px; height: 40px; border-radius: 12px;
+    display: grid !important; place-items: center; font-size: 16px; font-weight: 800; color: var(--ink-2) !important;
+    background: var(--surface-2) !important; }
+  .ffe-row:nth-child(1) .ffe-no { background: linear-gradient(135deg, #f6d365, #d4a017) !important; color: #fff !important; box-shadow: 0 4px 10px rgba(212,160,23,.4); }
+  .ffe-row:nth-child(2) .ffe-no { background: linear-gradient(135deg, #e2e8f0, #94a3b8) !important; color: #fff !important; }
+  .ffe-row:nth-child(3) .ffe-no { background: linear-gradient(135deg, #f0b27a, #b9770e) !important; color: #fff !important; }
+  .ffe-nm { grid-area: nm !important; align-self: end; font-size: 15.5px !important; font-weight: 800; color: var(--ink); white-space: nowrap !important; overflow: hidden; text-overflow: ellipsis; display: block !important; }
+  .ffe-num { grid-area: num !important; align-self: start; display: block !important; font-size: 12px; font-weight: 600; color: var(--muted) !important; justify-content: flex-start !important; }
+  .ffe-num::before { content: "Agihan "; font-weight: 600; color: var(--muted); }
+  .ffe-baki { grid-area: baki !important; display: flex !important; flex-direction: column; align-items: center; justify-content: center !important; gap: 2px; }
+  .ffe-baki::before { content: "Baki"; display: block; margin: 0; font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  .ffe-baki span { min-width: 0; padding: 4px 12px; font-size: 15px; }
+
+  /* Jubin statistik */
+  .ffe-komp { grid-area: k !important; } .ffe-kodA { grid-area: a !important; } .ffe-kodB { grid-area: b !important; }
+  .ffe-komp::before, .ffe-kodA::before, .ffe-kodB::before { content: none !important; }
+  .kk-isi { display: grid !important; gap: 6px; width: 100%; }
+  .kk-isi.kk3 { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+  .kk-isi.kk1 { grid-template-columns: minmax(0, 1fr) !important; }
+  .kk-isi .kg { display: flex !important; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+    padding: 8px 2px !important; border: 0 !important; border-radius: 12px; background: var(--surface-2); min-height: 66px; }
+  .kk-isi .kg::before { content: attr(data-k); font-size: 10px !important; font-weight: 700 !important; letter-spacing: .04em; text-transform: uppercase; color: var(--muted) !important; margin: 0 !important; }
+  .kk-isi .kg.cB::before { content: "Kod B"; }
+  .kk-isi .kv { font-size: 17px !important; font-weight: 800; color: var(--ink) !important; border: 0 !important; padding: 0 !important; background: none !important; line-height: 1.15; }
+  .kk-isi .kp { font-size: 11px !important; font-weight: 700; color: var(--accent) !important; border: 0 !important; padding: 0 !important; background: none !important; }
+  .kk-isi .kg.c11 { background: linear-gradient(145deg, #2563eb, #38bdf8) !important; box-shadow: 0 6px 14px -8px rgba(37,99,235,.8); }
+  .kk-isi .kg.cA { background: linear-gradient(145deg, #059669, #06b6d4) !important; box-shadow: 0 6px 14px -8px rgba(5,150,105,.8); }
+  .kk-isi .kg.c11 .kv, .kk-isi .kg.c11 .kp, .kk-isi .kg.cA .kv, .kk-isi .kg.cA .kp { color: #fff !important; }
+  .kk-isi .kg.c11::before, .kk-isi .kg.cA::before { color: rgba(255,255,255,.85) !important; }
+  .kk-isi .kg.cB { background: rgba(245,158,11,.14) !important; }
+  .kk-isi .kg.cB .kv { color: #b45309 !important; }
+
+  /* Bar peratus */
+  .ffe-bar { grid-area: pa !important; display: flex !important; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+  .ffe-sel { grid-area: ps !important; }
+  .ffe-bar::before { content: "% MKO Kod A" !important; flex-basis: 100%; display: block; margin: 0 !important; font-size: 10px !important; font-weight: 700 !important; letter-spacing: .05em; text-transform: uppercase; color: var(--muted) !important; }
+  .ffe-sel::before { content: "% MKO Selesai" !important; }
+  .ffe-bar .ffe-track { flex: 1; height: 8px; border-radius: 999px; }
+  .ffe-bar .ffe-pct { min-width: 0 !important; font-size: 14px !important; font-weight: 800; }
+}
