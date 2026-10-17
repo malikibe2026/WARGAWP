@@ -1719,7 +1719,8 @@
     }).sort((a, b) => b.p - a.p || b.n - a.n);
   }
   // Kod komposisi: [label, kunci dalam kiraKat, kelas, penerangan]
-  const KOMP_KOD = [["11", "A1", "c11", "Kod 11"], ["14", "K14", "c14", "Kod 14 (termasuk dalam LK)"], ["LK", "LK", "cLK", "LK (12–60)"], ["Kod A", "KodA", "cA", "Kod A = 11 + LK"], ["B", "KodB", "cB", "Kod B (71–77)"]];
+  // [label, kunci, kelas, kumpulan]: "komp" = komposisi 11/14/LK; Kod A dan Kod B lajur sendiri
+  const KOMP_KOD = [["11", "A1", "c11", "komp"], ["14", "K14", "c14", "komp"], ["LK", "LK", "cLK", "komp"], ["Kod A", "KodA", "cA", "kodA"], ["B", "KodB", "cB", "kodB"]];
   function paparKadFe(R) {
     const el = $("kadFe");
     const senarai = dataFe(R);
@@ -1752,20 +1753,26 @@
       const pa = (c.KodA / jumlah) * 100;
       const sel = capai(c), ps = (sel / jumlah) * 100;
       const bakiFe = c._n - c.KodA;
-      // Jadual komposisi: setiap kod ada dua sub-lajur (Jml dan %)
-      const kg = KOMP_KOD.map(([lab, kunci, cls, tajuk]) => {
+      // Komposisi: 11, 14, LK; Kod A dan Kod B lajur berasingan. Setiap kod ada Jml dan %.
+      const sel3 = (cols) => cols.map(([lab, kunci, cls, tajuk]) => {
         const v = c[kunci] || 0;
         return `<div class="kg ${cls}" data-k="${lab}" title="${esc(tajuk)}: ${fmtN.format(v)} / ${fmtN.format(c._n)}"><span class="kv ${cls}">${fmtN.format(v)}</span><span class="kp ${cls}">${fmtP(v / jumlah)}</span></div>`;
       }).join("");
+      const kompKod = sel3(KOMP_KOD.filter((k) => k[3] === "komp"));
+      const kodA = sel3(KOMP_KOD.filter((k) => k[3] === "kodA"));
+      const kodB = sel3(KOMP_KOD.filter((k) => k[3] === "kodB"));
       return `<div class="ffe-row" data-nama="${esc(f.nama)}" style="--d:${320 + i * 60}ms">` +
         `<div class="ffe-no${i === 0 ? " ffe-juara" : ""}">${i + 1}</div>` +
         `<div class="ffe-nm" title="${esc(f.nama)}">${esc(pendekNama(f.nama))}</div>` +
         `<div class="ffe-num" data-count="${f.n}">0</div>` +
-        `<div class="ffe-mini"><div class="kk-isi">${kg}</div></div>` +
+        `<div class="ffe-mini ffe-komp"><div class="kk-isi kk3">${kompKod}</div></div>` +
+        `<div class="ffe-mini ffe-kodA"><div class="kk-isi kk1">${kodA}</div></div>` +
+        `<div class="ffe-mini ffe-kodB"><div class="kk-isi kk1">${kodB}</div></div>` +
         `<div class="ffe-bar"><div class="ffe-track"><i style="--w:${pa.toFixed(2)}%;--d:${360 + i * 60}ms"></i></div><b class="ffe-pct" data-count="${pa.toFixed(1)}" data-suffix="%">0%</b></div>` +
         `<div class="ffe-bar ffe-sel" title="${nm}: ${fmtN.format(sel)} / ${fmtN.format(c._n)}"><div class="ffe-track"><i style="--w:${ps.toFixed(2)}%;--d:${400 + i * 60}ms"></i></div><b class="ffe-pct" data-count="${ps.toFixed(1)}" data-suffix="%">0%</b></div>` +
         `<div class="ffe-baki"><span>${fmtN.format(bakiFe)}</span></div></div>`;
     }).join("");
+
     el.innerHTML =
       `<div class="fe-hero">` +
         `<div class="fe-hero-teks"><p class="fe-kicker">${esc(cfg.TAJUK || "Dashboard")}</p>` +
@@ -1779,7 +1786,11 @@
         (p == null ? "" : `<div class="fe-kpi-track"><i style="--w:${(Math.min(1, p) * 100).toFixed(1)}%"></i></div>`) + `</div>`).join("") +
       `</div>` +
       `<div class="fe-komposisi"><div class="fe-komp-tajuk">Komposisi status respon</div><div class="fe-komp-bar">${segmen}</div><div class="fe-legenda-kuadran">${legenda}</div></div>` +
-      `<div class="fe-jadual"><div class="ffe-kepala"><div>#</div><div>Nama FE</div><div>Agihan</div><div class="ffe-kepala-komp"><div class="kk-tajuk">Komposisi</div><div class="kk-atas">${KOMP_KOD.map(([lab, , cls, tajuk]) => `<span class="${cls}" title="${esc(tajuk)}">${lab}</span>`).join("")}</div><div class="kk-bawah">${KOMP_KOD.map(([, , cls]) => `<span class="${cls}">Jml</span><span class="${cls}">%</span>`).join("")}</div></div><div>% Kod A</div><div>% ${nm}</div><div>Baki</div></div>` +
+      `<div class="fe-jadual"><div class="ffe-kepala"><div>#</div><div>Nama FE</div><div>Agihan</div>` +
+      `<div class="ffe-kepala-komp kk-grup"><div class="kk-tajuk">Komposisi</div><div class="kk-atas kk3a">${KOMP_KOD.filter((k) => k[3] === "komp").map(([lab, , cls, tajuk]) => `<span class="${cls}" title="${esc(tajuk)}">${lab}</span>`).join("")}</div><div class="kk-bawah kk3a">${KOMP_KOD.filter((k) => k[3] === "komp").map(([, , cls]) => `<span class="${cls}">Jml</span><span class="${cls}">%</span>`).join("")}</div></div>` +
+      `<div class="ffe-kepala-komp kk-grup kk-kodA"><div class="kk-tajuk">Kod A (11-60)</div><div class="kk-spacer"></div><div class="kk-bawah kk1a"><span>Jml</span><span>%</span></div></div>` +
+      `<div class="ffe-kepala-komp kk-grup kk-kodB"><div class="kk-tajuk">Kod B (71-77)</div><div class="kk-spacer"></div><div class="kk-bawah kk1a"><span>Jml</span><span>%</span></div></div>` +
+      `<div><span class="kh">% MKO Kod A</span></div><div><span class="kh">% MKO Selesai</span></div><div><span class="kh">Baki</span></div></div>` +
       `<div class="ffe-senarai">${baris}</div></div>`;
     el.onclick = (e) => {
       const row = e.target.closest(".ffe-row");

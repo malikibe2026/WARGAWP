@@ -864,3 +864,28 @@ td.io-merah { background: rgba(201, 54, 54, .08); }
 .kk-atas span.c11, .kk-atas span.cA { font-weight: 800 !important; }
 :root[data-theme="dark"] .ffe-kepala, :root[data-theme="dark"] .ffe-kepala > div, :root[data-theme="dark"] .kk-tajuk, :root[data-theme="dark"] .kk-bawah span, :root[data-theme="dark"] .kk-atas span:not(.c11):not(.cA) { color: #fb923c !important; }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .ffe-kepala, :root:not([data-theme="light"]) .ffe-kepala > div, :root:not([data-theme="light"]) .kk-tajuk, :root:not([data-theme="light"]) .kk-bawah span, :root:not([data-theme="light"]) .kk-atas span:not(.c11):not(.cA) { color: #fb923c !important; } }
+
+/* Susunan baharu: Komposisi (11, 14, LK) | Kod A (11-60) | Kod B (71-77) | % MKO Kod A | % MKO Selesai | Baki */
+.ffe-kepala, .ffe-row { grid-template-columns: 38px minmax(80px, .55fr) 62px minmax(330px, 2fr) minmax(150px, 1fr) minmax(150px, 1fr) minmax(120px, .9fr) minmax(120px, .9fr) 70px; }
+.kk-grup { display: flex; flex-direction: column; min-width: 0; }
+.kk-grup .kk-tajuk { text-align: center; }
+.kk3 { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.kk1 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.kk-atas.kk3a, .kk-bawah.kk3a { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.kk-bawah.kk1a { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.kk-kodA .kk-tajuk, .kk-kodB .kk-tajuk { color: #ea580c; font-weight: 800; }
+.kk-kodA, .kk-kodB { border-left: 1px solid var(--border-strong, var(--border)); }
+.ffe-kodA, .ffe-kodB { padding: 0; }
+.kk1 .kg .kv { font-size: 14px; }
+.kh { display: block; text-align: center; color: #ea580c; font-weight: 800; }
+.ffe-kepala > div:nth-child(n+4) { text-align: center; }
+.ffe-kepala > div { justify-content: center; }
+@media (max-width: 1100px) { .ffe-kepala, .ffe-row { grid-template-columns: 34px minmax(70px, .5fr) 56px minmax(290px, 2fr) minmax(130px, 1fr) minmax(130px, 1fr) minmax(100px, .9fr) minmax(100px, .9fr) 64px; } }
+@media (max-width: 720px) {
+  .ffe-row { grid-template-columns: 30px minmax(0, 1fr) auto; row-gap: 6px; }
+  .ffe-num, .ffe-baki { display: none; }
+  .ffe-komp, .ffe-kodA, .ffe-kodB, .ffe-bar, .ffe-sel { grid-column: 2 / -1; }
+  .ffe-kepala { display: none; }
+}
+.kk-spacer { height: 24px; }
+.ffe-kepala, .ffe-row { grid-template-columns: 38px minmax(104px, .7fr) 62px minmax(330px, 1.9fr) minmax(150px, 1fr) minmax(150px, 1fr) minmax(120px, .9fr) minmax(120px, .9fr) 70px; }
