@@ -849,3 +849,12 @@ td.io-merah { background: rgba(201, 54, 54, .08); }
   .kg.cA { background: linear-gradient(135deg, #10b981, #06b6d4); border-color: transparent; }
   .kg.c11::before, .kg.cA::before, .kg.c11 span, .kg.cA span { color: #fff !important; }
 }
+
+/* Header tidak tebal; ruang oren (rank #1) dikeluarkan; komposisi di tengah */
+.jadual th, .ffe-kepala, .ffe-kepala > div, .kk-tajuk, .kk-atas span, .kk-bawah span { font-weight: 500 !important; }
+.ffe-juara { color: var(--ink) !important; }
+.kk-tajuk, .ffe-kepala-komp { text-align: center; justify-content: center; }
+.ffe-kepala > .ffe-kepala-komp { align-items: center; }
+.ffe-row > .ffe-mini { display: flex; align-items: stretch; justify-content: center; }
+.ffe-row > .ffe-mini .kk-isi { width: 100%; }
+.kk-isi span { text-align: center; }
