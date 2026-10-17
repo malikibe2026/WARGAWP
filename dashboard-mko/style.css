@@ -889,3 +889,11 @@ td.io-merah { background: rgba(201, 54, 54, .08); }
 }
 .kk-spacer { height: 24px; }
 .ffe-kepala, .ffe-row { grid-template-columns: 38px minmax(104px, .7fr) 62px minmax(330px, 1.9fr) minmax(150px, 1fr) minmax(150px, 1fr) minmax(120px, .9fr) minmax(120px, .9fr) 70px; }
+
+/* Latar header jadual FE: lebih gelap sedikit */
+.ffe-kepala, .ffe-kepala > div { background: #e2e6ee !important; }
+:root[data-theme="dark"] .ffe-kepala, :root[data-theme="dark"] .ffe-kepala > div { background: #0c1220 !important; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .ffe-kepala, :root:not([data-theme="light"]) .ffe-kepala > div { background: #0c1220 !important; } }
+.kk-bawah span { background: #d5dbe6 !important; }
+:root[data-theme="dark"] .kk-bawah span { background: #0c1220 !important; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .kk-bawah span { background: #0c1220 !important; } }
