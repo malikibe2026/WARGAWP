@@ -1023,3 +1023,9 @@ td.io-merah { background: rgba(201, 54, 54, .08); }
   .ffe-bar .ffe-track { flex: 1; height: 8px; border-radius: 999px; }
   .ffe-bar .ffe-pct { min-width: 0 !important; font-size: 14px !important; font-weight: 800; }
 }
+@media (max-width: 720px) {
+  .kk-isi .kg.c11::before { content: "Kod 11"; }
+  .kk-isi .kg.c14::before { content: "Kod 14"; }
+  .kk-isi .kg.cLK::before { content: "Kod LK"; }
+  .kk-isi .kg::before { white-space: nowrap; }
+}
