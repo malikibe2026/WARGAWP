@@ -858,3 +858,9 @@ td.io-merah { background: rgba(201, 54, 54, .08); }
 .ffe-row > .ffe-mini { display: flex; align-items: stretch; justify-content: center; }
 .ffe-row > .ffe-mini .kk-isi { width: 100%; }
 .kk-isi span { text-align: center; }
+
+/* Header jadual FE: oren dan tebal supaya jelas */
+.ffe-kepala, .ffe-kepala > div, .kk-tajuk, .kk-bawah span, .kk-atas span:not(.c11):not(.cA) { color: #ea580c !important; font-weight: 800 !important; }
+.kk-atas span.c11, .kk-atas span.cA { font-weight: 800 !important; }
+:root[data-theme="dark"] .ffe-kepala, :root[data-theme="dark"] .ffe-kepala > div, :root[data-theme="dark"] .kk-tajuk, :root[data-theme="dark"] .kk-bawah span, :root[data-theme="dark"] .kk-atas span:not(.c11):not(.cA) { color: #fb923c !important; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .ffe-kepala, :root:not([data-theme="light"]) .ffe-kepala > div, :root:not([data-theme="light"]) .kk-tajuk, :root:not([data-theme="light"]) .kk-bawah span, :root:not([data-theme="light"]) .kk-atas span:not(.c11):not(.cA) { color: #fb923c !important; } }
