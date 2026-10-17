@@ -917,3 +917,49 @@ td.io-merah { background: rgba(201, 54, 54, .08); }
 .kk-tajuk { border-bottom: 1px solid #000; }
 .kk-spacer { border-bottom: 1px solid #000; }
 :root[data-theme="dark"] .ffe-senarai, :root[data-theme="dark"] .ffe-row > div, :root[data-theme="dark"] .ffe-kepala > div { border-color: #000 !important; }
+
+/* Telefon: setiap pegawai jadi satu kad, setiap bahagian ada label sendiri */
+@media (max-width: 720px) {
+  .ffe-senarai { max-height: none; }
+  .ffe-row { display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; gap: 10px; padding: 12px; align-items: center; }
+  .ffe-no { grid-column: 1; grid-row: 1; text-align: center; }
+  .ffe-nm { grid-column: 2; grid-row: 1; font-size: 14px; font-weight: 800; white-space: normal; overflow: visible; }
+  .ffe-num { display: block !important; grid-column: 3; grid-row: 1; font-size: 12px; font-weight: 700; color: var(--ink-2); }
+  .ffe-num::before { content: "Agihan "; color: var(--muted); font-weight: 600; }
+  .ffe-komp, .ffe-kodA, .ffe-kodB, .ffe-bar, .ffe-sel, .ffe-baki { grid-column: 1 / -1; }
+  .ffe-komp::before, .ffe-kodA::before, .ffe-kodB::before, .ffe-bar::before, .ffe-sel::before, .ffe-baki::before {
+    display: block; font-size: 11px; font-weight: 800; color: #ea580c; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 4px; }
+  .ffe-komp::before { content: "Komposisi (11 · 14 · LK)"; }
+  .ffe-kodA::before { content: "Kod A (11-60)"; }
+  .ffe-kodB::before { content: "Kod B (71-77)"; }
+  .ffe-bar::before { content: "% MKO Kod A"; }
+  .ffe-sel::before { content: "% MKO Selesai"; }
+  .ffe-baki { display: flex; justify-content: space-between; align-items: center; }
+  .ffe-baki::before { content: "Baki"; margin: 0; }
+  .ffe-baki span { min-width: 56px; }
+  .ffe-kepala { display: none !important; }
+  .kk-isi { display: grid; gap: 6px; width: 100%; height: auto; }
+  .kk-isi.kk3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .kk-isi.kk1 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .kk-isi .kg { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 6px 4px; border: 1px solid #000 !important; border-radius: 8px; background: var(--surface-2); }
+  .kk-isi .kg::before { content: attr(data-k); font-size: 11px; font-weight: 800; color: #ea580c; margin-bottom: 2px; }
+  .kk-isi .kv { font-size: 16px; font-weight: 800; border: 0 !important; padding: 0; }
+  .kk-isi .kp { font-size: 12px; font-weight: 700; border: 0 !important; padding: 0; }
+  .kk-isi .kg.c11 { background: linear-gradient(135deg, #2563eb, #38bdf8); }
+  .kk-isi .kg.cA { background: linear-gradient(135deg, #10b981, #06b6d4); }
+  .kk-isi .kg.c11 .kv, .kk-isi .kg.c11 .kp, .kk-isi .kg.cA .kv, .kk-isi .kg.cA .kp, .kk-isi .kg.c11::before, .kk-isi .kg.cA::before { color: #fff !important; }
+  .ffe-mini { padding: 0 !important; }
+  .ffe-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .ffe-bar::before, .ffe-sel::before { flex-basis: 100%; width: 100%; }
+  .ffe-track { flex: 1; }
+  .ffe-pct { min-width: 52px; text-align: right; }
+}
+@media (max-width: 720px) {
+  .ffe-no, .ffe-nm, .ffe-num, .ffe-mini, .ffe-komp, .ffe-kodA, .ffe-kodB, .ffe-bar, .ffe-sel, .ffe-baki { grid-area: auto; }
+}
+@media (max-width: 720px) {
+  .ffe-row { display: grid !important; grid-template-columns: 30px minmax(0, 1fr) auto !important; }
+  .ffe-komp, .ffe-kodA, .ffe-kodB, .ffe-bar, .ffe-sel, .ffe-baki { grid-column: 1 / -1 !important; }
+  .ffe-no, .ffe-nm, .ffe-num { min-width: 0; }
+  .ffe-row > div { border-left: 0 !important; }
+}
