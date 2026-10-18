@@ -1029,3 +1029,13 @@ td.io-merah { background: rgba(201, 54, 54, .08); }
   .kk-isi .kg.cLK::before { content: "Kod LK"; }
   .kk-isi .kg::before { white-space: nowrap; }
 }
+
+/* Penapis utama: kotak tanda kategori pegawai (Tetap / PMS / Kes HQ) */
+.tick-grup { display: flex; align-items: center; gap: 6px; margin: 0; padding: 6px 10px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); min-height: 50px; }
+.tick-grup legend { float: left; padding: 0 6px 0 2px; font-size: 10.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.tick { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border: 1px solid var(--border); border-radius: 999px; cursor: pointer; font-size: 13px; font-weight: 700; color: var(--ink); background: var(--surface-2); user-select: none; }
+.tick input { width: 16px; height: 16px; margin: 0; accent-color: var(--accent); cursor: pointer; }
+.tick small { font-size: 11px; font-weight: 700; color: var(--muted); }
+.tick.aktif { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+.tick.kosong { opacity: .5; cursor: not-allowed; }
+@media (max-width: 720px) { .tick-grup { flex: 1 1 100%; flex-wrap: wrap; } .tick-grup legend { width: 100%; margin-bottom: 4px; } }

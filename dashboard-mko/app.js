@@ -223,6 +223,26 @@
     { k: "Pertanian", kod: ["101", "103", "104", "105"], c1: "#22c55e", c2: "#14b8a6", ikon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20C4 10 10 4 20 4c0 10-6 16-16 16zM4 20l9-9"/></svg>' },
     { k: "Perlombongan & Pengkuarian", kod: ["200", "207"], c1: "#8b5cf6", c2: "#ec4899", ikon: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M2 20L9 7l4 6 2-3 7 10z"/></svg>' },
   ];
+  // Kod KP 3 digit di depan (cth. "205 - Pembuatan" → 205)
+  function kodKP(v) {
+    const m = String(v == null ? "" : v).match(/^\s*(?:KP\s*)?(\d{3})(?!\d)/i);
+    return m ? m[1] : null;
+  }
+  // Kategori pegawai: dari lajur fail (kategori / jenis / status pegawai) atau nama FE
+  const JENIS_PEGAWAI = ["Tetap", "PMS", "Kes HQ"];
+  function jenisPegawai(r) {
+    const calon = [];
+    if (r.kategori_pegawai) calon.push(r.kategori_pegawai);
+    if (r.tambahan) for (const [k, v] of Object.entries(r.tambahan)) if (/tetap|pms|hq|kategori|jenis|status\s*pegawai|kes/i.test(k)) calon.push(v);
+    calon.push(r.pegawai_kerja_luar);
+    for (const v of calon) {
+      const t = String(v == null ? "" : v).toLowerCase();
+      if (/\bkes\s*hq\b|\bhq\b|ibu\s*pejabat/.test(t)) return "Kes HQ";
+      if (/\bpms\b/.test(t)) return "PMS";
+      if (/\btetap\b/.test(t)) return "Tetap";
+    }
+    return KOSONG;
+  }
   // Ambil kod 3 digit di depan sahaja (cth. "205 - Pembuatan" atau "KP 205")
   function sektorUtama(v) {
     const m = String(v == null ? "" : v).match(/^\s*(?:KP\s*)?(\d{3})(?!\d)/i);
@@ -237,6 +257,8 @@
     r._dl = r.daerah_lokasi_semasa || r.daerah_lokasi_label || null;
     r._dp = r.daerah_pos_semasa || r.daerah_pos_label || null;
     r._sektor4 = sektorUtama(r.kod_kp || r.kod_survei);
+    r._kodkp = kodKP(r.kod_kp || r.kod_survei);
+    r._jenis = jenisPegawai(r);
     return r;
   }
   const ADA_TAHAP = () => S.rekod.some((r) => r._tahap !== "Tiada");
@@ -285,6 +307,7 @@
   const SEMUA_PENAPIS = PENAPIS_UTAMA.concat(PENAPIS_LAIN);
   const LABEL_DIM = Object.fromEntries(SEMUA_PENAPIS);
   LABEL_DIM._petaDaerah = "Daerah (peta)";
+  LABEL_DIM._jenis = "Kategori pegawai";
   const DIMENSI = [
     ["pegawai_kerja_luar", "Pegawai Kerja Luar"],
     ["fasa_be", "Fasa BE"],
@@ -411,7 +434,7 @@
     const pilih = $("pilihDimensi");
     pilih.innerHTML = senarai.map(([k, l]) => `<option value="${k}">${esc(l)}</option>`).join("");
     pilih.value = S.dimensi;
-    lajurJadual = LAJUR_JADUAL.filter(([k]) => adaLajur(k));
+    lajurJadual = LAJUR_JADUAL.filter(([k]) => k === "_kodkp" || adaLajur(k));
     const dimIo = DIMENSI_IO.find(([k]) => new Set(S.rekod.map((r) => nilaiDim(r, k))).size > 1);
     if (dimIo && !$("pilihDimIo").dataset.dipilih) $("pilihDimIo").value = dimIo[0];
     const uk = UKURAN.filter(([k]) => adaLajur(k + "_semasa") || adaLajur(k + "_sebelum"));
@@ -512,17 +535,23 @@
       `<span class="dd-label">${esc(label)}</span><span class="dd-nilai">${kosong ? "Tiada data" : esc(teksPilihan(d))}</span></button>`;
   }
   function paparPenapis() {
-    $("penapisUtama").innerHTML = PENAPIS_UTAMA.map(([d, l]) => htmlDd(d, l)).join("");
+    const kiraJenis = {};
+    for (const r of S.rekod) kiraJenis[r._jenis] = (kiraJenis[r._jenis] || 0) + 1;
+    const pilihJenis = S.tapis._jenis || new Set();
+    const tanda = `<fieldset class="tick-grup"><legend>Kategori pegawai</legend>` + JENIS_PEGAWAI.map((j) =>
+      `<label class="tick${pilihJenis.has(j) ? " aktif" : ""}${kiraJenis[j] ? "" : " kosong"}"><input type="checkbox" data-jenis="${j}"${pilihJenis.has(j) ? " checked" : ""}${kiraJenis[j] ? "" : " disabled"}>` +
+      `<span>${j}</span><small>${fmtN.format(kiraJenis[j] || 0)}</small></label>`).join("") + `</fieldset>`;
+    $("penapisUtama").innerHTML = PENAPIS_UTAMA.map(([d, l]) => htmlDd(d, l)).join("") + tanda;
     const lain = PENAPIS_LAIN.filter(([d]) => d === "_kat" || (d === "_tahap" && ADA_TAHAP()) || new Set(S.rekod.map((r) => nilaiDim(r, d))).size > 1 || S.tapis[d]);
     $("laciIsi").innerHTML = lain.map(([d, l]) => htmlDd(d, l)).join("") || '<p class="nota">Tiada penapis tambahan.</p>';
-    const bilLain = Object.keys(S.tapis).filter((d) => !PENAPIS_UTAMA.some(([k]) => k === d)).length;
+    const bilLain = Object.keys(S.tapis).filter((d) => d !== "_jenis" && !PENAPIS_UTAMA.some(([k]) => k === d)).length;
     $("bilPenapisLain").hidden = !bilLain;
     $("bilPenapisLain").textContent = bilLain;
     $("btnKosong").hidden = !Object.keys(S.tapis).length;
     // Cip untuk penapis yang datang dari klik carta / laci
     const c = [];
     for (const d in S.tapis) {
-      if (PENAPIS_UTAMA.some(([k]) => k === d)) continue;
+      if (d === "_jenis" || PENAPIS_UTAMA.some(([k]) => k === d)) continue;
       const v = d === "_petaDaerah" ? [S.petaLabelTapis || "daerah dipilih"] : [...S.tapis[d]].map((x) => labelNilai(d, x));
       c.push(`<span class="cip"><strong>${esc(LABEL_DIM[d] || d)}:</strong> ${esc(v.length > 3 ? v.slice(0, 3).join(", ") + " +" + (v.length - 3) : v.join(", "))}` +
         `<button data-buang="${d}" aria-label="Buang penapis">×</button></span>`);
@@ -1967,7 +1996,7 @@
 
   // ---------- Jadual rekod ----------
   const LAJUR_JADUAL = [
-    ["no_siri", "No. Siri"], ["nama", "Nama Pendaftaran"], ["pegawai_kerja_luar", "Pegawai Kerja Luar"],
+    ["no_siri", "No. Siri"], ["nama", "Nama Pendaftaran"], ["_kodkp", "Kod KP"], ["pegawai_kerja_luar", "Pegawai Kerja Luar"],
     ["msic_5", "Kod Industri"], ["status_respon_semasa", "Status Semasa"], ["status_respon_sebelum", "Status Sebelum"],
     ["status_rekod", "Status Rekod"], ["cara_terima", "Cara Terima"], ["tarikh_terima", "Tarikh Terima"], ["pmks", "PMKS"],
     ["pendapatan_semasa", "Pendapatan Semasa"], ["perbelanjaan_semasa", "Perbelanjaan Semasa"], ["gaji_semasa", "Gaji Semasa"],
@@ -2182,7 +2211,7 @@
   }
   // Daerah pos & lokasi tidak lagi dipaparkan (peta, penapis, carta, jadual atau butiran)
   const DAERAH_BUANG = new Set(["daerah_pos_label", "daerah_pos_semasa", "daerah_lokasi_label", "daerah_lokasi_semasa", "_dl", "_dp"]);
-  const SISTEM = new Set(["id", "muat_naik_id", "_kat", "_tahap", "_dl", "_dp", "_sektor4"]);
+  const SISTEM = new Set(["id", "muat_naik_id", "_kat", "_tahap", "_dl", "_dp", "_sektor4", "_kodkp", "_jenis"]);
   // ---------- Frame + kemas kini terpilih ----------
   // Frame = senarai pertubuhan tulang belakang (populasi). Fail lain hanya mengemas kini lajur tertentu
   // bagi No. Siri yang ada dalam frame; rekod tidak ditambah atau dibuang, sel kosong tidak memadam nilai.
@@ -2521,6 +2550,12 @@
     });
 
     // Tab
+    $("penapisUtama").addEventListener("change", (e) => {
+      const kotak = e.target.closest("input[data-jenis]");
+      if (!kotak) return;
+      const pilih = new Set([...$("penapisUtama").querySelectorAll("input[data-jenis]:checked")].map((x) => x.dataset.jenis));
+      setTapis("_jenis", pilih.size ? pilih : null);
+    });
     document.querySelector(".tab").addEventListener("click", (e) => {
       const b = e.target.closest("[role=tab]");
       if (b) tukarHalaman(b.dataset.hal);
