@@ -252,6 +252,12 @@
   }
 
   function terbit(r) {
+    // Data lama: lajur "Status" (Tetap / PMS / Kes HQ) pernah tersilap masuk ke Status Respon Semasa.
+    // Pindahkan ke "tambahan" supaya kategori pegawai kekal, dan kosongkan status respon yang salah.
+    if (/^\s*(tetap|pms|kes\s*hq|hq)\s*$/i.test(String(r.status_respon_semasa == null ? "" : r.status_respon_semasa))) {
+      r.tambahan = { ...(r.tambahan || {}), Status: String(r.status_respon_semasa).trim() };
+      r.status_respon_semasa = null;
+    }
     r._kat = kategori(r.status_respon_semasa);
     r._tahap = tahap(r.status_rekod);
     r._dl = r.daerah_lokasi_semasa || r.daerah_lokasi_label || null;
