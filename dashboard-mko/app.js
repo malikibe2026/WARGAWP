@@ -118,7 +118,7 @@
     namafe: "pegawai_kerja_luar", enumerator: "pegawai_kerja_luar", pkl: "pegawai_kerja_luar", namapkl: "pegawai_kerja_luar",
     sv: "penyelia", namapenyelia: "penyelia",
     daerah: "daerah_lokasi_semasa", daerahpentadbiran: "daerah_lokasi_semasa",
-    statusrespon: "status_respon_semasa", kodrespon: "status_respon_semasa", respon: "status_respon_semasa", status: "status_respon_semasa",
+    statusrespon: "status_respon_semasa", kodrespon: "status_respon_semasa", respon: "status_respon_semasa",
     msic: "msic_5", kodmsic: "msic_5", msic2008: "msic_5", kodindustri: "msic_5", msic5digit: "msic_5", msic3digit: "msic_3",
     saiz: "pmks", saizpertubuhan: "pmks", kategoripmks: "pmks",
     parlimen: "parlimen", kawasanparlimen: "parlimen", kodparlimen: "parlimen", parlimensemasa: "parlimen", parlimenlabel: "parlimen",
@@ -233,7 +233,7 @@
   function jenisPegawai(r) {
     const calon = [];
     if (r.kategori_pegawai) calon.push(r.kategori_pegawai);
-    if (r.tambahan) for (const [k, v] of Object.entries(r.tambahan)) if (/tetap|pms|hq|kategori|jenis|status\s*pegawai|kes/i.test(k)) calon.push(v);
+    if (r.tambahan) for (const [k, v] of Object.entries(r.tambahan)) if (/^\s*status\s*$|tetap|pms|hq|kategori|jenis|status\s*pegawai|kes/i.test(k)) calon.push(v);
     calon.push(r.pegawai_kerja_luar);
     for (const v of calon) {
       const t = String(v == null ? "" : v).toLowerCase();
