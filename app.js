@@ -456,6 +456,18 @@
     const lajur = baris[0].map(h => peta[kunci(h)] || null);
     if (!lajur.includes("nama")) return toast("Lajur 'Nama' tidak dijumpai dalam baris pertama CSV.", true);
 
+    // Padankan ejaan seksyen dengan yang sedia ada (abaikan huruf besar/kecil dan perkataan "Penyiasatan")
+    // supaya "SEKSYEN RANGKA DAN PEMETAAN" tidak jadi seksyen berasingan daripada "Seksyen Rangka dan Pemetaan".
+    const kunciUnit = u => String(u || "").toUpperCase().replace(/\bPENYIASATAN\b/g, "").replace(/\s+/g, " ").trim();
+    const unitAda = new Map();
+    for (const w of keadaan.data) {
+      if (!w.unit) continue;
+      const k = kunciUnit(w.unit), lama = unitAda.get(k);
+      // Utamakan ejaan biasa (bukan semua huruf besar).
+      if (!lama || (lama === lama.toUpperCase() && w.unit !== w.unit.toUpperCase())) unitAda.set(k, w.unit);
+    }
+    const unitSah = u => unitAda.get(kunciUnit(u)) || u;
+
     let icTakSah = 0;
     const rekods = baris.slice(1).map(b => {
       const r = {};
@@ -468,7 +480,8 @@
       }
       delete r._ic;   // No. KP tidak disimpan — hanya tarikh lahir
       for (const t of ["tarikh_lahir", "tarikh_lapor_diri"]) if (r[t]) r[t] = normalTarikh(r[t]);
-      if ("kategori" in r) r.kategori = /pms|mysteps/i.test(r.kategori) ? "pms" : "tetap";
+      if ("kategori" in r) r.kategori = /pms|mystep|personel/i.test(r.kategori) ? "pms" : "tetap";
+      if (r.unit) r.unit = unitSah(r.unit);
       return r;
     }).filter(r => r.nama);
 
