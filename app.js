@@ -466,7 +466,9 @@
       // Utamakan ejaan biasa (bukan semua huruf besar).
       if (!lama || (lama === lama.toUpperCase() && w.unit !== w.unit.toUpperCase())) unitAda.set(k, w.unit);
     }
-    const unitSah = u => unitAda.get(kunciUnit(u)) || u;
+    // Nama lama/ringkas seksyen → nama rasmi dalam direktori.
+    const ALIAS_UNIT = { "SEKSYEN INDUSTRI": "Seksyen Pembuatan, Binaan Alam Sekitar dan Pertanian" };
+    const unitSah = u => { const a = ALIAS_UNIT[kunciUnit(u)]; return unitAda.get(kunciUnit(a || u)) || a || u; };
 
     let icTakSah = 0;
     const rekods = baris.slice(1).map(b => {
@@ -502,6 +504,10 @@
       for (const [m, v] of Object.entries(r)) if (m !== "nama" && v !== "" && String(w[m] ?? "") !== String(v)) ubah[m] = v;
       if (Object.keys(ubah).length) kemas.push({ w, ubah });
     }
+    // Fail yang semuanya PMS dianggap senarai PMS terkini: PMS dalam direktori yang tiada dalam fail = sudah berhenti.
+    const failPms = rekods.length && rekods.every(r => r.kategori === "pms");
+    const namaFail = new Set(rekods.map(r => kunciNama(r.nama)));
+    const buang = failPms ? keadaan.data.filter(w => adalahPms(w) && !namaFail.has(kunciNama(w.nama))) : [];
     const nPms = baharu.filter(r => r.kategori === "pms").length;
     const contoh = baharu.slice(0, 5).map(r => "  • " + r.nama).join("\n") + (baharu.length > 5 ? `\n  … dan ${baharu.length - 5} lagi` : "");
     const mesej = [
@@ -512,8 +518,12 @@
       baharu.length && kemas.length ? "Jika nama baharu di atas sepatutnya warga sedia ada, BATAL dan betulkan ejaan nama dalam fail." : "",
       "\nTeruskan?",
     ].filter(Boolean).join("\n\n");
-    if (!kemas.length && !baharu.length) return toast("Tiada perubahan dalam fail ini." + (icTakSah ? ` ${icTakSah} No. KP tidak sah.` : ""), !!icTakSah);
-    if (!confirm(mesej)) return;
+    if (!kemas.length && !baharu.length && !buang.length) return toast("Tiada perubahan dalam fail ini." + (icTakSah ? ` ${icTakSah} No. KP tidak sah.` : ""), !!icTakSah);
+    if ((kemas.length || baharu.length) && !confirm(mesej)) return;
+    const padam = buang.length && confirm(
+      `Fail ini senarai PMS terkini. ${buang.length} PMS dalam direktori TIADA dalam fail (sudah berhenti) dan akan DIPADAM:\n\n`
+      + buang.slice(0, 30).map(w => "  • " + w.nama).join("\n") + (buang.length > 30 ? `\n  … dan ${buang.length - 30} lagi` : "")
+      + "\n\nPadam mereka? (Batal = kekalkan)");
     try {
       let siap = 0;
       for (const { w, ubah } of kemas) {
@@ -521,7 +531,10 @@
         if (++siap % 10 === 0) toast(`Mengemas kini… ${siap}/${kemas.length}`);
       }
       if (baharu.length) await Store.simpanBanyak(baharu);
-      toast(`${kemas.length} dikemas kini, ${baharu.length} ditambah.`);
+      const gagalPadam = [];
+      if (padam) for (const w of buang) { try { await Store.padam(w.id); } catch { gagalPadam.push(w.nama); } }
+      toast(`${kemas.length} dikemas kini, ${baharu.length} ditambah` + (padam ? `, ${buang.length - gagalPadam.length} dipadam` : "") + "."
+        + (gagalPadam.length ? ` ${gagalPadam.length} gagal dipadam (ada rekod kehadiran?): ${gagalPadam.slice(0, 3).join(", ")}` : ""), !!gagalPadam.length);
       await muat();
     } catch (err) { toast("Import gagal: " + err.message, true); await muat(); }
   }
